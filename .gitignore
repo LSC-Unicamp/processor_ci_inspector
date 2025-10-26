@@ -1,0 +1,24 @@
+# Compiled files
+build/
+debug/
+test/
+out/
+output/
+
+# Python virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+env.bak/
+venv.bak/
+__pycache__/
+lib/
+lib64/
+
+# Byte-compiled / optimized / DLL files
+*.py[cod]
+*$py.class
+
+

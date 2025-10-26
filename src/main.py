@@ -5,22 +5,48 @@ import argparse
 import os
 import logging
 import sys
+import re
+from typing import Optional
 
 from pathlib import Path
 
 from language import identify_language
 from license import identify_license_type, find_license_files
-from cocotb_labeler import count_bits
 from cocotb_makefile_creator import create_cocotb_makefile
 from config import load_config
 from simulate import run_ghdl_import, run_ghdl_elaborate, synthesize_to_verilog
 
 DESTINATION_DIR = './cores'
-BASE_DIR = Path('./')
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 BUILD_DIR = BASE_DIR / 'build'
+PROTECTED_WORDS = {"reg", "wire", "assign", "input", "output"}  # extend as needed
+
+def fix_protected_instances(verilog_file: Path, backup=True):
+    """
+    Fix Verilog instance names that use protected keywords.
+    Example: 'register_set reg (' -> 'register_set reg_inst ('
+    """
+    text = verilog_file.read_text()
+
+    def replacer(match):
+        module, inst = match.groups()
+        if inst in PROTECTED_WORDS:
+            return f"{module} {inst}_inst ("
+        return match.group(0)
+
+    # Match: <word> <identifier> (
+    pattern = re.compile(r"\b(\w+)\s+(\w+)\s*\(")
+    fixed_text = pattern.sub(replacer, text)
+
+    if backup:
+        verilog_file.with_suffix(".v.bak").write_text(text)
+
+    verilog_file.write_text(fixed_text)
+    print(f"[INFO] Fixed protected instances in {verilog_file}")
 
 
-def clone_repo(url: str, repo_name: str) -> str:
+
+def clone_repo(url: str, repo_name: str) -> Optional[str]:
     """Clones a GitHub repository to a specified directory.
 
     Args:
@@ -114,8 +140,9 @@ def core_labeler(directory, config_file, output_dir, top_dir):
 
     Args:
         directory (str): The directory to search for LICENSE files.
-        config_file (str): Path to the configuration file.
+        config_file (str): Path to directory where the configuration file is located.
         output_dir (str): Directory to save the generated files.
+        top_dir (str): The top directory for rtl files.
     """
     logging.basicConfig(
         level=logging.WARNING,
@@ -167,7 +194,7 @@ def core_labeler(directory, config_file, output_dir, top_dir):
         config = load_config(config_file, processor_name)
         sim_files = config['files']
         for i in range(len(sim_files)):
-            sim_files[i] = os.path.join('cores', processor_name, sim_files[i])
+            sim_files[i] = os.path.join(directory, sim_files[i])
         top_module = config['top_module']
 
         try:
@@ -176,12 +203,16 @@ def core_labeler(directory, config_file, output_dir, top_dir):
             run_ghdl_elaborate(processor_name, top_module)
             verilog_output = BUILD_DIR / f'{processor_name}.v'
             synthesize_to_verilog(processor_name, verilog_output, top_module)
-        except:
-            logging.warning('Error synthesizing VHDL to Verilog.')
+            fix_protected_instances(verilog_output)
+        except Exception as e:
+            logging.warning('Error during VHDL processing: %s', e)
+            pass
 
     # Create a Makefile for cocotb simulation
-    makefile = create_cocotb_makefile(processor_name, language, config_file, top_dir, output_dir)
-    bash_command = f"make -f {makefile} clean && PYTHONPATH=processor_ci_utils/labeler/src/ make -f {makefile}"
+    print(f"Directory being passed to cocotb_makefile_creator: {directory}") # debug
+    makefile = create_cocotb_makefile(processor_name, language, config_file, top_dir, output_dir, directory)
+    path_to_main = os.path.abspath(os.path.join(BASE_DIR, 'processor_ci_inspector/src'))
+    bash_command = f"make -f {makefile} clean && PYTHONPATH={path_to_main} make -f {makefile}"
 
     try:
         subprocess.run(bash_command, shell=True, check=True, executable="/bin/bash")
@@ -189,13 +220,14 @@ def core_labeler(directory, config_file, output_dir, top_dir):
         logging.warning('Error executing make command: %s', e)
         return
 
-def main(directory, config_directory, output_directory, top_directory):
+def main(directory, config_directory, output_directory, top_directory) -> None:
     """Main function to execute the core labeler.
 
     Args:
         directory (str): The directory to search for cores files.
         config_directory (str): The directory containing the configuration files.
         output_directory (str): The directory to save the generated files.
+        top_directory (str): The top directory for rtl files.
     """
     logging.basicConfig(
         level=logging.WARNING,
@@ -207,17 +239,22 @@ def main(directory, config_directory, output_directory, top_directory):
     for config_file in os.listdir(config_directory):
         processor_name = os.path.splitext(config_file)[0]
         config = load_config(config_directory, processor_name)
-        url = config['repository']
-        if not url:
-            logging.warning(f'No repository URL found for {processor_name}. Skipping.')
-            continue
-        # Checks if the repository is already cloned
-        repo_path = os.path.join(DESTINATION_DIR, processor_name)
-        if not os.path.exists(repo_path):
-            print(f'Cloning repository {url} for processor {processor_name}...')
-            clone_repo(url, processor_name)
-        else:
-            print(f'Repository {processor_name} already exists. Skipping clone.')
+        print(f"Trying to clone: {processor_name}") # debug
+        try:
+            url = config['repository']
+            if not url:
+                logging.warning(f'No repository URL found for {processor_name}. Skipping.')
+                continue
+            # Checks if the repository is already cloned
+            repo_path = os.path.join(DESTINATION_DIR, processor_name)
+            if not os.path.exists(repo_path):
+                print(f'Cloning repository {url} for processor {processor_name}...')
+                clone_repo(url, processor_name)
+            else:
+                print(f'Repository {processor_name} already exists. Skipping clone.')
+        except:
+            logging.warning(f'Error cloning repository for {processor_name}. Skipping.')
+        
 
     # Get all subdirectories in the given directory
     subdirectories = [
@@ -227,16 +264,19 @@ def main(directory, config_directory, output_directory, top_directory):
     ]
 
     for subdirectory in subdirectories:
-         if ('@' in subdirectory):
+        if ('@' in subdirectory):
              continue
-         print(f"Processing labeler on {subdirectory}...")
-         core_labeler(
-             subdirectory,
-             config_directory,
-             output_directory,
-             top_directory
-         )
-         print(f'Processed {subdirectory}')
+        print(f"Processing labeler on {subdirectory}...")
+        try:
+            core_labeler(
+                subdirectory,
+                config_directory,
+                output_directory,
+                top_directory,
+            )
+            print(f'Processed {subdirectory}')
+        except Exception as e:
+            logging.warning(f'Error processing {subdirectory}: {e}')
 
         
 if __name__ == '__main__':
@@ -246,14 +286,14 @@ if __name__ == '__main__':
     parser.add_argument(
         '-d',
         '--dir',
-        help='The core directory.',
+        help='Directory with all processor repositories',
         required=True,
     )
     parser.add_argument(
         '-c',
         '--config',
         default='config',
-        help='The configuration folder path',
+        help='Folder with processors json configuration files.',
     )
     parser.add_argument(
         '-o',
@@ -262,16 +302,23 @@ if __name__ == '__main__':
         help='The output folder path.',
     )
     parser.add_argument(
-        '-b',
-        '--batch',
-        default=False,
-        help='Run in batch mode.',
-    )
-    parser.add_argument(
         '-t',
         '--top',
         default='rtl',
-        help='The top folder for the processor.',
+        help='Folder containing the rtl wrappers.',
+    )
+    # Mutually exclusive run modes
+    run_mode = parser.add_mutually_exclusive_group(required=True)
+    run_mode.add_argument(
+        '-b',
+        '--batch',
+        action='store_true',
+        help='Run in batch mode.',
+    )
+    run_mode.add_argument(
+        '-s',
+        '--single-processor',
+        help='Name of the processor to analyze (for single processor mode).',
     )
     args = parser.parse_args()
     dir_to_search = args.dir
@@ -279,13 +326,16 @@ if __name__ == '__main__':
     output_folder = args.output
     batch_mode = args.batch
     top_folder = args.top
+    single_processor = args.single_processor
     if batch_mode:
         # Run in batch mode
         main(dir_to_search, config_json, output_folder, top_folder)
     else:
         # Run in interactive mode
+        single_dir = os.path.join(dir_to_search, single_processor)
+        print(f"Processing labeler on {single_dir}...") # debug
         core_labeler(
-            dir_to_search,
+            single_dir,
             config_json,
             output_folder,
             top_folder

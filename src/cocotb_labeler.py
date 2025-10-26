@@ -49,7 +49,7 @@ async def processor_test(dut):
     try:
         with open(os.path.join(output_dir, f"{processor_name}_reg_file.json"), 'r', encoding='utf-8') as json_file:
             data = json.load(json_file)
-            regfile_candidates = data.get(processor_name, {}).get("regfile_candidates", [])
+            regfile_candidates = data.get("regfile_candidates", [])
     except (json.JSONDecodeError, OSError) as e:
         logging.warning('Error reading register file candidates: %s', e)
     if not regfile_candidates:
@@ -57,7 +57,7 @@ async def processor_test(dut):
         return
     dut._log.info(f"Register file candidates: {regfile_candidates}")    
 
-    regfile_path = regfile_candidates[0]['regfile_path']
+    regfile_path = regfile_candidates[0]
     dut._log.info(f"Using register file: {regfile_path}")
 
     regfile = resolve_path(dut, regfile_path)

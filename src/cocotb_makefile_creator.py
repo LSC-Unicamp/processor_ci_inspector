@@ -9,7 +9,7 @@ from config import load_config
 def escape_spaces(path: str) -> str:
     return re.sub(r'(?<!\\) ', r'\\ ', path)
 
-def standard_makefile(processor_name: str, language: str, config_folder: str, output_dir: str, makefile_path: str, cocotb_name: str = 'cocotb_labeler'):
+def standard_makefile(processor_name: str, language: str, config_folder: str, output_dir: str, makefile_path: str, core_directory: str, cocotb_name: str = 'cocotb_labeler'):
 
     config = load_config(config_folder, processor_name)
 
@@ -26,20 +26,20 @@ def standard_makefile(processor_name: str, language: str, config_folder: str, ou
             makefile.write('TOPLEVEL_LANG ?= verilog\n')
             makefile.write(f'COMPILE_ARGS ?= -g{language_version}\n')
             for dirs in inc_dir:
-                path = escape_spaces(f'cores/{processor_name}/{dirs}')
+                path = escape_spaces(f'{core_directory}/{dirs}')
                 makefile.write(f'VERILOG_INCLUDE_DIRS += {path}\n')
             for file in sim_files:
-                path = escape_spaces(f'cores/{processor_name}/{file}')
+                path = escape_spaces(f'{core_directory}/{file}')
                 makefile.write(f'VERILOG_SOURCES += {path}\n')
         elif language == 'SystemVerilog':
             makefile.write('SIM ?= verilator\n')
             makefile.write('TOPLEVEL_LANG ?= verilog\n')
             makefile.write(f'COMPILE_ARGS ?= --language 1800-{language_version}\n')
             for dirs in inc_dir:
-                path = escape_spaces(f'cores/{processor_name}/{dirs}')
+                path = escape_spaces(f'{core_directory}/{dirs}')
                 makefile.write(f'VERILOG_INCLUDE_DIRS += {path}\n')
             for file in sim_files:
-                path = escape_spaces(f'cores/{processor_name}/{file}')
+                path = escape_spaces(f'{core_directory}/{file}')
                 makefile.write(f'VERILOG_SOURCES += {path}\n')
         elif language == 'VHDL':
             makefile.write('SIM ?= verilator\n')
@@ -56,32 +56,34 @@ def standard_makefile(processor_name: str, language: str, config_folder: str, ou
 
 
 
-def processor_top_makefile(processor_name: str, language: str, config_folder: str, top_folder: str, output_dir: str, makefile_path: str, cocotb_name: str = 'cocotb_labeler'):
+def processor_top_makefile(processor_name: str, language: str, config_folder: str, top_folder: str, output_dir: str, makefile_path: str, core_directory: str, cocotb_name: str = 'cocotb_labeler'):
     config = load_config(config_folder, processor_name)
 
     top_module = "processorci_top"
     inc_dir = config['include_dirs']
     sim_files = config['files']
+    two_memories = config.get('two_memories', False) # not fully implemented yet, allow default case
     language_version = config['language_version']
 
     # Write the Makefile content
     with open(makefile_path, 'a', encoding='utf-8') as makefile:
         makefile.write('SIM ?= verilator\n')
         makefile.write('TOPLEVEL_LANG ?= verilog\n')
+        makefile.write(f'export TWO_MEMORIES = {two_memories}\n')
         if language.lower() != 'vhdl':
             makefile.write(f'COMPILE_ARGS ?= --language 1800-{language_version} -DSIMULATION -Wno-fatal -Wno-lint\n')
             for dirs in inc_dir:
-                path = escape_spaces(f'cores/{processor_name}/{dirs}')
+                path = escape_spaces(f'{core_directory}/{dirs}')
                 makefile.write(f'VERILOG_INCLUDE_DIRS += {path}\n')
             for file in sim_files:
-                path = escape_spaces(f'cores/{processor_name}/{file}')
+                path = escape_spaces(f'{core_directory}/{file}')
                 makefile.write(f'VERILOG_SOURCES += {path}\n')
         else:
             makefile.write(f'COMPILE_ARGS ?= --language 1800-2012 -DSIMULATION -Wno-fatal -Wno-lint\n')
-            makefile.write(f'VERILOG_SOURCES += build/{processor_name}.v\n')
-        makefile.write(f'VERILOG_SOURCES += processor_ci/internal/ahblite_to_wishbone.sv\n')
-        makefile.write(f'VERILOG_SOURCES += processor_ci/internal/axi4lite_to_wishbone.sv\n')
-        makefile.write(f'VERILOG_SOURCES += processor_ci/internal/axi4_to_wishbone.sv\n')
+            makefile.write(f'VERILOG_SOURCES += /eda/processor_ci_utils/build/{processor_name}.v\n')
+        makefile.write(f'VERILOG_SOURCES += /eda/processor_ci/internal/ahblite_to_wishbone.sv\n')
+        makefile.write(f'VERILOG_SOURCES += /eda/processor_ci/internal/axi4lite_to_wishbone.sv\n')
+        makefile.write(f'VERILOG_SOURCES += /eda/processor_ci/internal/axi4_to_wishbone.sv\n')
         makefile.write(f'VERILOG_SOURCES += {os.path.join(top_folder, f"{processor_name}.sv")}\n')
         makefile.write(f'TOPLEVEL = {top_module}\n')
         makefile.write(f'MODULE = {cocotb_name}\n')
@@ -92,7 +94,7 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
     return makefile_path
 
 
-def create_cocotb_makefile(processor_name: str, language: str, config_folder: str, top_folder: str, output_dir: str, cocotb_name: str = 'cocotb_labeler'):
+def create_cocotb_makefile(processor_name: str, language: str, config_folder: str, top_folder: str, output_dir: str, core_directory: str, cocotb_name: str = 'cocotb_labeler'):
     """Create a Makefile for cocotb simulation.
 
     Args:
@@ -101,6 +103,7 @@ def create_cocotb_makefile(processor_name: str, language: str, config_folder: st
         config_folder (str): Path to the configuration folder.
         top_folder (str): Path to folder containg all the top "shells".
         output_dir (str): Directory to save the generated Makefile.
+        core_directory (str): Directory containing the processor source files (repository).
         cocotb_name (str): Name of the cocotb module. Defaults to 'cocotb_labeler'.
     """
     logging.basicConfig(
@@ -146,6 +149,7 @@ def create_cocotb_makefile(processor_name: str, language: str, config_folder: st
             config_folder, 
             output_dir, 
             makefile_path, 
+            core_directory,
             cocotb_name
         )
     else:
@@ -156,6 +160,7 @@ def create_cocotb_makefile(processor_name: str, language: str, config_folder: st
             top_path, 
             output_dir, 
             makefile_path, 
+            core_directory,
             cocotb_name
         )
 
