@@ -1,5 +1,4 @@
 import cocotb
-
 import argparse
 import json
 import os
@@ -37,14 +36,7 @@ def get_arrays_current_module(module):
 
 
 def get_arrays_hierarchy(module, regfile_candidates=[]):
-
-    # dut._log.info(f"Exploring module: {module._path}")
-
     arrays, submodules = get_arrays_current_module(module)
-
-    # dut._log.info(f"    Arrays:")
-    # for a in arrays:
-    #     dut._log.info(f"        {a[1]} [{len(a[0])}][{len(a[0][1])}]")
 
     if arrays:
         for a in arrays:
@@ -62,13 +54,6 @@ def get_arrays_hierarchy(module, regfile_candidates=[]):
 
 def get_all_leaf_handles(module, leaves=[]):
     new_leaves, submodules = get_current_module_leaf_handles(module)
-
-    # dut._log.info(f"Exploring module: {module._path}")
-    # dut._log.info(f"    Leaf Handles:")
-    # for l in leaves:
-    #     dut._log.info(f"        {l}")
-    #     handles.append(l)
-    # dut._log.info(f"    Submodules: {submodules}")
 
     leaves.extend(new_leaves)
 
@@ -205,9 +190,6 @@ def filter_processor_interface_from_response(response):
     try:
         return json.loads(last_obj)
     except json.JSONDecodeError as e:
-        # Optional: fallbacks for slightly non-JSON outputs (uncomment if you need)
-        # import json5; return json5.loads(last_obj)
-        # import ast; return ast.literal_eval(last_obj)  # only if it's Python-dict-like
         raise ValueError(f"Found a JSON-like object but failed to parse: {e}") from e
 
 
@@ -218,7 +200,7 @@ def find_register_file_interface(dut, regfile_guesses):
     Put imports and defines here because this function may be moved to another file
     """
     from ollama import Client
-    SERVER_URL = "http://enqii.lsc.ic.unicamp.br:11434"
+    SERVER_URL = 'http://enqii.lsc.ic.unicamp.br:11434'
     client = Client(host=SERVER_URL)
 
     def send_prompt(prompt: str, model: str = 'qwen2.5:14b') -> tuple[bool, str]:
@@ -238,25 +220,26 @@ def find_register_file_interface(dut, regfile_guesses):
 
         return 1, response['response']
 
-    find_regfile_prompt = """You're a Hardware Engineer. You must analyze signals from an RTL simulation and decide which signals are part of the register file interface of a RISC-V processor. Then you must map these signals to a standard interface.
-**Part 1 Filtering signals**
-1. Analyze the given signal paths in the format "module.module.signal".
-2. First look for a module that is most probably the register file. These are common names found in register file modules: ["reg","bank","rf","gpr","integer_file"]
-3. Check if the module's signals correspond to the standard regfile interface signals: [read_addr_1, read_addr_2, read_data_1, read_data_2, write_enable, write_addr, write_data]
-4. List the chosen signals **Part 2 Mapping signals** Map the signal chosen from part 1 to the standard interface signals.
-Provide your reasoning first and then use extactly the following json format, it is crucial for the system.
-{{
-"read_addr_1": "signal_path",
-"read_addr_2": "signal_path",
-"read_data_1": "signal_path",
-"read_data_2": "signal_path",
-"write_enable": "signal_path",
-"write_addr": "signal_path",
-"write_data": "signal_path"
-}}
-- Register File Guessed signals:
-{regfile_guesses}
-"""
+    find_regfile_prompt = """
+        You're a Hardware Engineer. You must analyze signals from an RTL simulation and decide which signals are part of the register file interface of a RISC-V processor. Then you must map these signals to a standard interface.
+        **Part 1 Filtering signals**
+            1. Analyze the given signal paths in the format "module.module.signal".
+            2. First look for a module that is most probably the register file. These are common names found in register file modules: ["reg","bank","rf","gpr","integer_file"]
+            3. Check if the module's signals correspond to the standard regfile interface signals: [read_addr_1, read_addr_2, read_data_1, read_data_2, write_enable, write_addr, write_data]
+            4. List the chosen signals **Part 2 Mapping signals** Map the signal chosen from part 1 to the standard interface signals.
+            Provide your reasoning first and then use extactly the following json format, it is crucial for the system.
+            {{
+            "read_addr_1": "signal_path",
+            "read_addr_2": "signal_path",
+            "read_data_1": "signal_path",
+            "read_data_2": "signal_path",
+            "write_enable": "signal_path",
+            "write_addr": "signal_path",
+            "write_data": "signal_path"
+            }}
+        - Register File Guessed signals:
+        {regfile_guesses}
+    """
     find_regfile_prompt = find_regfile_prompt.format(regfile_guesses="\n".join(regfile_guesses))
 
     success, response = send_prompt(find_regfile_prompt, model='gpt-oss:20b')
@@ -295,55 +278,71 @@ async def find_register_file(dut):
             "regfile_candidates": regfile_candidates
         }
     
-    # In case no candidates were found, look for the interface
-    regfile_guesses = guess_register_file_location(dut)
+    ollama_flag = os.environ.get('OLLAMA', False)
+    ollama_flag = True if str(ollama_flag).lower() == 'true' else False
+    if not ollama_flag:
+        dut._log.info("Skipping register file interface detection via Ollama.")
+        # Save the current data back to the JSON file
+        output_file = os.path.join(output_dir, f"{processor_name}_reg_file.json")
 
-    if regfile_guesses:
-        dut._log.info("- Register File Guessed Signals:")
-        for i, guess in enumerate(regfile_guesses):
-            dut._log.info(f"  {i + 1}: {guess}")
-        dut._log.info("\n")
-
-        regfile_interface = find_register_file_interface(dut, regfile_guesses)
-
-        if isinstance(regfile_interface, dict):
-            dut._log.info("- Register File Interface:")
-            for signal, path in regfile_interface.items():
-                dut._log.info(f"  {signal}: {path}")
-
-            output_data["regfile_interface"] = regfile_interface
-
-    # Save the updated data back to the JSON file
-    output_file = os.path.join(output_dir, f"{processor_name}_reg_file.json")
-
-    try:
-        with open(output_file, 'w', encoding='utf-8') as json_file:
-            json.dump(output_data, json_file, indent=4)
-        logging.info(f'Results saved to {output_file}')
-    except OSError as e:
-        logging.warning(f'Error writing to {output_file}: %s', e)
-
-    # Consider the interface invalid if at least one required entry is null or missing
-    # Other error condition are harder to detect
-    required_keys = {
-        "read_addr_1",
-        "read_addr_2",
-        "read_data_1",
-        "read_data_2",
-        "write_enable",
-        "write_addr",
-        "write_data",
-    }
-
-    if isinstance(regfile_interface, dict) and required_keys.issubset(regfile_interface.keys()):
-        # invalid if any required entry is None
-        any_nulls = any(regfile_interface[k] is None for k in required_keys)
-        valid_regfile_interface = not any_nulls
+        try:
+            with open(output_file, 'w', encoding='utf-8') as json_file:
+                json.dump(output_data, json_file, indent=4)
+            logging.info(f'Results saved to {output_file}')
+        except OSError as e:
+            logging.warning(f'Error writing to {output_file}: %s', e)
+        return
     else:
-        valid_regfile_interface = False
+        dut._log.info("Register file interface detection via Ollama enabled.")
+        # In case no candidates were found, look for the interface
+        regfile_guesses = guess_register_file_location(dut)
 
-    if not regfile_candidates and not valid_regfile_interface:
-        assert False, f"No register file found for the {processor_name} processor"
+        if regfile_guesses:
+            dut._log.info("- Register File Guessed Signals:")
+            for i, guess in enumerate(regfile_guesses):
+                dut._log.info(f"  {i + 1}: {guess}")
+            dut._log.info("\n")
+
+            regfile_interface = find_register_file_interface(dut, regfile_guesses)
+
+            if isinstance(regfile_interface, dict):
+                dut._log.info("- Register File Interface:")
+                for signal, path in regfile_interface.items():
+                    dut._log.info(f"  {signal}: {path}")
+
+                output_data["regfile_interface"] = regfile_interface
+
+        # Save the updated data back to the JSON file
+        output_file = os.path.join(output_dir, f"{processor_name}_reg_file.json")
+
+        try:
+            with open(output_file, 'w', encoding='utf-8') as json_file:
+                json.dump(output_data, json_file, indent=4)
+            logging.info(f'Results saved to {output_file}')
+        except OSError as e:
+            logging.warning(f'Error writing to {output_file}: %s', e)
+
+        # Consider the interface invalid if at least one required entry is null or missing
+        # Other error condition are harder to detect
+        required_keys = {
+            "read_addr_1",
+            "read_addr_2",
+            "read_data_1",
+            "read_data_2",
+            "write_enable",
+            "write_addr",
+            "write_data",
+        }
+
+        if isinstance(regfile_interface, dict) and required_keys.issubset(regfile_interface.keys()):
+            # invalid if any required entry is None
+            any_nulls = any(regfile_interface[k] is None for k in required_keys)
+            valid_regfile_interface = not any_nulls
+        else:
+            valid_regfile_interface = False
+
+        if not regfile_candidates and not valid_regfile_interface:
+            assert False, f"No register file found for the {processor_name} processor"
 
 
 # This script is intended to be run as a cocotb testbench.

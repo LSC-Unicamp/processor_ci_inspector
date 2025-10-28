@@ -135,7 +135,7 @@ def generate_labels_file(
         logging.warning('Error writing to JSON file: %s', e)
 
 
-def core_labeler(directory, config_file, output_dir, top_dir):
+def core_labeler(directory, config_file, output_dir, top_dir, ollama_flag: bool) -> None:
     """Main function to find LICENSE files and generate labels.
 
     Args:
@@ -210,7 +210,7 @@ def core_labeler(directory, config_file, output_dir, top_dir):
 
     # Create a Makefile for cocotb simulation
     print(f"Directory being passed to cocotb_makefile_creator: {directory}") # debug
-    makefile = create_cocotb_makefile(processor_name, language, config_file, top_dir, output_dir, directory)
+    makefile = create_cocotb_makefile(processor_name, language, config_file, top_dir, output_dir, directory, ollama_flag)
     path_to_main = os.path.abspath(os.path.join(BASE_DIR, 'processor_ci_inspector/src'))
     bash_command = f"make -f {makefile} clean && PYTHONPATH={path_to_main} make -f {makefile}"
 
@@ -220,7 +220,7 @@ def core_labeler(directory, config_file, output_dir, top_dir):
         logging.warning('Error executing make command: %s', e)
         return
 
-def main(directory, config_directory, output_directory, top_directory) -> None:
+def main(directory, config_directory, output_directory, top_directory, ollama_flag: bool) -> None:
     """Main function to execute the core labeler.
 
     Args:
@@ -273,6 +273,7 @@ def main(directory, config_directory, output_directory, top_directory) -> None:
                 config_directory,
                 output_directory,
                 top_directory,
+                ollama_flag
             )
             print(f'Processed {subdirectory}')
         except Exception as e:
@@ -307,6 +308,13 @@ if __name__ == '__main__':
         default='rtl',
         help='Folder containing the rtl wrappers.',
     )
+    parser.add_argument(
+        '-n',
+        '--ollama_flag',
+        default=False,
+        type=bool,
+        help='Flag to enable ollama integration.',
+    )
     # Mutually exclusive run modes
     run_mode = parser.add_mutually_exclusive_group(required=True)
     run_mode.add_argument(
@@ -326,6 +334,7 @@ if __name__ == '__main__':
     output_folder = args.output
     batch_mode = args.batch
     top_folder = args.top
+    ollama_flag = args.ollama_flag
     single_processor = args.single_processor
     if batch_mode:
         # Run in batch mode
@@ -338,5 +347,6 @@ if __name__ == '__main__':
             single_dir,
             config_json,
             output_folder,
-            top_folder
+            top_folder,
+            ollama_flag
         )

@@ -56,20 +56,23 @@ def standard_makefile(processor_name: str, language: str, config_folder: str, ou
 
 
 
-def processor_top_makefile(processor_name: str, language: str, config_folder: str, top_folder: str, output_dir: str, makefile_path: str, core_directory: str, cocotb_name: str = 'cocotb_labeler'):
+def processor_top_makefile(processor_name: str, language: str, config_folder: str, top_folder: str, output_dir: str, makefile_path: str, core_directory: str, ollama_flag: bool, cocotb_name: str = 'cocotb_labeler'):
     config = load_config(config_folder, processor_name)
-
     top_module = "processorci_top"
     inc_dir = config['include_dirs']
     sim_files = config['files']
     two_memories = config.get('two_memories', False) # not fully implemented yet, allow default case
     language_version = config['language_version']
+    
+    # Extract processor_ci base path from top_folder (e.g., "processor_ci/rtl" -> "processor_ci")
+    processor_ci_base = os.path.dirname(top_folder) if 'rtl' in top_folder else top_folder
 
     # Write the Makefile content
     with open(makefile_path, 'a', encoding='utf-8') as makefile:
         makefile.write('SIM ?= verilator\n')
         makefile.write('TOPLEVEL_LANG ?= verilog\n')
         makefile.write(f'export TWO_MEMORIES = {two_memories}\n')
+        makefile.write(f'export OLLAMA = {ollama_flag}\n')
         if language.lower() != 'vhdl':
             makefile.write(f'COMPILE_ARGS ?= --language 1800-{language_version} -DSIMULATION -Wno-fatal -Wno-lint\n')
             for dirs in inc_dir:
@@ -80,10 +83,10 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
                 makefile.write(f'VERILOG_SOURCES += {path}\n')
         else:
             makefile.write(f'COMPILE_ARGS ?= --language 1800-2012 -DSIMULATION -Wno-fatal -Wno-lint\n')
-            makefile.write(f'VERILOG_SOURCES += /eda/processor_ci_utils/build/{processor_name}.v\n')
-        makefile.write(f'VERILOG_SOURCES += /eda/processor_ci/internal/ahblite_to_wishbone.sv\n')
-        makefile.write(f'VERILOG_SOURCES += /eda/processor_ci/internal/axi4lite_to_wishbone.sv\n')
-        makefile.write(f'VERILOG_SOURCES += /eda/processor_ci/internal/axi4_to_wishbone.sv\n')
+            makefile.write(f'VERILOG_SOURCES += processor_ci_utils/build/{processor_name}.v\n')
+        makefile.write(f'VERILOG_SOURCES += {processor_ci_base}/internal/ahblite_to_wishbone.sv\n')
+        makefile.write(f'VERILOG_SOURCES += {processor_ci_base}/internal/axi4lite_to_wishbone.sv\n')
+        makefile.write(f'VERILOG_SOURCES += {processor_ci_base}/internal/axi4_to_wishbone.sv\n')
         makefile.write(f'VERILOG_SOURCES += {os.path.join(top_folder, f"{processor_name}.sv")}\n')
         makefile.write(f'TOPLEVEL = {top_module}\n')
         makefile.write(f'MODULE = {cocotb_name}\n')
@@ -94,7 +97,7 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
     return makefile_path
 
 
-def create_cocotb_makefile(processor_name: str, language: str, config_folder: str, top_folder: str, output_dir: str, core_directory: str, cocotb_name: str = 'cocotb_labeler'):
+def create_cocotb_makefile(processor_name: str, language: str, config_folder: str, top_folder: str, output_dir: str, core_directory: str, ollama_flag: bool, cocotb_name: str = 'cocotb_labeler'):
     """Create a Makefile for cocotb simulation.
 
     Args:
@@ -134,8 +137,8 @@ def create_cocotb_makefile(processor_name: str, language: str, config_folder: st
 
     # Check if the top folder exists
     if os.path.exists(top_folder):
-        top_path = os.path.abspath(top_folder)
-        top_file = os.path.join(top_path, f'{processor_name}.sv')
+        top_path = top_folder  # Keep relative path
+        top_file = os.path.join(top_folder, f'{processor_name}.sv')
     else:
         top_path = ""
         top_file = ""
@@ -161,13 +164,14 @@ def create_cocotb_makefile(processor_name: str, language: str, config_folder: st
             output_dir, 
             makefile_path, 
             core_directory,
+            ollama_flag,
             cocotb_name
         )
 
     return makefile_path
 
 
-def main(processor_name: str, config_folder: str, output_dir: str, cocotb_name: str):
+def main(processor_name: str, config_folder: str, output_dir: str, ollama_flag: bool, cocotb_name: str):
     """Main function to create the cocotb Makefile.
 
     Args:
@@ -176,7 +180,7 @@ def main(processor_name: str, config_folder: str, output_dir: str, cocotb_name: 
         output_dir (str): Directory to save the generated Makefile.
         cocotb_name (str): Name of the cocotb module.
     """
-    makefile_path = create_cocotb_makefile(processor_name, config_folder, output_dir, cocotb_name)
+    makefile_path = create_cocotb_makefile(processor_name, config_folder, output_dir, ollama_flag, cocotb_name)
     logging.info(f'Makefile created at: {makefile_path}')
     return makefile_path
 
@@ -211,10 +215,18 @@ if __name__ == '__main__':
         default='cocotb_labeler',
         help='Name of the cocotb module. Defaults to "cocotb_labeler".'
     )
+    parser.add_argument(
+        '-n',
+        '--ollama_flag',
+        type=str,
+        default=False,
+        help='Ollama flag for the Makefile.'
+    )
     args = parser.parse_args()
     processor_name = args.name
     config_folder = args.config
     output_dir = args.output
     cocotb_name = args.cocotb_name
-    main(processor_name, config_folder, output_dir, cocotb_name)
+    ollama_flag = args.ollama_flag
+    main(processor_name, config_folder, output_dir, ollama_flag, cocotb_name)
     

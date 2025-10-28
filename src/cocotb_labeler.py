@@ -3,7 +3,6 @@ import re
 import os
 import json
 import logging
-from word_size import count_bits
 from regfile_finder import find_register_file
 from cycle import instr_mem_driver, test_pc_behavior
 from cocotb.triggers import RisingEdge, Timer
@@ -35,7 +34,6 @@ async def processor_test(dut):
         dut: The design under test.
     """
 
-    # bits = count_bits(dut, None)
     bits = None
 
     find_register_file(dut)
