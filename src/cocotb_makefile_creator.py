@@ -4,7 +4,10 @@ import argparse
 import sys
 import re
 
+from pathlib import Path
 from config import load_config
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 def escape_spaces(path: str) -> str:
     return re.sub(r'(?<!\\) ', r'\\ ', path)
@@ -83,7 +86,8 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
                 makefile.write(f'VERILOG_SOURCES += {path}\n')
         else:
             makefile.write(f'COMPILE_ARGS ?= --language 1800-2012 -DSIMULATION -Wno-fatal -Wno-lint\n')
-            makefile.write(f'VERILOG_SOURCES += processor_ci_utils/build/{processor_name}.v\n')
+            # directory from where the script is being called
+            makefile.write(f'VERILOG_SOURCES += {BASE_DIR}/build/{processor_name}.v\n')
         makefile.write(f'VERILOG_SOURCES += {processor_ci_base}/internal/ahblite_to_wishbone.sv\n')
         makefile.write(f'VERILOG_SOURCES += {processor_ci_base}/internal/axi4lite_to_wishbone.sv\n')
         makefile.write(f'VERILOG_SOURCES += {processor_ci_base}/internal/axi4_to_wishbone.sv\n')

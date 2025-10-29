@@ -30,7 +30,7 @@ def count_file_loc(filepath: str) -> int:
         return 0
 
 
-def identify_language(directory: str) -> str:
+def identify_language(directory: str, config_file) -> str:
     """Identify the main HDL language in a directory based on LOC,
     including Python-based HDLs and skipping irrelevant folders.
 
@@ -66,18 +66,21 @@ def identify_language(directory: str) -> str:
         'test', 'tests', 'testbench', 'testbenches',
         'bench', 'benches', 'sim', 'simulation',
         'doc', 'docs', 'examples', 'ref', 'reference'
-    }
+    }    
+    sim_files = config_file.get("files")
 
     lang_loc_counter = Counter()
     total_loc = 0
 
-    for root, _, files in os.walk(directory):
-        path_parts = set(os.path.normpath(root).split(os.sep))
-        if path_parts & ignored_dirs:
-            continue
+    # walk through the sim_files to check their extensions first
+    # the files have relative paths to the repository
 
-        for file in files:
-            filepath = os.path.join(root, file)
+    if sim_files:
+        for file in sim_files:
+            filepath = os.path.join(directory, file)
+            if not os.path.isfile(filepath):
+                continue
+
             _, ext = os.path.splitext(file)
             ext = ext.lower()
 

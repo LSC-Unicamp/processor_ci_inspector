@@ -100,6 +100,7 @@ Core #(
 
 More details are available in the [Controller documentation](https://lsc-unicamp.github.io/processor_ci-controller/). 
 
+**Note**: This tool also requires the bus adapter wrapper files from Processor CI. They can be found in the internals folder of the [Processor CI Controller repository](https://github.com/LSC-Unicamp/processor_ci). The folder should be in the same parent directory as the wrappers folder used for this tool.
 
 **Note**: The [Processor CI repository](https://github.com/LSC-Unicamp/processor_ci) includes sample configuration and wrapper files for several processors in the `configs` and `rtl` directories, respectively. You can use these as references or starting points for your own configurations. There are also scripts available to help generate these files automatically.
    

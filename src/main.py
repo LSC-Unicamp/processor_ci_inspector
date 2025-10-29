@@ -179,10 +179,11 @@ def core_labeler(directory, config_file, output_dir, top_dir, ollama_flag: bool)
                 license_types.append('Error')
 
     processor_name = os.path.basename(os.path.normpath(directory))
+    config = load_config(config_file, processor_name)
 
     cpu_bits = 'Undetected'
     cache = 'Undetected'
-    language = identify_language(directory)
+    language = identify_language(directory, config)
     print(f"Identified language: {language}")
 
     generate_labels_file(processor_name, license_types, cpu_bits, cache, language, output_dir)
@@ -191,7 +192,6 @@ def core_labeler(directory, config_file, output_dir, top_dir, ollama_flag: bool)
 
     #VHDL treatment
     if language.lower() == 'vhdl':
-        config = load_config(config_file, processor_name)
         sim_files = config['files']
         for i in range(len(sim_files)):
             sim_files[i] = os.path.join(directory, sim_files[i])

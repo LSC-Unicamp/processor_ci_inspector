@@ -4,7 +4,7 @@ import json
 import logging
 from cocotb.triggers import RisingEdge, FallingEdge, Timer, First
 from cocotb.clock import Clock
-from regfile_signal_finder import find_regfile_write_signals, load_regfile_interface
+from regfile_finder import find_regfile_write_signals, load_regfile_interface
 
 
 # Pipeline measurement program with cache pre-warming strategy
@@ -66,6 +66,7 @@ async def instr_mem_driver(dut):
     cycle_count = 0
     while True:
         await RisingEdge(dut.sys_clk)
+        await Timer(0.001, units="ns") # let signals settle
         cycle_count += 1
         
         # Always provide valid data based on current address
@@ -97,6 +98,8 @@ async def data_mem_driver(dut):
     
     while True:
         await RisingEdge(dut.sys_clk)
+        await Timer(0.001, units="ns") # let signals settle
+
         # Always provide data (0 for all loads)
         dut.data_mem_data_in.value = 0
 
@@ -124,6 +127,8 @@ async def measure_with_interface_signals(dut, write_enable_sig, write_addr_sig, 
     for cycle in range(max_cycles):
         # === CHECK RISING EDGE ===
         await RisingEdge(dut.sys_clk)
+        await Timer(0.001, units="ns") # let signals settle
+
         
         # Detect fetch completion
         if dut.core_addr.value.is_resolvable:
@@ -150,6 +155,8 @@ async def measure_with_interface_signals(dut, write_enable_sig, write_addr_sig, 
         # === CHECK FALLING EDGE ===
         if issue_cycle is not None and write_cycle is None:
             await FallingEdge(dut.sys_clk)
+            await Timer(0.001, units="ns") # let signals settle
+
             
             try:
                 if write_enable_sig.value and write_addr_sig.value.is_resolvable:
@@ -245,6 +252,8 @@ async def measure_pipeline_depth(dut, regfile, core_name=None):
 
     # Align to clock and sample a baseline for x1
     await RisingEdge(dut.sys_clk)
+    await Timer(0.001, units="ns") # let signals settle
+
     try:
         baseline = int(regfile[x1_idx].value) if regfile[x1_idx].value.is_resolvable else 0
     except Exception:
@@ -262,6 +271,8 @@ async def measure_pipeline_depth(dut, regfile, core_name=None):
     for cycle in range(max_cycles):
         # === CHECK RISING EDGE ===
         await RisingEdge(dut.sys_clk)
+        await Timer(0.001, units="ns") # let signals settle
+
         
         # Safe PC read
         if dut.core_addr.value.is_resolvable:
@@ -306,6 +317,8 @@ async def measure_pipeline_depth(dut, regfile, core_name=None):
         # Check falling edge if we haven't found the write yet and we've detected fetch
         if issue_cycle is not None and write_cycle is None:
             await FallingEdge(dut.sys_clk)
+            await Timer(0.001, units="ns") # let signals settle
+
             
             dut._log.debug(f"[measure] cycle={cycle}.falling")
             
