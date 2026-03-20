@@ -37,7 +37,7 @@ def standard_makefile(processor_name: str, language: str, config_folder: str, ou
         elif language == 'SystemVerilog':
             makefile.write('SIM ?= verilator\n')
             makefile.write('TOPLEVEL_LANG ?= verilog\n')
-            makefile.write(f'COMPILE_ARGS ?= --language 1800-{language_version}\n')
+            makefile.write(f'COMPILE_ARGS ?= --language {language_version}\n')
             for dirs in inc_dir:
                 path = escape_spaces(f'{core_directory}/{dirs}')
                 makefile.write(f'VERILOG_INCLUDE_DIRS += {path}\n')
@@ -77,7 +77,7 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
         makefile.write(f'export TWO_MEMORIES = {two_memories}\n')
         makefile.write(f'export OLLAMA = {ollama_flag}\n')
         if language.lower() != 'vhdl':
-            makefile.write(f'COMPILE_ARGS ?= --language 1800-{language_version} -DSIMULATION -Wno-fatal -Wno-lint\n')
+            makefile.write(f'COMPILE_ARGS ?= --language {language_version} -DSIMULATION -Wno-fatal -Wno-lint\n')
             for dirs in inc_dir:
                 path = escape_spaces(f'{core_directory}/{dirs}')
                 makefile.write(f'VERILOG_INCLUDE_DIRS += {path}\n')
@@ -88,9 +88,9 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
             makefile.write(f'COMPILE_ARGS ?= --language 1800-2012 -DSIMULATION -Wno-fatal -Wno-lint\n')
             # directory from where the script is being called
             makefile.write(f'VERILOG_SOURCES += {BASE_DIR}/build/{processor_name}.v\n')
-        makefile.write(f'VERILOG_SOURCES += {processor_ci_base}/internal/ahblite_to_wishbone.sv\n')
-        makefile.write(f'VERILOG_SOURCES += {processor_ci_base}/internal/axi4lite_to_wishbone.sv\n')
-        makefile.write(f'VERILOG_SOURCES += {processor_ci_base}/internal/axi4_to_wishbone.sv\n')
+        makefile.write(f'VERILOG_SOURCES += {processor_ci_base}internal/ahblite_to_wishbone.sv\n')
+        makefile.write(f'VERILOG_SOURCES += {processor_ci_base}internal/axi4lite_to_wishbone.sv\n')
+        makefile.write(f'VERILOG_SOURCES += {processor_ci_base}internal/axi4_to_wishbone.sv\n')
         makefile.write(f'VERILOG_SOURCES += {os.path.join(top_folder, f"{processor_name}.sv")}\n')
         makefile.write(f'TOPLEVEL = {top_module}\n')
         makefile.write(f'MODULE = {cocotb_name}\n')
