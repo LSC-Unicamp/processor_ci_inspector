@@ -2,6 +2,7 @@ import cocotb
 import os
 import json
 import logging
+import re
 from cocotb.triggers import RisingEdge, FallingEdge, Timer, First
 from cocotb.clock import Clock
 from regfile_finder import find_regfile_write_signals, load_regfile_interface
@@ -102,6 +103,82 @@ async def data_mem_driver(dut):
 
         # Always provide data (0 for all loads)
         dut.data_mem_data_in.value = 0
+
+
+def _get_handle_from_path(obj, path_str):
+    """
+    Resolve a dotted hierarchical path to a handle.
+    E.g., "Processor.FE0.o_instr_valid" → handle to that signal
+    Returns None if path cannot be resolved.
+    """
+    try:
+        parts = path_str.split('.')
+        current = obj
+        for part in parts:
+            current = getattr(current, part)
+        return current
+    except (AttributeError, TypeError):
+        return None
+
+
+def _find_core_instance(dut):
+    """
+    Find the core instance under processorci_top.
+    Returns the instance name (string) or None if not found.
+    Common names: Processor, aukv_inst, core_inst, etc.
+    """
+    try:
+        # Try to list all scopes under dut to find core instances
+        for name in dir(dut):
+            if not name.startswith('_'):
+                try:
+                    obj = getattr(dut, name)
+                    # Skip if it's a method, property, or other non-instance
+                    if hasattr(obj, '_scope'):
+                        return name
+                except:
+                    pass
+    except:
+        pass
+    
+    # Fallback: try common names
+    for common_name in ['Processor', 'aukv_inst', 'core_inst', 'core', 'processor']:
+        try:
+            if hasattr(dut, common_name):
+                return common_name
+        except:
+            pass
+    
+    return None
+
+
+def _auto_find_fetch_signal(dut, core_instance_name):
+    """
+    Try to find fetch-valid signal under the core instance.
+    Returns the signal handle or None if not found.
+    
+    Args:
+        dut: Design under test (processorci_top)
+        core_instance_name: Name of core instance (e.g., "Processor")
+    """
+    if not core_instance_name:
+        return None
+    
+    fetch_candidates = [
+        f"{core_instance_name}.FE0.o_instr_valid",
+        f"{core_instance_name}.FE0.o_instr_addr_valid",
+        f"{core_instance_name}.fetch.o_instr_valid",
+        f"{core_instance_name}.fetch.o_valid",
+        f"{core_instance_name}.FE.o_instr_valid",
+        f"{core_instance_name}.if_stage.o_instr_valid",
+    ]
+    
+    for candidate in fetch_candidates:
+        sig = _get_handle_from_path(dut, candidate)
+        if sig is not None:
+            return sig
+    
+    return None
 
 
 async def measure_with_interface_signals(dut, write_enable_sig, write_addr_sig, target_addr=1):
@@ -214,17 +291,23 @@ async def measure_pipeline_depth(dut, regfile, core_name=None):
     # If we found interface signals, use them for accurate measurement
     if interface_signals and "write_enable" in interface_signals and "write_addr" in interface_signals:
         try:
-            # Get signal handles
-            we_path = interface_signals["write_enable"].replace("processorci_top.", "").split('.')
-            wa_path = interface_signals["write_addr"].replace("processorci_top.", "").split('.')
+            # Get signal handles using robust path resolution
+            we_path = interface_signals["write_enable"].replace("processorci_top.", "")
+            wa_path = interface_signals["write_addr"].replace("processorci_top.", "")
             
-            write_enable_sig = dut
-            for part in we_path:
-                write_enable_sig = getattr(write_enable_sig, part)
+            # Try to find the actual core instance name and fix hardcoded paths
+            actual_core_instance = _find_core_instance(dut)
+            if actual_core_instance:
+                # Replace any incorrect instance name with the actual one
+                # e.g., "aukv_inst.RF0.i_we" → "Processor.RF0.i_we"
+                we_path = re.sub(r'^[^.]+\.', f'{actual_core_instance}.', we_path)
+                wa_path = re.sub(r'^[^.]+\.', f'{actual_core_instance}.', wa_path)
             
-            write_addr_sig = dut
-            for part in wa_path:
-                write_addr_sig = getattr(write_addr_sig, part)
+            write_enable_sig = _get_handle_from_path(dut, we_path)
+            write_addr_sig = _get_handle_from_path(dut, wa_path)
+            
+            if write_enable_sig is None or write_addr_sig is None:
+                raise ValueError(f"Could not resolve signal paths: we={we_path}, wa={wa_path}")
             
             # Use interface-based measurement
             issue_cycle, write_cycle, write_edge = await measure_with_interface_signals(

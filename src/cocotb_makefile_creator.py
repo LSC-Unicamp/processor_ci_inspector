@@ -68,7 +68,8 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
     language_version = config['language_version']
     
     # Extract processor_ci base path from top_folder (e.g., "processor_ci/rtl" -> "processor_ci")
-    processor_ci_base = os.path.dirname(top_folder) if 'rtl' in top_folder else top_folder
+    normalized_path = os.path.normpath(top_folder)
+    processor_ci_base = os.path.dirname(normalized_path) if normalized_path.endswith('rtl') else normalized_path
 
     # Write the Makefile content
     with open(makefile_path, 'a', encoding='utf-8') as makefile:
