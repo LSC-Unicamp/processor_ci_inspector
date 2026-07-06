@@ -338,7 +338,7 @@ if __name__ == '__main__':
     single_processor = args.single_processor
     if batch_mode:
         # Run in batch mode
-        main(dir_to_search, config_json, output_folder, top_folder)
+        main(dir_to_search, config_json, output_folder, top_folder, ollama_flag)
     else:
         # Run in interactive mode
         single_dir = os.path.join(dir_to_search, single_processor)

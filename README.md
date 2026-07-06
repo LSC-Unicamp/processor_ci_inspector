@@ -1,14 +1,14 @@
-# Processor CI Inspector
+# ProcessorCI Inspector
 
-Welcome to Processor CI Inspector! This tool is designed to assist developers in inspecting and analyzing processor designs to find its characteristics and behaviors.
+Welcome to ProcessorCI Inspector! This tool is designed to assist developers in inspecting and analyzing processor designs to find its characteristics and behaviors.
 
 ## About this Project
 
-Processor CI Inspector is part of the Processor CI suite, which aims to provide comprehensive tools for continuous integration and testing of processor designs. This specific tool focuses on inspecting various aspects of processor implementations, such as word size, datapath structure and more to come.
+Processor CI Inspector is part of the ProcessorCI suite, which aims to provide comprehensive tools for continuous integration and testing of processor designs. This specific tool focuses on inspecting various aspects of processor implementations, such as word size, datapath structure and more to come.
 
 ## Features
 
-Currently, Processor CI Inspector offers the following features:
+Currently, ProcessorCI Inspector offers the following features:
 
 - **License Detection**: Automatically detects the licenses present in the processor repository.
 - **Language Identification**: Identifies the main programming language used in the processor design.
@@ -36,7 +36,7 @@ Currently, Processor CI Inspector offers the following features:
 
 ## Configuration
 
-Before running the Processor CI Inspector, you need to set up the configuration and wrapper files. These files are essential for the tool to function correctly.
+Before running the ProcessorCI Inspector, you need to set up the configuration and wrapper files. These files are essential for the tool to function correctly.
 
 1. **Configuration Files**: These files define the files required to simulate the processor core, the top module name, and other necessary settings. Place these files in a directory of your choice. Following is the structure of a sample configuration file (`darkriscv.json`):
 
@@ -100,14 +100,14 @@ Core #(
 
 More details are available in the [Controller documentation](https://lsc-unicamp.github.io/processor_ci-controller/). 
 
-**Note**: This tool also requires the bus adapter wrapper files from Processor CI. They can be found in the internals folder of the [Processor CI Controller repository](https://github.com/LSC-Unicamp/processor_ci). The folder should be in the same parent directory as the wrappers folder used for this tool.
+**Note**: This tool also requires the bus adapter wrapper files from ProcessorCI. They can be found in the internals folder of the [ProcessorCI Controller repository](https://github.com/LSC-Unicamp/processor_ci). The folder should be in the same parent directory as the wrappers folder used for this tool.
 
-**Note**: The [Processor CI repository](https://github.com/LSC-Unicamp/processor_ci) includes sample configuration and wrapper files for several processors in the `configs` and `rtl` directories, respectively. You can use these as references or starting points for your own configurations. There are also scripts available to help generate these files automatically.
+**Note**: The [ProcessorCI repository](https://github.com/LSC-Unicamp/processor_ci) includes sample configuration and wrapper files for several processors in the `configs` and `rtl` directories, respectively. You can use these as references or starting points for your own configurations. There are also scripts available to help generate these files automatically.
    
 
 ## Usage
 
-To use the Processor CI Inspector, you have two options:
+To use the ProcessorCI Inspector, you have two options:
 
 1. **Run a single processor inspection**:
    ```bash
