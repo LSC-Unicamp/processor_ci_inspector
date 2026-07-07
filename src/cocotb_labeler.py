@@ -36,7 +36,8 @@ async def processor_test(dut):
 
     bits = None
 
-    find_register_file(dut)
+    # Importing find_register_file registers the finder as a cocotb test.
+    # Cocotb runs it before this labeler test, so the JSON should already exist.
 
     output_dir = os.environ.get('OUTPUT_DIR', "default")
     processor_name = os.path.basename(output_dir)
