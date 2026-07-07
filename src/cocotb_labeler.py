@@ -3,7 +3,7 @@ import re
 import os
 import json
 import logging
-from regfile_finder_protoype_2 import find_register_file
+from regfile_finder import find_register_file
 from cycle import instr_mem_driver, test_pc_behavior
 from cocotb.triggers import RisingEdge, Timer
 from cocotb.clock import Clock
