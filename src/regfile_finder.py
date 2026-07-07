@@ -2173,6 +2173,81 @@ def _interface_trace_summary(trace_result):
     }
 
 
+def _env_flag(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return str(value).strip().lower() in ("1", "true", "yes", "on", "debug")
+
+
+def _compact_selected_regfile(selected_regfile):
+    if not selected_regfile:
+        return None
+    keys = (
+        "candidate_path",
+        "kind",
+        "status",
+        "score",
+        "confidence",
+        "mapping_order",
+        "mapped_registers",
+    )
+    return {key: selected_regfile.get(key) for key in keys if key in selected_regfile}
+
+
+def _compact_selected_interface(selected_interface, interface_classification=None):
+    if not selected_interface:
+        return None
+    keys = (
+        "status",
+        "score",
+        "confidence",
+        "write_enable",
+        "write_addr",
+        "write_data",
+        "timing_offset",
+    )
+    compact = {key: selected_interface.get(key) for key in keys if key in selected_interface}
+    derived_roles = (interface_classification or {}).get("derived_roles")
+    if derived_roles:
+        compact["derived_roles"] = derived_roles
+    return compact
+
+
+def _compat_regfile_interface(selected_interface):
+    selected_interface = selected_interface or {}
+    return {
+        "write_enable": selected_interface.get("write_enable"),
+        "write_addr": selected_interface.get("write_addr"),
+        "write_data": selected_interface.get("write_data"),
+    }
+
+
+def _compact_regfile_output(verbose_output):
+    selected_regfile = verbose_output.get("selected_regfile")
+    selected_interface = verbose_output.get("selected_regfile_interface")
+    selected_path = None
+    if selected_regfile:
+        selected_path = selected_regfile.get("candidate_path") or selected_regfile.get("path")
+    regfile_candidates = [selected_path] if selected_path else verbose_output.get("regfile_candidates", [])
+
+    return {
+        "regfile_candidates": regfile_candidates,
+        "selected_regfile": _compact_selected_regfile(selected_regfile),
+        "regfile_interface": _compat_regfile_interface(selected_interface),
+        "selected_regfile_interface": _compact_selected_interface(
+            selected_interface,
+            verbose_output.get("interface_classification"),
+        ),
+    }
+
+
+def _write_regfile_json(output_file, verbose_output, debug_enabled=False):
+    output_data = verbose_output if debug_enabled else _compact_regfile_output(verbose_output)
+    with open(output_file, 'w', encoding='utf-8') as json_file:
+        json.dump(output_data, json_file, indent=4)
+
+
 def get_all_leaf_handles(module, leaves=None):
     if leaves is None:
         leaves = []
@@ -2568,6 +2643,7 @@ def load_regfile_interface(core_name):
 async def find_register_file(dut):
     output_dir = os.environ.get('OUTPUT_DIR', "default")
     processor_name = os.path.basename(output_dir)
+    debug_output = _env_flag("REGFILE_FINDER_DEBUG") or _env_flag("DEBUG_REGFILE_FINDER")
     output_data = {}
 
     print("""
@@ -2687,12 +2763,13 @@ async def find_register_file(dut):
     ollama_flag = True if str(ollama_flag).lower() == 'true' else False
     if not ollama_flag:
         dut._log.info("Skipping register file interface detection via Ollama.")
+        if debug_output:
+            dut._log.info("REGFILE_FINDER_DEBUG enabled; writing full regfile discovery JSON.")
         # Save the current data back to the JSON file
         output_file = os.path.join(output_dir, f"{processor_name}_reg_file.json")
 
         try:
-            with open(output_file, 'w', encoding='utf-8') as json_file:
-                json.dump(output_data, json_file, indent=4)
+            _write_regfile_json(output_file, output_data, debug_enabled=debug_output)
             logging.info(f'Results saved to {output_file}')
         except OSError as e:
             logging.warning(f'Error writing to {output_file}: %s', e)
@@ -2722,8 +2799,7 @@ async def find_register_file(dut):
         output_file = os.path.join(output_dir, f"{processor_name}_reg_file.json")
 
         try:
-            with open(output_file, 'w', encoding='utf-8') as json_file:
-                json.dump(output_data, json_file, indent=4)
+            _write_regfile_json(output_file, output_data, debug_enabled=debug_output)
             logging.info(f'Results saved to {output_file}')
         except OSError as e:
             logging.warning(f'Error writing to {output_file}: %s', e)

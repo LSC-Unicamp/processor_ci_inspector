@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 from unittest import mock
 
-from src import regfile_finder_protoype_2 as finder
+from src import regfile_finder as finder
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import cocotb_makefile_creator
@@ -605,6 +605,36 @@ class InterfaceDiscoveryTests(unittest.TestCase):
         self.assertIn("all selected signals are in the same scope", result["reasons"])
 
 
+class RegfileJsonOutputTests(unittest.TestCase):
+    def test_compact_output_keeps_only_stable_contract(self):
+        verbose = _verbose_output_fixture()
+
+        compact = finder._compact_regfile_output(verbose)
+
+        self.assertEqual(set(compact), {
+            "regfile_candidates",
+            "selected_regfile",
+            "regfile_interface",
+            "selected_regfile_interface",
+        })
+        self.assertEqual(compact["regfile_candidates"], ["dut.core.REGS"])
+        self.assertEqual(compact["regfile_interface"]["write_addr"], "dut.core.rd")
+        self.assertEqual(compact["selected_regfile_interface"]["derived_roles"], ["write_data"])
+        self.assertNotIn("trace_runs", compact)
+        self.assertNotIn("interface_candidates", compact)
+
+    def test_debug_write_preserves_verbose_output(self):
+        verbose = _verbose_output_fixture()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_file = Path(temp_dir) / "regfile.json"
+
+            finder._write_regfile_json(output_file, verbose, debug_enabled=True)
+
+            text = output_file.read_text(encoding="utf-8")
+            self.assertIn("trace_runs", text)
+            self.assertIn("interface_candidates", text)
+
+
 def _interface_candidates():
     return {
         "write_enable_candidates": [{
@@ -658,6 +688,36 @@ def _interface_trace(rows, extra_signals=None):
     return {
         "samples": samples,
         "update_events": finder.detect_regfile_storage_update_events(samples, program),
+    }
+
+
+def _verbose_output_fixture():
+    return {
+        "regfile_candidates": ["dut.core.REGS", "dut.core.shadow"],
+        "regfile_array_candidates": [{"path": "dut.core.REGS"}],
+        "trace_runs": {"phase4": {"samples": [1, 2, 3]}},
+        "interface_candidates": {"write_data_candidates": [{"path": "dut.core.wdata"}]},
+        "interface_classification": {"derived_roles": ["write_data"]},
+        "selected_regfile": {
+            "candidate_path": "dut.core.REGS",
+            "kind": "array_of_words",
+            "status": "confirmed_candidate",
+            "score": 100,
+            "confidence": "high",
+            "mapping_order": "direct",
+            "mapped_registers": {"x0": 0, "x1": 1},
+            "reasons": ["verbose reason"],
+        },
+        "selected_regfile_interface": {
+            "status": "likely_interface",
+            "score": 84,
+            "confidence": "medium",
+            "write_enable": finder.DERIVED_WRITE_ENABLE_PATH,
+            "write_addr": "dut.core.rd",
+            "write_data": finder.DERIVED_WRITE_DATA_PATH,
+            "timing_offset": -1,
+            "reasons": ["verbose interface reason"],
+        },
     }
 
 
