@@ -67,13 +67,13 @@ async def instr_mem_driver(dut):
     cycle_count = 0
     while True:
         await RisingEdge(dut.sys_clk)
-        await Timer(0.001, units="ns") # let signals settle
+        await Timer(0.001, unit="ns") # let signals settle
         cycle_count += 1
         
         # Always provide valid data based on current address
         addr_val = dut.core_addr.value
         if addr_val.is_resolvable:
-            addr = addr_val.integer
+            addr = addr_val.to_unsigned()
             instr = prog.get(addr, 0x00000013)  # default NOP
             dut.core_data_in.value = instr
             
@@ -99,7 +99,7 @@ async def data_mem_driver(dut):
     
     while True:
         await RisingEdge(dut.sys_clk)
-        await Timer(0.001, units="ns") # let signals settle
+        await Timer(0.001, unit="ns") # let signals settle
 
         # Always provide data (0 for all loads)
         dut.data_mem_data_in.value = 0
@@ -204,12 +204,12 @@ async def measure_with_interface_signals(dut, write_enable_sig, write_addr_sig, 
     for cycle in range(max_cycles):
         # === CHECK RISING EDGE ===
         await RisingEdge(dut.sys_clk)
-        await Timer(0.001, units="ns") # let signals settle
+        await Timer(0.001, unit="ns") # let signals settle
 
         
         # Detect fetch completion
         if dut.core_addr.value.is_resolvable:
-            pc_val = dut.core_addr.value.integer
+            pc_val = dut.core_addr.value.to_unsigned()
             
             if issue_cycle is None and pc_val == 0x000000a8 and dut.core_stb.value and dut.core_ack.value:
                 issue_cycle = cycle
@@ -232,7 +232,7 @@ async def measure_with_interface_signals(dut, write_enable_sig, write_addr_sig, 
         # === CHECK FALLING EDGE ===
         if issue_cycle is not None and write_cycle is None:
             await FallingEdge(dut.sys_clk)
-            await Timer(0.001, units="ns") # let signals settle
+            await Timer(0.001, unit="ns") # let signals settle
 
             
             try:
@@ -335,7 +335,7 @@ async def measure_pipeline_depth(dut, regfile, core_name=None):
 
     # Align to clock and sample a baseline for x1
     await RisingEdge(dut.sys_clk)
-    await Timer(0.001, units="ns") # let signals settle
+    await Timer(0.001, unit="ns") # let signals settle
 
     try:
         baseline = int(regfile[x1_idx].value) if regfile[x1_idx].value.is_resolvable else 0
@@ -354,12 +354,12 @@ async def measure_pipeline_depth(dut, regfile, core_name=None):
     for cycle in range(max_cycles):
         # === CHECK RISING EDGE ===
         await RisingEdge(dut.sys_clk)
-        await Timer(0.001, units="ns") # let signals settle
+        await Timer(0.001, unit="ns") # let signals settle
 
         
         # Safe PC read
         if dut.core_addr.value.is_resolvable:
-            pc_val = dut.core_addr.value.integer
+            pc_val = dut.core_addr.value.to_unsigned()
         else:
             pc_val = None
 
@@ -400,7 +400,7 @@ async def measure_pipeline_depth(dut, regfile, core_name=None):
         # Check falling edge if we haven't found the write yet and we've detected fetch
         if issue_cycle is not None and write_cycle is None:
             await FallingEdge(dut.sys_clk)
-            await Timer(0.001, units="ns") # let signals settle
+            await Timer(0.001, unit="ns") # let signals settle
 
             
             dut._log.debug(f"[measure] cycle={cycle}.falling")
@@ -444,14 +444,14 @@ async def test_pc_behavior(dut, regfile):
     dut.core_ack.value = 0
     dut.core_data_in.value = 0
 
-    cocotb.start_soon(Clock(dut.sys_clk, 10, units="ns").start())
+    cocotb.start_soon(Clock(dut.sys_clk, 10, unit="ns").start())
     cocotb.start_soon(instr_mem_driver(dut))
     cocotb.start_soon(data_mem_driver(dut))  # For cores with separate data memory
 
     # Reset
     dut.rst_n.value = 0
     dut.core_ack.value = 0
-    await Timer(50, units="ns")
+    await Timer(50, unit="ns")
     dut.rst_n.value = 1
 
     # Measure pipeline depth - will catch test instruction whenever it appears
@@ -487,7 +487,7 @@ async def test_pc_behavior(dut, regfile):
         if not dut.core_addr.value.is_resolvable:
             continue
             
-        pc = dut.core_addr.value.integer
+        pc = dut.core_addr.value.to_unsigned()
         
         if transaction_occurred:
             dut._log.info(f"Cycle {cycle}: PC = {pc:#010x} [TRANSACTION]")

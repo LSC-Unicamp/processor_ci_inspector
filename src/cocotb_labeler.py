@@ -3,7 +3,7 @@ import re
 import os
 import json
 import logging
-from regfile_finder import find_register_file
+from regfile_finder_protoype_2 import find_register_file
 from cycle import instr_mem_driver, test_pc_behavior
 from cocotb.triggers import RisingEdge, Timer
 from cocotb.clock import Clock
@@ -36,7 +36,8 @@ async def processor_test(dut):
 
     bits = None
 
-    find_register_file(dut)
+    # Importing find_register_file registers the finder as a cocotb test.
+    # Cocotb runs it before this labeler test, so the JSON should already exist.
 
     output_dir = os.environ.get('OUTPUT_DIR', "default")
     processor_name = os.path.basename(output_dir)
