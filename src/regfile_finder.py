@@ -5,6 +5,8 @@ import os
 import subprocess
 import logging
 import re
+from cocotb import simulator
+from cocotb.handle import _make_sim_object
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, Timer
 
@@ -19,6 +21,7 @@ from cocotb.triggers import RisingEdge, Timer
 # style cores may expose 16 entries.
 REGFILE_DEPTHS = {16, 31, 32}
 REGFILE_WORD_WIDTHS = {32, 64}
+REGFILE_ECC_BITS_MAX = 8
 
 # cocotb/GPI type strings vary a little between simulators and cocotb versions.
 # Keep this intentionally permissive because this is a discovery heuristic.
@@ -60,9 +63,11 @@ NON_REGFILE_NAME_HINTS = (
 
 NOP_INSTRUCTION = 0x00000013
 REGFILE_WRITE_LOOP_PC = 0x0000002C
-REGFILE_WRITE_MAX_CYCLES = 300
+# Bit-serial and heavily stalled implementations can need hundreds of clocks
+# per short probe. Fast cores still stop when the terminal loop is observed.
+REGFILE_WRITE_MAX_CYCLES = 2000
 REGFILE_LOOP_QUIESCENCE_CYCLES = 8
-REGFILE_INTERFACE_LOOP_PC = 0x0000001C
+REGFILE_INTERFACE_LOOP_PC = 0x00000020
 REGFILE_INTERFACE_TIMING_OFFSETS = (-2, -1, 0, 1)
 DERIVED_WRITE_ENABLE_PATH = "__storage_update_event__"
 DERIVED_WRITE_DATA_PATH = "__storage_update_value__"
@@ -155,6 +160,7 @@ def _safe_value_int(handle):
 def _iter_range_indices(handle, limit=8):
     """Return likely legal indices for HDL arrays with arbitrary left/right bounds."""
     indices = []
+    has_declared_range = False
 
     # cocotb ArrayObject/LogicArrayObject commonly expose .range, .left, .right.
     try:
@@ -163,6 +169,7 @@ def _iter_range_indices(handle, limit=8):
             if i >= limit:
                 break
             indices.append(int(idx))
+            has_declared_range = True
     except Exception:
         pass
 
@@ -170,13 +177,18 @@ def _iter_range_indices(handle, limit=8):
         try:
             idx = int(getattr(handle, attr))
             indices.append(idx)
+            has_declared_range = True
         except Exception:
             pass
 
     n = _safe_len(handle)
-    if n is not None:
-        # Covers common Verilog [0:N-1], [N-1:0], and VHDL 1 to N styles.
-        indices.extend([0, 1, n - 1, n, 15, 16, 30, 31])
+    if not has_declared_range and n is not None and n > 0:
+        # Without declared bounds, use only offsets guaranteed to be inside the
+        # reported element count.  Probing n or fixed architectural indices on
+        # small arrays makes Verilator's VPI report invalid-index errors and can
+        # crash large designs while walking their hierarchy.
+        preferred = [0, 1, n - 1, 15, 16, 30, 31]
+        indices.extend(idx for idx in preferred if 0 <= idx < n)
 
     # Preserve order while deduplicating.
     deduped = []
@@ -213,6 +225,18 @@ def _word_width_from_samples(samples):
 
     # Use the most common sampled width.  Register-file arrays should be uniform.
     return max(set(widths), key=widths.count)
+
+
+def _architectural_word_width(storage_width, word_widths=None):
+    """Map a physical word width to XLEN, allowing parity/ECC check bits."""
+    if storage_width is None:
+        return None
+    if word_widths is None:
+        word_widths = REGFILE_WORD_WIDTHS
+    for xlen in sorted(word_widths):
+        if xlen <= storage_width <= xlen + REGFILE_ECC_BITS_MAX:
+            return xlen
+    return None
 
 
 def _path_name_score(path):
@@ -297,19 +321,76 @@ def _classify_array_like_candidate(handle, depths=None, word_widths=None):
     # Case 1: HDL unpacked array / memory: regs[0:31], regs(0 to 31), etc.
     if handle_type in ARRAY_TYPES or "ARRAY" in handle_type or "MEMORY" in handle_type:
         samples = _sample_array_elements(handle)
-        word_width = _word_width_from_samples(samples)
+        storage_word_width = _word_width_from_samples(samples)
+        word_width = _architectural_word_width(storage_word_width, word_widths)
         depth = n
 
-        if depth in depths and word_width in word_widths:
+        if depth in depths and word_width is not None:
             score, reasons = _score_array_shape(depth, word_width, "array_of_words", path, word_widths)
+            if storage_word_width != word_width:
+                reasons.append(
+                    f"physical word width {storage_word_width} includes parity/ECC bits"
+                )
             return {
                 "path": path,
                 "kind": "array_of_words",
                 "handle_type": handle_type,
                 "depth": depth,
                 "word_width": word_width,
-                "total_width": depth * word_width,
+                "storage_word_width": storage_word_width,
+                "total_width": depth * storage_word_width,
                 "sample_indices": [idx for idx, _ in samples],
+                "score": score,
+                "reasons": reasons,
+            }
+
+        if depth == 33 and word_width is not None:
+            score, reasons = _score_array_shape(
+                32, word_width, "array_of_words", path, word_widths
+            )
+            reasons.append("33 physical entries; using architectural x0-x31")
+            return {
+                "path": path,
+                "kind": "array_of_words",
+                "handle_type": handle_type,
+                "depth": 32,
+                "storage_depth": 33,
+                "word_width": word_width,
+                "storage_word_width": storage_word_width,
+                "total_width": depth * storage_word_width,
+                "sample_indices": [0, 1, 2, 31],
+                "score": score,
+                "reasons": reasons,
+            }
+
+        # Bit-serial cores such as SERV store each architectural register in
+        # several narrow RAM entries.  Recognize 32 GPRs plus up to four CSR
+        # slots and reconstruct only the architectural GPR portion.
+        total_bits = (depth or 0) * (storage_word_width or 0)
+        logical_registers = total_bits // 32 if total_bits % 32 == 0 else 0
+        if (
+            storage_word_width in (1, 2, 4, 8, 16)
+            and 32 <= logical_registers <= 36
+            and 32 % storage_word_width == 0
+        ):
+            chunks_per_register = 32 // storage_word_width
+            score, reasons = _score_array_shape(
+                32, 32, "bit_sliced_array", path, word_widths
+            )
+            reasons.append(
+                f"{chunks_per_register} entries of {storage_word_width} bits per architectural register"
+            )
+            return {
+                "path": path,
+                "kind": "bit_sliced_array",
+                "handle_type": handle_type,
+                "depth": 32,
+                "storage_depth": depth,
+                "word_width": 32,
+                "storage_word_width": storage_word_width,
+                "chunks_per_register": chunks_per_register,
+                "total_width": total_bits,
+                "sample_indices": [0, chunks_per_register, 31 * chunks_per_register],
                 "score": score,
                 "reasons": reasons,
             }
@@ -318,7 +399,7 @@ def _classify_array_like_candidate(handle, depths=None, word_widths=None):
         # flat vector only when indexing looks bit-like or unavailable.  Do not
         # reinterpret a true memory depth, e.g. 1024 x 32, as a 32 x 32 packed
         # register file just because len(memory) == 1024.
-        if not samples or word_width in (None, 1):
+        if not samples or storage_word_width in (None, 1):
             flat = _classify_flat_vector_candidate(handle, handle_type, path, n, depths, word_widths)
             if flat is not None:
                 return flat
@@ -392,6 +473,7 @@ def _parse_trailing_index(name):
     patterns = (
         r"^(.+?)[\[_](\d+)\]?$",
         r"^([A-Za-z_][A-Za-z_]*)(\d+)$",
+        r"^(.+?)(\d+)(?:_[A-Za-z][A-Za-z0-9]*)+$",
     )
     for pattern in patterns:
         match = re.match(pattern, name)
@@ -566,9 +648,80 @@ def _is_hierarchy_handle(handle):
         return bool(handle_type) and handle_type not in (ARRAY_TYPES | VECTOR_TYPES)
 
 
+def _looks_like_generated_instance_array(handle):
+    """Identify simulator arrays created for generate-block module instances."""
+    handle_type = _safe_type(handle)
+    path = _safe_path(handle).lower()
+    if handle_type in {"GPI_GENARRAY", "GPI_MODULE_ARRAY"}:
+        return True
+    generated_parts = ("genblk", ".generate", "__gen", ".gen_")
+    return handle_type in ARRAY_TYPES and any(part in path for part in generated_parts)
+
+
+def _normalize_misclassified_hierarchy(handle):
+    """Undo a Verilator VPI module-as-genarray compatibility failure.
+
+    Verilator 5.050 can expose a normal module instance as a singleton
+    ``GPI_GENARRAY`` whose only raw child has the same, non-indexed name. Cocotb
+    then cannot translate that name as an array index. Real generate arrays
+    have indexed/generated names and are deliberately left unchanged.
+    """
+    if _safe_type(handle) != "GPI_GENARRAY":
+        return handle
+
+    path = _safe_path(handle)
+    basename = _leaf_basename(path)
+    if not basename or "[" in basename or "genblk" in basename.lower():
+        return handle
+
+    try:
+        raw_children = []
+        for raw_child in handle._handle.iterate(simulator.OBJECTS):
+            raw_children.append(raw_child)
+            if len(raw_children) > 1:
+                return handle
+        if len(raw_children) != 1:
+            return handle
+        if str(raw_children[0].get_name_string()) != basename:
+            return handle
+        return _make_sim_object(raw_children[0], path)
+    except Exception:
+        return handle
+
+
 def _iter_sim_children(module):
-    """Yield (name, child_handle) pairs discovered through cocotb attribute access."""
+    """Yield simulator children without forcing cocotb's ``dir()`` cache.
+
+    Direct raw iteration is important for large Verilator designs: one malformed
+    VPI child should be skippable instead of preventing every sibling handle
+    from being discovered. The attribute-based path remains as a fallback for
+    test doubles and simulators that do not expose the raw iterator.
+    """
     seen_paths = set()
+
+    raw_parent = getattr(module, "_handle", None)
+    if raw_parent is not None and hasattr(raw_parent, "iterate"):
+        module_path = _safe_path(module)
+        delimiter = "::" if _safe_type(module) == "GPI_PACKAGE" else "."
+        try:
+            raw_children = raw_parent.iterate(simulator.OBJECTS)
+            for raw_child in raw_children:
+                try:
+                    name = str(raw_child.get_name_string())
+                    child_path = f"{module_path}{delimiter}{name}" if module_path else name
+                    child = _make_sim_object(raw_child, child_path)
+                    child = _normalize_misclassified_hierarchy(child)
+                    stable_path = _safe_path(child, fallback=child_path)
+                except Exception:
+                    continue
+                if stable_path in seen_paths:
+                    continue
+                seen_paths.add(stable_path)
+                yield name, child
+            return
+        except Exception:
+            # Fall back to normal cocotb access below.
+            pass
 
     for name in dir(module):
         if name.startswith("_"):
@@ -577,6 +730,8 @@ def _iter_sim_children(module):
             child = getattr(module, name)
         except Exception:
             continue
+
+        child = _normalize_misclassified_hierarchy(child)
 
         # Skip normal Python methods/properties, but keep simulator handles.
         if callable(child) and not hasattr(child, "_type"):
@@ -591,6 +746,38 @@ def _iter_sim_children(module):
             continue
         seen_paths.add(child_path)
         yield name, child
+
+
+class _SimulatorSafeHierarchyView:
+    """Resolve top-level children from one raw snapshot before cocotb fallback."""
+
+    def __init__(self, target):
+        object.__setattr__(self, "_target", target)
+        object.__setattr__(self, "_safe_children", None)
+
+    def _children(self):
+        children = object.__getattribute__(self, "_safe_children")
+        if children is None:
+            target = object.__getattribute__(self, "_target")
+            children = {name: child for name, child in _iter_sim_children(target)}
+            object.__setattr__(self, "_safe_children", children)
+        return children
+
+    def __getattr__(self, name):
+        child = self._children().get(name)
+        if child is not None:
+            return child
+        return getattr(object.__getattribute__(self, "_target"), name)
+
+    def __setattr__(self, name, value):
+        setattr(object.__getattribute__(self, "_target"), name, value)
+
+
+def simulator_safe_hierarchy(root):
+    """Return a transparent view with stable top-level simulator handles."""
+    if isinstance(root, _SimulatorSafeHierarchyView):
+        return root
+    return _SimulatorSafeHierarchyView(root)
 
 
 def discover_regfile_array_candidates(root, max_depth=25, depths=None, word_widths=None):
@@ -631,19 +818,31 @@ def discover_regfile_array_candidates(root, max_depth=25, depths=None, word_widt
         visited.add(module_key)
 
         scope_leaves = []
+        hierarchy_children = []
 
         for _, child in _iter_sim_children(module):
             child_path = _safe_path(child)
             child_type = _safe_type(child)
             child_width = _safe_len(child)
+            if _is_hierarchy_handle(child):
+                # Generated/module instance arrays contain hierarchy, not
+                # register storage. Descending through them via Verilator VPI
+                # can expose malformed names and hang the simulator. Their
+                # containing module's ordinary signals are still inspected.
+                if child_type not in {"GPI_GENARRAY", "GPI_MODULE_ARRAY"}:
+                    hierarchy_children.append(child)
+                elif child_width is not None and child_width <= 8:
+                    for _, sampled_child in _sample_array_elements(child, limit=8):
+                        if _is_hierarchy_handle(sampled_child):
+                            hierarchy_children.append(sampled_child)
+                continue
+
+            if _looks_like_generated_instance_array(child):
+                continue
 
             candidate = _classify_array_like_candidate(child, depths, word_widths)
             if candidate is not None:
                 candidates.append(candidate)
-
-            if _is_hierarchy_handle(child):
-                stack.append((child, depth + 1))
-                continue
 
             scope_leaves.append({
                 "name": _leaf_basename(child_path),
@@ -662,6 +861,23 @@ def discover_regfile_array_candidates(root, max_depth=25, depths=None, word_widt
         scope = _safe_path(module, fallback="")
         candidates.extend(_classify_vector_group(scope, scope_leaves, depths, word_widths))
         candidates.extend(_classify_scalar_bit_clusters(scope, scope_leaves, depths, word_widths))
+
+        # A high-scoring candidate with an architectural depth and XLEN word
+        # width is already specific enough to proceed to dynamic confirmation.
+        # Stopping here also avoids forcing simulators to enumerate unrelated
+        # generated arithmetic hierarchies after a clear register file was
+        # found (some Verilator VPI versions expose malformed generate names).
+        if any(candidate.get("score", 0) >= 100 for candidate in candidates):
+            break
+
+        # The stack is LIFO, so append low-priority scopes first. Register-like
+        # hierarchy names are then visited before caches, memories, and generic
+        # datapath blocks. If no strong candidate is found the walk remains
+        # exhaustive up to max_depth.
+        hierarchy_children.sort(
+            key=lambda child: _path_name_score(_safe_path(child))[0]
+        )
+        stack.extend((child, depth + 1) for child in hierarchy_children)
 
     # Remove duplicates by path, preserving the highest score.
     best_by_path = {}
@@ -967,7 +1183,8 @@ async def regfile_write_instr_mem_driver(dut, program_metadata):
             dut.core_ack.value = 1
             addr = _safe_value_int(dut.core_addr)
             if addr is not None:
-                dut.core_data_in.value = program.get(addr, default_instruction)
+                relative_addr = _program_relative_address(dut, program_metadata, addr)
+                dut.core_data_in.value = program.get(relative_addr, default_instruction)
             else:
                 dut.core_data_in.value = default_instruction
         except Exception:
@@ -1020,6 +1237,7 @@ async def run_regfile_write_program(dut, program_metadata):
             pc = _safe_value_int(dut.core_addr)
             if pc is None:
                 continue
+            pc = _program_relative_address(dut, program_metadata, pc)
             transaction_ok = True
             if hasattr(dut, "core_stb"):
                 transaction_ok = bool(dut.core_stb.value)
@@ -1077,6 +1295,9 @@ def _sample_array_candidate(dut, candidate):
             child = _safe_get_child(handle, index - 1)
         value = _safe_value_int(child) if child is not None else None
         if value is not None:
+            word_width = candidate.get("word_width")
+            if word_width:
+                value &= (1 << int(word_width)) - 1
             values[_register_key(index)] = value
     return values
 
@@ -1091,6 +1312,29 @@ def _sample_vector_group_candidate(dut, candidate):
         value = _safe_value_int(handle) if handle is not None else None
         if value is not None:
             values[_register_key(reg_index)] = value
+    return values
+
+
+def _sample_bit_sliced_candidate(dut, candidate):
+    handle = _resolve_path(dut, candidate.get("path"))
+    if handle is None:
+        return {}
+    chunk_width = candidate.get("storage_word_width", 1)
+    chunks_per_register = candidate.get("chunks_per_register", 32)
+    chunk_mask = (1 << chunk_width) - 1
+    values = {}
+    for reg_index in range(candidate.get("depth", 32)):
+        word = 0
+        for chunk_index in range(chunks_per_register):
+            element = _safe_get_child(
+                handle, reg_index * chunks_per_register + chunk_index
+            )
+            chunk = _safe_value_int(element)
+            if chunk is None:
+                word = None
+                break
+            word |= (chunk & chunk_mask) << (chunk_index * chunk_width)
+        values[_register_key(reg_index)] = word
     return values
 
 
@@ -1152,6 +1396,8 @@ def sample_candidate_value(dut, candidate):
         return _sample_array_candidate(dut, candidate)
     if kind == "vector_group":
         return _sample_vector_group_candidate(dut, candidate)
+    if kind == "bit_sliced_array":
+        return _sample_bit_sliced_candidate(dut, candidate)
     if kind == "scalar_bit_cluster":
         return _sample_scalar_bit_cluster_candidate(dut, candidate)
     if kind == "packed_flat_vector":
@@ -1209,7 +1455,9 @@ def _score_mapping_samples(samples, expected_registers, written_registers):
     final_sample = samples[-1]
     final_values = final_sample.get("values") or {}
     match_count, mapped_registers = _values_match(final_values, expected_registers)
-    expected_count = max(1, len(expected_registers))
+    observed_x0 = final_values.get("x0")
+    x0_unavailable = observed_x0 is None
+    expected_count = max(1, len(expected_registers) - (1 if x0_unavailable and "x0" in expected_registers else 0))
     value_points = round(45 * match_count / expected_count)
     score += value_points
 
@@ -1218,10 +1466,14 @@ def _score_mapping_samples(samples, expected_registers, written_registers):
     else:
         failed.append("no expected register values matched")
 
-    x0_ok = final_values.get("x0") == expected_registers.get("x0", 0)
+    x0_ok = observed_x0 == expected_registers.get("x0", 0)
     if x0_ok:
         score += 15
         reasons.append("x0 remained zero")
+    elif x0_unavailable:
+        # Some implementations hard-wire x0 on their read ports and leave an
+        # unused physical storage entry absent or uninitialised.
+        reasons.append("physical x0 storage was unavailable")
     else:
         failed.append("x0 behavior mismatch")
 
@@ -1254,7 +1506,7 @@ def _score_mapping_samples(samples, expected_registers, written_registers):
     else:
         failed.append("no dynamic update observed")
 
-    if not x0_ok:
+    if not x0_ok and not x0_unavailable:
         score = min(score, 49)
 
     return {
@@ -1266,7 +1518,12 @@ def _score_mapping_samples(samples, expected_registers, written_registers):
 
 
 def _status_from_score(score, confirmed=False, x0_failed=False):
-    if confirmed and score >= 80:
+    # Repeating the same candidate and architectural mapping with a second
+    # program is strong evidence even when a core only executes a subset of
+    # the probe instructions (for example, a wrapper with an 8-byte fetch
+    # cadence).  Seventy-five still requires exact values, x0 behavior,
+    # persistence, selectivity, and a dynamic update.
+    if confirmed and score >= 75:
         return "confirmed_candidate"
     if x0_failed or score < 50:
         return "rejected_candidate"
@@ -1352,6 +1609,20 @@ async def _reset_for_regfile_program(dut):
         dut.reset_core.value = 0
 
 
+def _program_relative_address(dut, program_metadata, address):
+    """Translate a core's fixed reset-vector address into a probe offset."""
+    base = program_metadata.get("_runtime_base_address")
+    transaction_ok = True
+    if hasattr(dut, "core_stb"):
+        transaction_ok = bool(_safe_value_int(dut.core_stb))
+    elif hasattr(dut, "core_cyc"):
+        transaction_ok = bool(_safe_value_int(dut.core_cyc))
+    if base is None and transaction_ok:
+        base = address & ~0x3
+        program_metadata["_runtime_base_address"] = base
+    return address - base if base is not None else address
+
+
 async def run_regfile_program_and_trace(dut, program_metadata, candidates):
     trace_result = {
         "program_name": program_metadata.get("program_name"),
@@ -1401,6 +1672,8 @@ async def run_regfile_program_and_trace(dut, program_metadata, candidates):
             await Timer(0.001, unit="ns")
 
             pc = _safe_value_int(dut.core_addr)
+            if pc is not None:
+                pc = _program_relative_address(dut, program_metadata, pc)
             transaction_ok = True
             if hasattr(dut, "core_stb"):
                 transaction_ok = bool(_safe_value_int(dut.core_stb))
@@ -1501,12 +1774,18 @@ def _confirm_classification_results(phase5_results, confirmation_classification)
     for result in confirmation_classification:
         signature = _candidate_signature(result)
         previous = phase5_by_signature.get(signature)
+        previous_registers = set((previous or {}).get("mapped_registers", {}))
+        current_registers = set(result.get("mapped_registers", {}))
+        mapping_union = previous_registers | current_registers
+        mapping_overlap = (
+            len(previous_registers & current_registers) / max(1, len(mapping_union))
+        )
         same_mapping = (
             previous is not None
             and previous.get("mapping_order") == result.get("mapping_order")
-            and set(previous.get("mapped_registers", {})) == set(result.get("mapped_registers", {}))
+            and mapping_overlap >= 0.75
         )
-        confirmed = same_mapping and result.get("score", 0) >= 80
+        confirmed = same_mapping and result.get("score", 0) >= 75
         result = dict(result)
         result["status"] = _status_from_score(
             result.get("score", 0),
@@ -1650,6 +1929,7 @@ def collect_nearby_regfile_interface_candidates(dut, selected_regfile):
     result = {
         "regfile_path": regfile_path,
         "parent_scope": parent_scope,
+        "searched_scopes": [],
         "word_width": word_width,
         "write_enable_candidates": [],
         "write_addr_candidates": [],
@@ -1661,8 +1941,31 @@ def collect_nearby_regfile_interface_candidates(dut, selected_regfile):
         result["error"] = f"parent scope not resolvable: {parent_scope}"
         return result
 
+    # Storage can live inside a generated RAM block while its write interface
+    # belongs to the enclosing regfile module. Search the storage scope and two
+    # ancestors, which is narrow enough to avoid unrelated pipeline signals.
+    scope_handles = []
+    scope_path = parent_scope
+    for _ in range(3):
+        if not scope_path:
+            break
+        scope_handle = _resolve_path(dut, scope_path)
+        if scope_handle is not None:
+            scope_handles.append(scope_handle)
+            result["searched_scopes"].append(scope_path)
+        scope_path = _parent_path(scope_path)
+
     seen = set()
-    for leaf in _collect_leaf_signals_in_scope(parent_handle, include_child_scopes=True):
+    leaves = []
+    for index, scope_handle in enumerate(scope_handles):
+        leaves.extend(
+            _collect_leaf_signals_in_scope(
+                scope_handle,
+                include_child_scopes=index == 0,
+            )
+        )
+
+    for leaf in leaves:
         path = leaf["path"]
         if path in seen or path == regfile_path:
             continue
@@ -1672,9 +1975,16 @@ def collect_nearby_regfile_interface_candidates(dut, selected_regfile):
         roles = []
         if width == 1:
             roles.append("write_enable")
-        if width in (4, 5):
+        if width in (4, 5, 6, 7):
+            roles.append("write_addr")
+        elif width and 8 <= width <= 16 and _interface_name_score(path, "write_addr")[0] > 0:
+            # Typed destinations can carry a tag above the low five GPR bits.
+            roles.append("write_addr")
+        elif width and width <= 40 and width % 5 == 0:
             roles.append("write_addr")
         if width == word_width:
+            roles.append("write_data")
+        elif width and word_width and width <= word_width * 8 and width % word_width == 0:
             roles.append("write_data")
 
         if not roles:
@@ -1684,6 +1994,12 @@ def collect_nearby_regfile_interface_candidates(dut, selected_regfile):
         for role in roles:
             scored = dict(leaf)
             scored["role"] = role
+            if role == "write_addr" and 8 <= width <= 16 and width % 5:
+                scored["register_index_lsb_width"] = 5
+            elif role == "write_addr" and width not in (4, 5, 6, 7):
+                scored["packed_lane_width"] = 5
+            if role == "write_data" and width != word_width:
+                scored["packed_lane_width"] = word_width
             name_score, reasons = _interface_name_score(path, role)
             scored["name_score"] = name_score
             scored["name_reasons"] = reasons
@@ -1694,27 +2010,26 @@ def collect_nearby_regfile_interface_candidates(dut, selected_regfile):
 
 def build_regfile_interface_probe_program(max_cycles=REGFILE_WRITE_MAX_CYCLES):
     write_sequence = [
-        {"pc": 0x08, "reg": "x5", "reg_index": 5, "value": 0x0C, "opclass": "r_alu"},
-        {"pc": 0x0C, "reg": "x6", "reg_index": 6, "value": 0x07, "opclass": "i_alu_overlap"},
-        {"pc": 0x10, "reg": "x5", "reg_index": 5, "value": 0x00012000, "opclass": "lui"},
-        {"pc": 0x14, "reg": "x6", "reg_index": 6, "value": 0x04, "opclass": "i_alu_xor"},
+        {"pc": 0x08, "reg": "x5", "reg_index": 5, "value": 0x15, "opclass": "i_alu_add"},
+        {"pc": 0x10, "reg": "x6", "reg_index": 6, "value": 0x26, "opclass": "i_alu_add"},
+        {"pc": 0x18, "reg": "x5", "reg_index": 5, "value": 0x35, "opclass": "i_alu_add"},
     ]
     return {
         "program_name": "regfile_interface_write_probe_v1",
         "program": {
-            0x00: _addi(9, 0, 0x05),
-            0x04: _addi(10, 0, 0x07),
-            0x08: _add(5, 9, 10),
-            0x0C: _ori(6, 9, 0x03),
-            0x10: _lui(5, 0x12),
-            0x14: _xori(6, 10, 0x03),
-            0x18: NOP_INSTRUCTION,
+            0x00: NOP_INSTRUCTION,
+            0x04: NOP_INSTRUCTION,
+            0x08: _addi(5, 0, 0x15),
+            0x0C: NOP_INSTRUCTION,
+            0x10: _addi(6, 0, 0x26),
+            0x14: NOP_INSTRUCTION,
+            0x18: _addi(5, 0, 0x35),
+            0x1C: NOP_INSTRUCTION,
             REGFILE_INTERFACE_LOOP_PC: _jal(0, 0),
         },
         "loop_pc": REGFILE_INTERFACE_LOOP_PC,
         "write_sequence": write_sequence,
-        "setup_registers": {"x9": 0x05, "x10": 0x07},
-        "expected_registers": {"x5": 0x00012000, "x6": 0x04},
+        "expected_registers": {"x5": 0x35, "x6": 0x26},
         "overwrite_register": "x5",
         "max_cycles": max_cycles,
         "default_instruction": NOP_INSTRUCTION,
@@ -1723,11 +2038,15 @@ def build_regfile_interface_probe_program(max_cycles=REGFILE_WRITE_MAX_CYCLES):
 
 def _watched_regfile_values(dut, selected_regfile):
     values = sample_candidate_value(dut, selected_regfile) or {}
+    if selected_regfile.get("kind") == "packed_flat_vector":
+        values = values.get(selected_regfile.get("mapping_order")) or {}
     return {"x5": values.get("x5"), "x6": values.get("x6")}
 
 
 def _watched_regfile_values_for_program(dut, selected_regfile, program_metadata):
     values = sample_candidate_value(dut, selected_regfile) or {}
+    if selected_regfile.get("kind") == "packed_flat_vector":
+        values = values.get(selected_regfile.get("mapping_order")) or {}
     watched = {}
     for entry in program_metadata.get("write_sequence", []):
         reg = entry.get("reg")
@@ -1769,11 +2088,13 @@ def detect_regfile_storage_update_events(trace_samples, program_metadata):
             previous_values = current_values
             continue
 
-        expected = write_sequence[expected_idx]
-        reg = expected["reg"]
-        old_value = previous_values.get(reg)
-        new_value = current_values.get(reg)
-        if old_value != new_value and new_value == expected["value"]:
+        while expected_idx < len(write_sequence):
+            expected = write_sequence[expected_idx]
+            reg = expected["reg"]
+            old_value = previous_values.get(reg)
+            new_value = current_values.get(reg)
+            if old_value == new_value or new_value != expected["value"]:
+                break
             cycle = sample.get("cycle")
             events.append({
                 "cycle": cycle,
@@ -1801,6 +2122,18 @@ def _signal_values(trace_samples, path):
     return [(sample.get("signals") or {}).get(path) for sample in trace_samples]
 
 
+def _candidate_lane_values(candidate, value):
+    index_width = candidate.get("register_index_lsb_width")
+    if value is not None and index_width:
+        return [value & ((1 << index_width) - 1)]
+    lane_width = candidate.get("packed_lane_width")
+    width = candidate.get("width")
+    if value is None or not lane_width or not width or width <= lane_width:
+        return [value]
+    mask = (1 << lane_width) - 1
+    return [(value >> offset) & mask for offset in range(0, width, lane_width)]
+
+
 def _score_write_addr_candidate(candidate, trace_samples, update_events):
     path = candidate.get("path")
     samples = _samples_by_cycle(trace_samples)
@@ -1811,8 +2144,9 @@ def _score_write_addr_candidate(candidate, trace_samples, update_events):
         for event in update_events:
             sample = samples.get(event["cycle"] + offset)
             value = (sample.get("signals") or {}).get(path) if sample else None
-            observed.append(value)
-            if value == event["reg_index"]:
+            lane_values = _candidate_lane_values(candidate, value)
+            observed.extend(lane_values)
+            if event["reg_index"] in lane_values:
                 matched += 1
         score = round(70 * matched / max(1, len(update_events))) + max(0, candidate.get("name_score", 0))
         if len(set(v for v in observed if v is not None)) > 1:
@@ -1825,7 +2159,10 @@ def _score_write_addr_candidate(candidate, trace_samples, update_events):
             "reasons": [f"{matched}/{len(update_events)} write-address values matched"] + candidate.get("name_reasons", []),
             "failed_checks": [] if matched == len(update_events) else ["write address did not match every update event"],
         }
-        if result["score"] > best["score"]:
+        if (result["score"], -abs(offset)) > (
+            best["score"],
+            -abs(best["timing_offset"]) if best["timing_offset"] is not None else -999,
+        ):
             best = result
     return best
 
@@ -1840,8 +2177,9 @@ def _score_write_data_candidate(candidate, trace_samples, update_events):
         for event in update_events:
             sample = samples.get(event["cycle"] + offset)
             value = (sample.get("signals") or {}).get(path) if sample else None
-            observed.append(value)
-            if value == event["new_value"]:
+            lane_values = _candidate_lane_values(candidate, value)
+            observed.extend(lane_values)
+            if event["new_value"] in lane_values:
                 matched += 1
         distinct_observed = len(set(v for v in observed if v is not None))
         score = round(70 * matched / max(1, len(update_events))) + max(0, candidate.get("name_score", 0))
@@ -1858,7 +2196,10 @@ def _score_write_data_candidate(candidate, trace_samples, update_events):
             "reasons": [f"{matched}/{len(update_events)} write-data values matched"] + candidate.get("name_reasons", []),
             "failed_checks": failed,
         }
-        if result["score"] > best["score"]:
+        if (result["score"], -abs(offset)) > (
+            best["score"],
+            -abs(best["timing_offset"]) if best["timing_offset"] is not None else -999,
+        ):
             best = result
     return best
 
@@ -1900,7 +2241,10 @@ def _score_write_enable_candidate(candidate, trace_samples, update_events):
             "reasons": [f"{active_matches}/{len(update_events)} write-enable events active"] + candidate.get("name_reasons", []),
             "failed_checks": failed,
         }
-        if result["score"] > best["score"]:
+        if (result["score"], -abs(offset)) > (
+            best["score"],
+            -abs(best["timing_offset"]) if best["timing_offset"] is not None else -999,
+        ):
             best = result
     return best
 
@@ -1996,7 +2340,12 @@ def classify_regfile_interface(trace_result, interface_candidates):
     }
     derived_roles = []
     for role in ("write_enable", "write_data"):
-        if _needs_derived_role(role_scores[role]):
+        evidence_results = role_scores[role]
+        if role == "write_enable":
+            evidence_results = [
+                result for result in evidence_results if result.get("name_score", 0) > 0
+            ]
+        if _needs_derived_role(evidence_results):
             role_scores[role] = sorted(
                 role_scores[role] + _derived_role_results(role, trace_result),
                 key=lambda item: item.get("score", 0),
@@ -2005,52 +2354,91 @@ def classify_regfile_interface(trace_result, interface_candidates):
             derived_roles.append(role)
     tuples = []
 
-    for offset in REGFILE_INTERFACE_TIMING_OFFSETS:
-        we_candidates = _candidates_at_offset(role_scores["write_enable"], offset)
-        wa_candidates = _candidates_at_offset(role_scores["write_addr"], offset)
-        wd_candidates = _candidates_at_offset(role_scores["write_data"], offset)
-        for we in we_candidates:
-            for wa in wa_candidates:
-                for wd in wd_candidates:
-                    failed = []
-                    for label, result in (("write_enable", we), ("write_addr", wa), ("write_data", wd)):
-                        if result.get("score", 0) < 50:
-                            failed.append(f"{label} score below threshold")
+    we_candidates = [
+        result
+        for result in role_scores["write_enable"]
+        if (
+            result.get("score", 0) >= 50
+            and not result.get("failed_checks")
+            and (result.get("derived") or result.get("name_score", 0) > 0)
+        )
+    ]
+    wa_candidates = [
+        result
+        for result in role_scores["write_addr"]
+        if result.get("score", 0) >= 50
+    ]
+    wd_candidates = [
+        result
+        for result in role_scores["write_data"]
+        if result.get("score", 0) >= 50
+    ]
+    for we in we_candidates:
+        for wa in wa_candidates:
+            for wd in wd_candidates:
+                failed = []
+                for label, result in (("write_enable", we), ("write_addr", wa), ("write_data", wd)):
+                    if result.get("score", 0) < 50:
+                        failed.append(f"{label} score below threshold")
 
-                    score = round(0.30 * we["score"] + 0.35 * wa["score"] + 0.35 * wd["score"])
-                    reasons = [
-                        f"common timing offset {offset}",
-                        f"write_enable score {we['score']}",
-                        f"write_addr score {wa['score']}",
-                        f"write_data score {wd['score']}",
-                    ]
-                    if len({we.get("scope"), wa.get("scope"), wd.get("scope")}) == 1:
-                        score += 5
-                        reasons.append("all selected signals are in the same scope")
-                    if we.get("derived"):
-                        reasons.append("write_enable is derived from storage updates")
-                    if wd.get("derived"):
-                        reasons.append("write_data is derived from storage updates")
-                    if failed:
-                        score = min(score, 59)
+                score = round(0.30 * we["score"] + 0.35 * wa["score"] + 0.35 * wd["score"])
+                reasons = [
+                    f"write_addr timing offset {wa.get('timing_offset')}",
+                    f"write_data timing offset {wd.get('timing_offset')}",
+                    f"write_enable timing offset {we.get('timing_offset')}",
+                    f"write_enable score {we['score']}",
+                    f"write_addr score {wa['score']}",
+                    f"write_data score {wd['score']}",
+                ]
+                if len({we.get("scope"), wa.get("scope"), wd.get("scope")}) == 1:
+                    score += 5
+                    reasons.append("all selected signals are in the same scope")
+                if we.get("derived"):
+                    reasons.append("write_enable is derived from storage updates")
+                if wd.get("derived"):
+                    reasons.append("write_data is derived from storage updates")
+                if failed:
+                    score = min(score, 59)
 
-                    score = min(score, 100)
-                    if we.get("derived") or wd.get("derived"):
-                        score = min(score, 84)
-                    confidence = "high" if score >= 85 else "medium" if score >= 70 else "low" if score >= 50 else "none"
-                    tuples.append({
-                        "status": _interface_status(score, failed),
-                        "score": score,
-                        "confidence": confidence,
-                        "write_enable": we.get("path"),
-                        "write_addr": wa.get("path"),
-                        "write_data": wd.get("path"),
-                        "timing_offset": offset,
-                        "reasons": reasons,
-                        "failed_checks": failed,
-                    })
+                score = min(score, 100)
+                if we.get("derived") or wd.get("derived"):
+                    score = min(score, 84)
+                confidence = "high" if score >= 85 else "medium" if score >= 70 else "low" if score >= 50 else "none"
+                tuples.append({
+                    "status": _interface_status(score, failed),
+                    "score": score,
+                    "confidence": confidence,
+                    "write_enable": we.get("path"),
+                    "write_addr": wa.get("path"),
+                    "write_data": wd.get("path"),
+                    # Preserve the historical single-offset contract.  A derived
+                    # data value has no sampled signal timing, so the address is
+                    # the meaningful reference in that case.
+                    "timing_offset": (
+                        wa.get("timing_offset") if wd.get("derived") else wd.get("timing_offset")
+                    ),
+                    "write_enable_timing_offset": we.get("timing_offset"),
+                    "write_addr_timing_offset": wa.get("timing_offset"),
+                    "write_data_timing_offset": wd.get("timing_offset"),
+                    "reasons": reasons,
+                    "failed_checks": failed,
+                })
 
-    selected = max(tuples, key=lambda item: item.get("score", 0), default={
+    def tuple_rank(item):
+        offsets = (
+            item.get("write_enable_timing_offset"),
+            item.get("write_addr_timing_offset"),
+            item.get("write_data_timing_offset"),
+        )
+        displacement = sum(abs(offset) for offset in offsets if offset is not None)
+        data_offset = item.get("write_data_timing_offset")
+        return (
+            item.get("score", 0),
+            -abs(data_offset) if data_offset is not None else -999,
+            -displacement,
+        )
+
+    selected = max(tuples, key=tuple_rank, default={
         "status": "rejected_interface",
         "score": 0,
         "confidence": "none",
@@ -2063,7 +2451,7 @@ def classify_regfile_interface(trace_result, interface_candidates):
     })
     return {
         "role_scores": role_scores,
-        "tuples": sorted(tuples, key=lambda item: item["score"], reverse=True),
+        "tuples": sorted(tuples, key=tuple_rank, reverse=True),
         "selected": selected,
         "derived_roles": derived_roles,
     }
@@ -2106,6 +2494,8 @@ async def run_regfile_interface_probe_and_trace(dut, selected_regfile, program_m
             await Timer(0.001, unit="ns")
 
             pc = _safe_value_int(dut.core_addr)
+            if pc is not None:
+                pc = _program_relative_address(dut, program_metadata, pc)
             transaction_ok = True
             if hasattr(dut, "core_stb"):
                 transaction_ok = bool(_safe_value_int(dut.core_stb))
@@ -2151,7 +2541,9 @@ def _candidate_for_selected_regfile(selected_regfile, candidates):
     selected_kind = selected_regfile.get("kind")
     for candidate in candidates:
         if _candidate_id(candidate) == selected_path and candidate.get("kind") == selected_kind:
-            return dict(candidate)
+            resolved = dict(candidate)
+            resolved["mapping_order"] = selected_regfile.get("mapping_order")
+            return resolved
     return {
         "path": selected_path,
         "kind": selected_kind or "array_of_words",
@@ -2206,6 +2598,9 @@ def _compact_selected_interface(selected_interface, interface_classification=Non
         "write_addr",
         "write_data",
         "timing_offset",
+        "write_enable_timing_offset",
+        "write_addr_timing_offset",
+        "write_data_timing_offset",
     )
     compact = {key: selected_interface.get(key) for key in keys if key in selected_interface}
     derived_roles = (interface_classification or {}).get("derived_roles")
@@ -2223,13 +2618,46 @@ def _compat_regfile_interface(selected_interface):
     }
 
 
+def selected_candidate_metadata(output_data):
+    """Return the full static candidate corresponding to the selected result."""
+    selected = (output_data or {}).get("selected_regfile") or {}
+    selected_path = selected.get("candidate_path") or selected.get("path")
+    selected_kind = selected.get("kind")
+    candidates = (output_data or {}).get("regfile_array_candidates") or []
+    for candidate in candidates:
+        if _candidate_id(candidate) != selected_path:
+            continue
+        if selected_kind and candidate.get("kind") != selected_kind:
+            continue
+        metadata = dict(candidate)
+        metadata["mapping_order"] = selected.get("mapping_order")
+        return metadata
+    return None
+
+
+def selected_interface_paths(output_data):
+    """Compatibility view of the selected write interface."""
+    selected_interface = (output_data or {}).get("selected_regfile_interface") or {}
+    return {
+        "write_enable": selected_interface.get("write_enable"),
+        "write_addr": selected_interface.get("write_addr"),
+        "write_data": selected_interface.get("write_data"),
+    }
+
+
 def _compact_regfile_output(verbose_output):
     selected_regfile = verbose_output.get("selected_regfile")
     selected_interface = verbose_output.get("selected_regfile_interface")
     selected_path = None
     if selected_regfile:
         selected_path = selected_regfile.get("candidate_path") or selected_regfile.get("path")
-    regfile_candidates = [selected_path] if selected_path else verbose_output.get("regfile_candidates", [])
+    if selected_path and selected_regfile.get("status") != "static_candidate":
+        regfile_candidates = [selected_path]
+    else:
+        # Static scoring is intentionally permissive. Keep the full ranked list
+        # until clocked confirmation distinguishes a GPR file from similarly
+        # shaped counters, CSRs, and memories.
+        regfile_candidates = verbose_output.get("regfile_candidates", [])
 
     return {
         "regfile_candidates": regfile_candidates,
@@ -2506,6 +2934,19 @@ def find_regfile_write_signals(dut, core_name, regfile=None):
     exclude_patterns = ["csr", "debug", "dbg", "trace", "jtag", "rdata", "raddr", "rdy", "ready", "fetch", "regrd", "read", "load", "store", "prev", "ebreak", "ecall", "mret", "_rs1", "_rs2", "size"]
     
     found_signals = {}
+
+    def has_value_handle(obj):
+        try:
+            getattr(obj, "value")
+            return True
+        except Exception:
+            return False
+
+    def safe_child_handle(parent, child_name):
+        try:
+            return getattr(parent, child_name)
+        except Exception:
+            return None
     
     def search_signals(module, path="", depth=0, max_depth=8):
         """Recursively search for signals in the design hierarchy."""
@@ -2534,7 +2975,7 @@ def find_regfile_write_signals(dut, core_name, regfile=None):
                         for pattern in write_enable_patterns:
                             if pattern in name_lower:
                                 # Verify it's actually a signal (has value attribute)
-                                if hasattr(obj, 'value'):
+                                if has_value_handle(obj):
                                     found_signals["write_enable"] = full_path
                                     cocotb.log.info(f"Found write_enable: {full_path}")
                                     break
@@ -2543,7 +2984,7 @@ def find_regfile_write_signals(dut, core_name, regfile=None):
                     if "write_addr" not in found_signals:
                         for pattern in write_addr_patterns:
                             if pattern in name_lower:
-                                if hasattr(obj, 'value'):
+                                if has_value_handle(obj):
                                     found_signals["write_addr"] = full_path
                                     cocotb.log.info(f"Found write_addr: {full_path}")
                                     break
@@ -2552,19 +2993,19 @@ def find_regfile_write_signals(dut, core_name, regfile=None):
                     if "write_data" not in found_signals:
                         for pattern in write_data_patterns:
                             if pattern in name_lower:
-                                if hasattr(obj, 'value'):
+                                if has_value_handle(obj):
                                     found_signals["write_data"] = full_path
                                     cocotb.log.info(f"Found write_data: {full_path}")
                                     break
                     
                     # Recurse into submodules
-                    if not hasattr(obj, 'value') and hasattr(obj, '__dict__'):
+                    if not has_value_handle(obj) and hasattr(obj, '__dict__'):
                         search_signals(obj, full_path, depth + 1, max_depth)
                     
-                except (AttributeError, TypeError):
+                except Exception:
                     continue
                     
-        except (AttributeError, TypeError):
+        except Exception:
             pass
     
     # Start search from the register file module if provided
@@ -2586,8 +3027,11 @@ def find_regfile_write_signals(dut, core_name, regfile=None):
             try:
                 parent_module = dut
                 for part in parent_path_parts:
-                    if part and hasattr(parent_module, part):
-                        parent_module = getattr(parent_module, part)
+                    if not part or part == getattr(dut, "_name", None):
+                        continue
+                    child = safe_child_handle(parent_module, part)
+                    if child is not None:
+                        parent_module = child
                 
                 cocotb.log.info(f"Searching in register file parent module: {parent_path}")
                 search_signals(parent_module, parent_path, depth=0, max_depth=3)
@@ -2639,8 +3083,7 @@ def load_regfile_interface(core_name):
             return json.load(f)
     return None
 
-@cocotb.test()
-async def find_register_file(dut):
+async def run_register_file_finder(dut):
     output_dir = os.environ.get('OUTPUT_DIR', "default")
     processor_name = os.path.basename(output_dir)
     debug_output = _env_flag("REGFILE_FINDER_DEBUG") or _env_flag("DEBUG_REGFILE_FINDER")
@@ -2654,9 +3097,53 @@ async def find_register_file(dut):
     
     # Static discovery stage: find array-like objects whose shape is compatible
     # with a RISC-V architectural register file.
-    regfile_array_candidates = discover_regfile_array_candidates(dut)
+    hierarchy_root = getattr(dut, "_target", dut)
+    regfile_array_candidates = discover_regfile_array_candidates(hierarchy_root)
     regfile_array_candidates, visibility_summary = check_regfile_candidate_visibility(dut, regfile_array_candidates)
     regfile_candidates = [candidate["path"] for candidate in regfile_array_candidates]
+    visible_static_candidate = next(
+        (candidate for candidate in regfile_array_candidates if candidate.get("visible")),
+        None,
+    )
+    preliminary_selection = None
+    if visible_static_candidate is not None:
+        preliminary_selection = {
+            "candidate_path": visible_static_candidate["path"],
+            "kind": visible_static_candidate["kind"],
+            "status": "static_candidate",
+            "score": visible_static_candidate["score"],
+            "confidence": "static_only",
+        }
+
+    # Persist static discovery before starting any clocked probe. A DUT with a
+    # non-settling combinational loop can block inside the simulator before
+    # Python gets another scheduling turn; the parent process can still time it
+    # out while retaining the useful register-file result for batch analysis.
+    static_output = {
+        "regfile_candidates": regfile_candidates,
+        "regfile_array_candidates": regfile_array_candidates,
+        "visibility_summary": visibility_summary,
+        "selected_regfile": preliminary_selection,
+        "selected_regfile_interface": None,
+    }
+    output_file = os.path.join(output_dir, f"{processor_name}_reg_file.json")
+    try:
+        _write_regfile_json(output_file, static_output, debug_enabled=debug_output)
+    except OSError as exc:
+        logging.warning("Error writing static register-file checkpoint to %s: %s", output_file, exc)
+
+    if visible_static_candidate is not None:
+        dut._log.info(
+            "Static register-file checkpoint: %s kind=%s depth=%s word_width=%s score=%s",
+            visible_static_candidate["path"],
+            visible_static_candidate["kind"],
+            visible_static_candidate["depth"],
+            visible_static_candidate["word_width"],
+            visible_static_candidate["score"],
+        )
+    else:
+        dut._log.warning("Static register-file discovery found no visible candidates")
+
     dynamic_program = build_regfile_write_program()
     trace_result = await run_regfile_program_and_trace(dut, dynamic_program, regfile_array_candidates)
     classification_results = classify_regfile_candidates(trace_result, dynamic_program)
@@ -2754,6 +3241,7 @@ async def find_register_file(dut):
         },
         "interface_probe_program": interface_probe_program,
         "interface_trace_summary": _interface_trace_summary(interface_probe["trace_result"]),
+        "interface_trace": interface_probe["trace_result"],
         "interface_candidates": interface_probe["interface_candidates"],
         "interface_classification": interface_classification,
         "selected_regfile_interface": interface_classification["selected"],
@@ -2773,7 +3261,7 @@ async def find_register_file(dut):
             logging.info(f'Results saved to {output_file}')
         except OSError as e:
             logging.warning(f'Error writing to {output_file}: %s', e)
-        return
+        return output_data
     else:
         dut._log.info("Register file interface detection via Ollama enabled.")
         regfile_interface = None
@@ -2825,6 +3313,13 @@ async def find_register_file(dut):
 
         if not regfile_candidates and not valid_regfile_interface:
             assert False, f"No register file found for the {processor_name} processor"
+
+    return output_data
+
+
+@cocotb.test()
+async def find_register_file(dut):
+    await run_register_file_finder(dut)
 
 
 # This script is intended to be run as a cocotb testbench.

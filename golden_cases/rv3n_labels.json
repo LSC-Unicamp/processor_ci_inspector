@@ -1,0 +1,18 @@
+{
+    "rv3n": {
+        "license_types": [
+            "Apache 2.0"
+        ],
+        "bits": 32,
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "Verilog",
+        "multicycle": null,
+        "pipeline": {
+            "depth": 8
+        },
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected"
+    }
+}

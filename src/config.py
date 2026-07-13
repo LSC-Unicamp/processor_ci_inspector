@@ -45,7 +45,6 @@ def load_config(config_path: str, processor_name: str) -> dict:
         json.JSONDecodeError: If the file is not a valid JSON.
     """
     if not os.path.exists(config_path):
-        os.makedirs(config_path, exist_ok=True)
         raise FileNotFoundError(
             f'The configuration folder {config_path} was not found.'
         )
@@ -54,13 +53,21 @@ def load_config(config_path: str, processor_name: str) -> dict:
     full_config_path = os.path.join(config_path, f'{processor_name}.json')
 
     if not os.path.exists(full_config_path):
-        create_default_config(config_path, processor_name)
         raise FileNotFoundError(
             f'The configuration file {full_config_path} was not found.'
         )
 
     with open(full_config_path, 'r', encoding='utf-8') as file:
         config_data = json.load(file)
+
+    # RV-Bench historically used both ``files`` and ``sim_files`` for the
+    # source list. Normalize that public config schema once so downstream
+    # language detection and Makefile generation do not disagree. Include
+    # directories and extra flags are optional by nature.
+    if 'files' not in config_data and 'sim_files' in config_data:
+        config_data['files'] = list(config_data['sim_files'])
+    config_data.setdefault('include_dirs', [])
+    config_data.setdefault('extra_flags', [])
 
     return config_data
 

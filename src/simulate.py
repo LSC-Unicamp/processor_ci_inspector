@@ -14,7 +14,7 @@ BUILD_DIR = BASE_DIR / './build'
 PROCESSADOR_BASE = Path('/eda/processadores')
 
 
-def run_ghdl_import(cpu_name, vhdl_files):
+def run_ghdl_import(cpu_name, vhdl_files, extra_flags=None):
     """Importar todos os arquivos VHDL com GHDL -i."""
     print('[INFO] Importando arquivos VHDL com GHDL (-i)...')
     cmd = [
@@ -24,12 +24,12 @@ def run_ghdl_import(cpu_name, vhdl_files):
         f'--work={cpu_name}',
         f'--workdir={BUILD_DIR}',
         f'-P{BUILD_DIR}',
-    ] + list(map(str, vhdl_files))
+    ] + list(extra_flags or []) + list(map(str, vhdl_files))
     print(f"[CMD] {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
 
 
-def run_ghdl_elaborate(cpu_name, top_module):
+def run_ghdl_elaborate(cpu_name, top_module, extra_flags=None):
     """Elaborar com GHDL -m."""
     print('[INFO] Elaborando projeto com GHDL (-m)...')
     cmd = [
@@ -39,26 +39,23 @@ def run_ghdl_elaborate(cpu_name, top_module):
         f'--work={cpu_name}',
         f'--workdir={BUILD_DIR}',
         f'-P{BUILD_DIR}',
-        f'{top_module}',
-    ]
+    ] + list(extra_flags or []) + [f'{top_module}']
     print(f"[CMD] {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
 
 
-def synthesize_to_verilog(cpu_name, output_file, top_module):
+def synthesize_to_verilog(cpu_name, output_file, top_module, extra_flags=None):
     """Sintetizar o VHDL com GHDL para Verilog."""
     print(f'[INFO] Sintetizando {cpu_name} para Verilog...')
     cmd = [
         'ghdl',
         'synth',
-        '--latches',
         '--std=08',
         f'--work={cpu_name}',
         f'--workdir={BUILD_DIR}',
         f'-P{BUILD_DIR}',
         '--out=verilog',
-        top_module,
-    ]
+    ] + list(extra_flags or []) + [top_module]
     print(f"[CMD] {' '.join(cmd)} > {output_file}")
     with open(output_file, 'w') as f:
         subprocess.run(cmd, stdout=f, check=True)

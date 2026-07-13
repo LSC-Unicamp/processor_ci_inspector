@@ -1,0 +1,18 @@
+{
+    "AUK-V-Aethia": {
+        "license_types": [
+            "GPLv3"
+        ],
+        "bits": 32,
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "Verilog",
+        "multicycle": false,
+        "pipeline": {
+            "depth": 4
+        },
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected"
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "nerv": {
+        "license_types": [
+            "Undetected"
+        ],
+        "bits": 32,
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "SystemVerilog",
+        "multicycle": false,
+        "pipeline": false,
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected"
+    }
+}

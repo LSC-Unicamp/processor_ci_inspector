@@ -1,0 +1,18 @@
+{
+    "fedar-f1-rv64im": {
+        "license_types": [
+            "MIT"
+        ],
+        "bits": 64,
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "Verilog",
+        "multicycle": false,
+        "pipeline": {
+            "depth": 5
+        },
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected"
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "tinyriscv": {
+        "license_types": [
+            "Apache 2.0",
+            "Custom License"
+        ],
+        "bits": 32,
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "Verilog",
+        "multicycle": false,
+        "pipeline": {
+            "depth": 3
+        },
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected"
+    }
+}

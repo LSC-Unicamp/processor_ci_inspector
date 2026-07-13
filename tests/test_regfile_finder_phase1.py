@@ -8,6 +8,7 @@ from src import regfile_finder as finder
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import cocotb_makefile_creator
+from src.config import load_config
 
 
 class FakeSignal:
@@ -48,6 +49,45 @@ class FakeModule:
 
 
 class Phase1DiscoveryTests(unittest.TestCase):
+    def test_config_normalizes_sim_files_and_optional_lists(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_path = Path(temp_dir) / "demo.json"
+            config_path.write_text('{"sim_files": ["rtl/core.v"]}', encoding="utf-8")
+
+            config = load_config(temp_dir, "demo")
+
+        self.assertEqual(config["files"], ["rtl/core.v"])
+        self.assertEqual(config["include_dirs"], [])
+        self.assertEqual(config["extra_flags"], [])
+
+    def test_static_checkpoint_keeps_all_ranked_candidates(self):
+        compact = finder._compact_regfile_output({
+            "regfile_candidates": ["dut.counter", "dut.regfile"],
+            "selected_regfile": {
+                "candidate_path": "dut.counter",
+                "status": "static_candidate",
+            },
+            "selected_regfile_interface": None,
+        })
+
+        self.assertEqual(compact["regfile_candidates"], ["dut.counter", "dut.regfile"])
+
+    def test_array_sampling_never_probes_outside_reported_length(self):
+        class NoRangeArray:
+            def __init__(self, length):
+                self.length = length
+
+            def __len__(self):
+                return self.length
+
+        self.assertEqual(finder._iter_range_indices(NoRangeArray(1)), [0])
+        self.assertEqual(finder._iter_range_indices(NoRangeArray(2)), [0, 1])
+
+    def test_generate_block_array_is_not_treated_as_register_storage(self):
+        generated = FakeArray("dut.core.genblk1", [FakeModule("dut.core.genblk1[0]")])
+
+        self.assertTrue(finder._looks_like_generated_instance_array(generated))
+
     def test_discovers_unpacked_array_of_words(self):
         elements = [FakeSignal(f"dut.core.regs.{i}", 32) for i in range(32)]
         dut = FakeModule("dut", core=FakeModule("dut.core", regs=FakeArray("dut.core.regs", elements)))
@@ -55,6 +95,28 @@ class Phase1DiscoveryTests(unittest.TestCase):
         candidates = finder.discover_regfile_array_candidates(dut)
 
         self.assertTrue(any(c["kind"] == "array_of_words" and c["path"] == "dut.core.regs" for c in candidates))
+
+    def test_discovers_ecc_protected_array_as_architectural_xlen(self):
+        elements = [FakeSignal(f"dut.core.regs.{i}", 38) for i in range(32)]
+        dut = FakeModule("dut", core=FakeModule("dut.core", regs=FakeArray("dut.core.regs", elements)))
+
+        candidate = finder.discover_regfile_array_candidates(dut)[0]
+
+        self.assertEqual(candidate["word_width"], 32)
+        self.assertEqual(candidate["storage_word_width"], 38)
+
+    def test_discovers_33_entry_array_as_32_architectural_registers(self):
+        elements = [FakeSignal(f"dut.core.regs.{i}", 32) for i in range(33)]
+        dut = FakeModule("dut", core=FakeModule("dut.core", regs=FakeArray("dut.core.regs", elements)))
+
+        candidate = finder.discover_regfile_array_candidates(dut)[0]
+
+        self.assertEqual(candidate["depth"], 32)
+        self.assertEqual(candidate["storage_depth"], 33)
+
+    def test_parses_indexed_register_names_with_alias_suffixes(self):
+        self.assertEqual(finder._parse_trailing_index("reg_r12_q"), ("reg_r", 12))
+        self.assertEqual(finder._parse_trailing_index("x7_t2_w"), ("x", 7))
 
     def test_discovers_packed_flat_vector(self):
         dut = FakeModule("dut", core=FakeModule("dut.core", regs=FakeSignal("dut.core.regs", 1024)))
@@ -207,6 +269,20 @@ class Phase3ProgramTests(unittest.TestCase):
             self.assertIn("--trace-structs", makefile_text)
             self.assertIn("--trace-underscore", makefile_text)
 
+    def test_cv32e40x_omits_crashing_trace_underscore_flag(self):
+        config = {
+            "name": "cv32e40x",
+            "include_dirs": [],
+            "files": [],
+            "top_module": "core_top",
+            "language_version": "1800-2017",
+        }
+
+        args = cocotb_makefile_creator.verilator_compile_args(config)
+
+        self.assertIn("--trace-structs", args)
+        self.assertNotIn("--trace-underscore", args)
+
 
 class Phase4SamplingTests(unittest.TestCase):
     def test_samples_array_candidate_by_register_index(self):
@@ -297,6 +373,21 @@ def _trace_for_values(values_by_cycle, kind="array_of_words", candidate_path="du
 
 
 class Phase5ClassificationTests(unittest.TestCase):
+    def test_unavailable_physical_x0_does_not_reject_valid_regfile(self):
+        expected = {"x0": 0, "x1": 0x11, "x2": 0x22, "x3": 0x33}
+        samples = [
+            {"values": {"x0": None, "x1": 0, "x2": 0, "x3": 0}},
+            {"values": {"x0": None, "x1": 0x11, "x2": 0x22, "x3": 0x33}},
+            {"values": {"x0": None, "x1": 0x11, "x2": 0x22, "x3": 0x33}},
+            {"values": {"x0": None, "x1": 0x11, "x2": 0x22, "x3": 0x33}},
+        ]
+
+        result = finder._score_mapping_samples(samples, expected, ["x1", "x2", "x3"])
+
+        self.assertGreaterEqual(result["score"], 75)
+        self.assertNotIn("x0 behavior mismatch", result["failed_checks"])
+        self.assertIn("physical x0 storage was unavailable", result["reasons"])
+
     def test_classifies_perfect_match_as_likely_candidate(self):
         program = finder.build_regfile_write_program()
         zero_values = {reg: 0 for reg in program["expected_registers"]}
@@ -372,6 +463,50 @@ class Phase5ClassificationTests(unittest.TestCase):
 
 
 class Phase6ConfirmationTests(unittest.TestCase):
+    def test_confirms_when_second_probe_matches_one_additional_register(self):
+        phase5 = [{
+            "candidate_path": "dut.core.regs",
+            "kind": "array_of_words",
+            "score": 95,
+            "mapping_order": "direct",
+            "mapped_registers": {f"x{i}": i for i in range(8)},
+        }]
+        confirmation = [{
+            "candidate_path": "dut.core.regs",
+            "kind": "array_of_words",
+            "score": 100,
+            "mapping_order": "direct",
+            "mapped_registers": {f"x{i}": i + 1 for i in range(9)},
+            "reasons": [],
+            "failed_checks": [],
+        }]
+
+        result = finder._confirm_classification_results(phase5, confirmation)[0]
+
+        self.assertEqual(result["status"], "confirmed_candidate")
+
+    def test_confirms_repeated_partial_probe_at_seventy_five(self):
+        phase5 = [{
+            "candidate_path": "dut.core.regs",
+            "kind": "array_of_words",
+            "score": 75,
+            "mapping_order": "direct",
+            "mapped_registers": {"x0": 0, "x2": 0x22, "x4": 0x44, "x6": 0x66},
+        }]
+        confirmation = [{
+            "candidate_path": "dut.core.regs",
+            "kind": "array_of_words",
+            "score": 75,
+            "mapping_order": "direct",
+            "mapped_registers": {"x0": 0, "x2": 0x24, "x4": 0x48, "x6": 0x6C},
+            "reasons": [],
+            "failed_checks": [],
+        }]
+
+        result = finder._confirm_classification_results(phase5, confirmation)[0]
+
+        self.assertEqual(result["status"], "confirmed_candidate")
+
     def test_confirms_same_candidate_and_mapping(self):
         phase5 = [{
             "candidate_path": "dut.core.regs",
@@ -468,36 +603,100 @@ class InterfaceDiscoveryTests(unittest.TestCase):
 
         self.assertEqual(metadata["program"][metadata["loop_pc"]], finder._jal(0, 0))
         self.assertTrue(all(addr % 4 == 0 for addr in metadata["program"]))
-        self.assertEqual([w["reg"] for w in metadata["write_sequence"]], ["x5", "x6", "x5", "x6"])
-        self.assertEqual([w["opclass"] for w in metadata["write_sequence"]], ["r_alu", "i_alu_overlap", "lui", "i_alu_xor"])
-        self.assertEqual(metadata["expected_registers"], {"x5": 0x00012000, "x6": 0x04})
+        self.assertEqual([w["reg"] for w in metadata["write_sequence"]], ["x5", "x6", "x5"])
+        self.assertEqual([w["opclass"] for w in metadata["write_sequence"]], ["i_alu_add", "i_alu_add", "i_alu_add"])
+        self.assertEqual(metadata["expected_registers"], {"x5": 0x35, "x6": 0x26})
         self.assertEqual(metadata["overwrite_register"], "x5")
 
     def test_detects_expected_storage_update_events(self):
         program = finder.build_regfile_interface_probe_program()
         samples = [
             {"cycle": 0, "pc": 0x00, "regfile_values": {"x5": 0, "x6": 0}},
-            {"cycle": 1, "pc": 0x08, "regfile_values": {"x5": 0x0C, "x6": 0}},
-            {"cycle": 2, "pc": 0x0C, "regfile_values": {"x5": 0x0C, "x6": 0x07}},
-            {"cycle": 3, "pc": 0x10, "regfile_values": {"x5": 0x00012000, "x6": 0x07}},
-            {"cycle": 4, "pc": 0x14, "regfile_values": {"x5": 0x00012000, "x6": 0x04}},
-            {"cycle": 5, "pc": 0x1C, "regfile_values": {"x5": 0x00012000, "x6": 0x04}},
+            {"cycle": 1, "pc": 0x08, "regfile_values": {"x5": 0x15, "x6": 0}},
+            {"cycle": 2, "pc": 0x0C, "regfile_values": {"x5": 0x15, "x6": 0x26}},
+            {"cycle": 3, "pc": 0x10, "regfile_values": {"x5": 0x35, "x6": 0x26}},
+            {"cycle": 4, "pc": 0x20, "regfile_values": {"x5": 0x35, "x6": 0x26}},
         ]
 
         events = finder.detect_regfile_storage_update_events(samples, program)
 
-        self.assertEqual([(e["reg_index"], e["new_value"]) for e in events], [(5, 0x0C), (6, 0x07), (5, 0x00012000), (6, 0x04)])
-        self.assertEqual(events[2]["old_value"], 0x0C)
+        self.assertEqual([(e["reg_index"], e["new_value"]) for e in events], [(5, 0x15), (6, 0x26), (5, 0x35)])
+        self.assertEqual(events[2]["old_value"], 0x15)
+
+    def test_detects_two_expected_writes_in_the_same_sample(self):
+        program = finder.build_regfile_interface_probe_program()
+        samples = [
+            {"cycle": 0, "pc": 0x00, "regfile_values": {"x5": 0, "x6": 0}},
+            {"cycle": 1, "pc": 0x08, "regfile_values": {"x5": 0x15, "x6": 0}},
+            {"cycle": 2, "pc": 0x18, "regfile_values": {"x5": 0x35, "x6": 0x26}},
+        ]
+
+        events = finder.detect_regfile_storage_update_events(samples, program)
+
+        self.assertEqual(
+            [(event["reg_index"], event["new_value"]) for event in events],
+            [(5, 0x15), (6, 0x26), (5, 0x35)],
+        )
+
+    def test_scores_packed_multiwrite_address_and_data_buses(self):
+        trace = [{
+            "cycle": 3,
+            "signals": {
+                "dut.addr_bus": (6 << 5) | 5,
+                "dut.data_bus": (0x26 << 32) | 0x35,
+            },
+        }]
+        events = [
+            {"cycle": 3, "reg_index": 5, "new_value": 0x35},
+            {"cycle": 3, "reg_index": 6, "new_value": 0x26},
+        ]
+        addr = {
+            "path": "dut.addr_bus", "width": 10, "packed_lane_width": 5,
+            "name_score": 10, "name_reasons": [],
+        }
+        data = {
+            "path": "dut.data_bus", "width": 64, "packed_lane_width": 32,
+            "name_score": 10, "name_reasons": [],
+        }
+
+        addr_score = finder._score_write_addr_candidate(addr, trace, events)
+        data_score = finder._score_write_data_candidate(data, trace, events)
+
+        self.assertGreaterEqual(addr_score["score"], 90)
+        self.assertGreaterEqual(data_score["score"], 90)
+
+    def test_scores_tagged_destination_using_low_gpr_index_bits(self):
+        trace = [
+            {"cycle": 1, "signals": {"dut.dst": 0x2005}},
+            {"cycle": 2, "signals": {"dut.dst": 0x2006}},
+            {"cycle": 3, "signals": {"dut.dst": 0x2005}},
+        ]
+        events = [
+            {"cycle": 1, "reg_index": 5},
+            {"cycle": 2, "reg_index": 6},
+            {"cycle": 3, "reg_index": 5},
+        ]
+        candidate = {
+            "path": "dut.dst",
+            "width": 14,
+            "register_index_lsb_width": 5,
+            "name_score": 20,
+            "name_reasons": ["write_addr name hint(s): dst"],
+        }
+
+        result = finder._score_write_addr_candidate(candidate, trace, events)
+
+        self.assertEqual(result["score"], 100)
+        self.assertEqual(result["timing_offset"], 0)
 
     def test_classifies_perfect_interface_tuple(self):
         trace = _interface_trace(
             [
                 (0, 0, 0, 0, 0, 0),
-                (1, 5, 0x0C, 1, 0x0C, 0),
-                (2, 6, 0x07, 1, 0x0C, 0x07),
-                (3, 5, 0x00012000, 1, 0x00012000, 0x07),
-                (4, 6, 0x04, 1, 0x00012000, 0x04),
-                (5, 0, 0, 0, 0x00012000, 0x04),
+                (1, 5, 0x15, 1, 0x15, 0),
+                (2, 6, 0x26, 1, 0x15, 0x26),
+                (3, 5, 0x35, 1, 0x35, 0x26),
+                (5, 0, 0, 0, 0x35, 0x26),
             ]
         )
         candidates = _interface_candidates()
@@ -513,15 +712,25 @@ class InterfaceDiscoveryTests(unittest.TestCase):
         trace = _interface_trace(
             [
                 (0, 0, 0, 1, 0, 0),
-                (1, 5, 0x0C, 1, 0x0C, 0),
-                (2, 6, 0x07, 1, 0x0C, 0x07),
-                (3, 5, 0x00012000, 1, 0x00012000, 0x07),
-                (4, 6, 0x04, 1, 0x00012000, 0x04),
-                (5, 0, 0, 1, 0x00012000, 0x04),
-            ]
+                (1, 5, 0x15, 1, 0x15, 0),
+                (2, 6, 0x26, 1, 0x15, 0x26),
+                (3, 5, 0x35, 1, 0x35, 0x26),
+                (5, 0, 0, 1, 0x35, 0x26),
+            ],
+            extra_signals={"dut.core.phase": [0, 1, 1, 1, 0, 0]},
         )
+        candidates = _interface_candidates()
+        candidates["write_enable_candidates"].append({
+            "path": "dut.core.phase",
+            "name": "phase",
+            "scope": "dut.core",
+            "width": 1,
+            "handle_type": "GPI_REGISTER",
+            "name_score": 0,
+            "name_reasons": [],
+        })
 
-        result = finder.classify_regfile_interface(trace, _interface_candidates())["selected"]
+        result = finder.classify_regfile_interface(trace, candidates)["selected"]
 
         self.assertEqual(result["write_enable"], finder.DERIVED_WRITE_ENABLE_PATH)
         self.assertEqual(result["status"], "likely_interface")
@@ -530,11 +739,10 @@ class InterfaceDiscoveryTests(unittest.TestCase):
         trace = _interface_trace(
             [
                 (0, 0, 0, 0, 0, 0),
-                (1, 1, 0x0C, 1, 0x0C, 0),
-                (2, 1, 0x07, 1, 0x0C, 0x07),
-                (3, 1, 0x00012000, 1, 0x00012000, 0x07),
-                (4, 1, 0x04, 1, 0x00012000, 0x04),
-                (5, 0, 0, 0, 0x00012000, 0x04),
+                (1, 1, 0x15, 1, 0x15, 0),
+                (2, 1, 0x26, 1, 0x15, 0x26),
+                (3, 1, 0x35, 1, 0x35, 0x26),
+                (5, 0, 0, 0, 0x35, 0x26),
             ]
         )
 
@@ -546,11 +754,10 @@ class InterfaceDiscoveryTests(unittest.TestCase):
         trace = _interface_trace(
             [
                 (0, 0, 0, 0, 0, 0),
-                (1, 5, 0x0C, 1, 0x0C, 0),
-                (2, 6, 0x0C, 1, 0x0C, 0x07),
-                (3, 5, 0x0C, 1, 0x00012000, 0x07),
-                (4, 6, 0x0C, 1, 0x00012000, 0x04),
-                (5, 0, 0, 0, 0x00012000, 0x04),
+                (1, 5, 0x15, 1, 0x15, 0),
+                (2, 6, 0x15, 1, 0x15, 0x26),
+                (3, 5, 0x15, 1, 0x35, 0x26),
+                (5, 0, 0, 0, 0x35, 0x26),
             ]
         )
 
@@ -562,12 +769,11 @@ class InterfaceDiscoveryTests(unittest.TestCase):
     def test_allows_one_cycle_timing_offset(self):
         trace = _interface_trace(
             [
-                (0, 5, 0x0C, 1, 0, 0),
-                (1, 6, 0x07, 1, 0x0C, 0),
-                (2, 5, 0x00012000, 1, 0x0C, 0x07),
-                (3, 6, 0x04, 1, 0x00012000, 0x07),
-                (4, 0, 0, 0, 0x00012000, 0x04),
-                (5, 0, 0, 0, 0x00012000, 0x04),
+                (0, 5, 0x15, 1, 0, 0),
+                (1, 6, 0x26, 1, 0x15, 0),
+                (2, 5, 0x35, 1, 0x15, 0x26),
+                (4, 0, 0, 0, 0x35, 0x26),
+                (5, 0, 0, 0, 0x35, 0x26),
             ]
         )
 
@@ -580,13 +786,12 @@ class InterfaceDiscoveryTests(unittest.TestCase):
         trace = _interface_trace(
             [
                 (0, 0, 0, 0, 0, 0),
-                (1, 5, 0x0C, 1, 0x0C, 0),
-                (2, 6, 0x07, 1, 0x0C, 0x07),
-                (3, 5, 0x00012000, 1, 0x00012000, 0x07),
-                (4, 6, 0x04, 1, 0x00012000, 0x04),
-                (5, 0, 0, 0, 0x00012000, 0x04),
+                (1, 5, 0x15, 1, 0x15, 0),
+                (2, 6, 0x26, 1, 0x15, 0x26),
+                (3, 5, 0x35, 1, 0x35, 0x26),
+                (5, 0, 0, 0, 0x35, 0x26),
             ],
-            extra_signals={"dut.other.wdata": [0, 0x0C, 0x07, 0x00012000, 0x04, 0]},
+            extra_signals={"dut.other.wdata": [0, 0x15, 0x26, 0x35, 0, 0]},
         )
         candidates = _interface_candidates()
         candidates["write_data_candidates"].insert(0, {

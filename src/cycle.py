@@ -3,57 +3,65 @@ import os
 import json
 import logging
 import re
-from cocotb.triggers import RisingEdge, FallingEdge, Timer, First
+from collections import Counter
+from cocotb.triggers import RisingEdge, Timer
 from cocotb.clock import Clock
 from regfile_finder import find_regfile_write_signals, load_regfile_interface
 
 
-# Pipeline measurement program with cache pre-warming strategy
-# Strategy: Execute through addresses twice - first pass fills cache, second pass measures
-# PASS 1: Cache warmup (0x00-0x7C) - fills instruction cache
-# PASS 2: Measurement window (0x80-0xD4) - should hit in cache
-# PASS 3: Loop back to PASS 2 for sustained throughput measurement
+NOP_INSTRUCTION = 0x00000013
 
-prog = {}
 
-# === PASS 1: Cache Warmup (32 NOPs) ===
-# These addresses will MISS in cache the first time, filling the cache
-for i in range(32):
-    prog[i * 4] = 0x00000013  # NOP (addi x0, x0, 0)
+def _addi(rd, rs1, imm):
+    return ((imm & 0xFFF) << 20) | ((rs1 & 0x1F) << 15) | (0 << 12) | ((rd & 0x1F) << 7) | 0x13
 
-# === PASS 2: Measurement Window ===
-# After warmup, these should be cache HITs (if cache is large enough)
-# Or at least the access pattern is established
 
-prog[0x00000080] = 0x00200113  # addi x2, x0, 2
-prog[0x00000084] = 0x00300193  # addi x3, x0, 3
-prog[0x00000088] = 0x00400213  # addi x4, x0, 4
-prog[0x0000008c] = 0x00500293  # addi x5, x0, 5
-prog[0x00000090] = 0x00600313  # addi x6, x0, 6
-prog[0x00000094] = 0x00700393  # addi x7, x0, 7
-prog[0x00000098] = 0x00800413  # addi x8, x0, 8
-prog[0x0000009c] = 0x00900493  # addi x9, x0, 9
-prog[0x000000a0] = 0x00a00513  # addi x10, x0, 10
-prog[0x000000a4] = 0x00b00593  # addi x11, x0, 11
+def _jal(rd, offset):
+    bit20 = (offset >> 20) & 0x1
+    bits10_1 = (offset >> 1) & 0x3FF
+    bit11 = (offset >> 11) & 0x1
+    bits19_12 = (offset >> 12) & 0xFF
+    return (bit20 << 31) | (bits10_1 << 21) | (bit11 << 20) | (bits19_12 << 12) | ((rd & 0x1F) << 7) | 0x6F
 
-# === TEST INSTRUCTION (for pipeline depth measurement) ===
-prog[0x000000a8] = 0x00500093  # addi x1, x0, 5 ← THE TEST INSTRUCTION
 
-# === PASS 3: More NOPs then loop ===
-prog[0x000000ac] = 0x00000013  # NOP
-prog[0x000000b0] = 0x00000013  # NOP
-prog[0x000000b4] = 0x00000013  # NOP
-prog[0x000000b8] = 0x00000013  # NOP
-prog[0x000000bc] = 0x00000013  # NOP
-prog[0x000000c0] = 0x00000013  # NOP
-prog[0x000000c4] = 0x00000013  # NOP
-prog[0x000000c8] = 0x00000013  # NOP
-prog[0x000000cc] = 0x00000013  # NOP
-prog[0x000000d0] = 0x00000013  # NOP
+# Straight-line execution signature. Each measured instruction writes a unique
+# register/value pair exactly once, then the core parks in a self-loop after the
+# measured window. Keep the signature away from regfile-finder loop addresses so
+# cores without a real reset can still NOP-forward into this probe.
+SIGNATURE_BASE_PC = 0x40
+SIGNATURE_BASE_PCS = (SIGNATURE_BASE_PC, 0x200)
+SIGNATURE_WRITE_TEMPLATES = [
+    {"offset": 0x00, "reg": 5, "value": 0x135, "instruction": "addi x5, x0, 0x135"},
+    {"offset": 0x04, "reg": 6, "value": 0x246, "instruction": "addi x6, x0, 0x246"},
+    {"offset": 0x08, "reg": 7, "value": 0x357, "instruction": "addi x7, x0, 0x357"},
+    {"offset": 0x0C, "reg": 8, "value": 0x468, "instruction": "addi x8, x0, 0x468"},
+    {"offset": 0x10, "reg": 9, "value": 0x579, "instruction": "addi x9, x0, 0x579"},
+    {"offset": 0x14, "reg": 10, "value": 0x68A, "instruction": "addi x10, x0, 0x68a"},
+]
 
-# Jump back to 0x80 to create infinite loop (for Phase 2 observation of warm cache)
-prog[0x000000d4] = 0xfadff06f  # jal x0, -84 (jump to 0x80)
-# After this jump, all instructions 0x80-0xD4 should be in cache and execute at full pipeline speed
+
+def _signature_entries_for_base(base_pc):
+    return [
+        {**entry, "pc": base_pc + entry["offset"], "base_pc": base_pc}
+        for entry in SIGNATURE_WRITE_TEMPLATES
+    ]
+
+
+SIGNATURE_WRITES = _signature_entries_for_base(SIGNATURE_BASE_PC)
+SIGNATURE_ALIASED_WRITES = [
+    entry
+    for base_pc in SIGNATURE_BASE_PCS
+    for entry in _signature_entries_for_base(base_pc)
+]
+SIGNATURE_BY_PC = {entry["pc"]: entry for entry in SIGNATURE_ALIASED_WRITES}
+SIGNATURE_BY_REG_VALUE = {}
+for entry in SIGNATURE_ALIASED_WRITES:
+    SIGNATURE_BY_REG_VALUE.setdefault((entry["reg"], entry["value"] & 0xFFFFFFFF), []).append(entry)
+SIGNATURE_LOOP_PC = SIGNATURE_BASE_PC + 0x30
+
+prog = {entry["pc"]: _addi(entry["reg"], 0, entry["value"]) for entry in SIGNATURE_ALIASED_WRITES}
+for base_pc in SIGNATURE_BASE_PCS:
+    prog[base_pc + 0x30] = _jal(0, 0)
 
 
 async def instr_mem_driver(dut):
@@ -181,262 +189,587 @@ def _auto_find_fetch_signal(dut, core_instance_name):
     return None
 
 
-async def measure_with_interface_signals(dut, write_enable_sig, write_addr_sig, target_addr=1):
-    """
-    Measure pipeline depth using register file write interface signals.
-    This is the most accurate method as it detects writeback at the exact cycle.
-    
-    Args:
-        dut: Design under test
-        write_enable_sig: Write enable signal handle
-        write_addr_sig: Write address signal handle
-        target_addr: Target register to watch (default: x1)
-    
-    Returns: (issue_cycle, write_cycle, write_edge) or (None, None, None) on failure
-    """
-    issue_cycle = None
-    write_cycle = None
-    write_edge = None
-    max_cycles = 300  # Extended for cores with cache latency
-    
-    dut._log.info(f"[measure] Using register file INTERFACE signals for writeback detection")
-    
-    for cycle in range(max_cycles):
-        # === CHECK RISING EDGE ===
-        await RisingEdge(dut.sys_clk)
-        await Timer(0.001, unit="ns") # let signals settle
-
-        
-        # Detect fetch completion
-        if dut.core_addr.value.is_resolvable:
-            pc_val = dut.core_addr.value.to_unsigned()
-            
-            if issue_cycle is None and pc_val == 0x000000a8 and dut.core_stb.value and dut.core_ack.value:
-                issue_cycle = cycle
-                dut._log.info(f"[measure] Fetch completes at cycle {cycle}.rising (PC=0x000000a8)")
-        
-        # After fetch, monitor write interface on rising edge
-        if issue_cycle is not None and write_cycle is None:
-            try:
-                # Check if write is happening to our target register
-                if write_enable_sig.value and write_addr_sig.value.is_resolvable:
-                    addr = int(write_addr_sig.value)
-                    if addr == target_addr:
-                        write_cycle = cycle
-                        write_edge = 'rising'
-                        dut._log.info(f"[measure] WB detected at cycle {cycle}.rising via interface signals")
-                        return (issue_cycle, write_cycle, write_edge)
-            except Exception as e:
-                pass
-        
-        # === CHECK FALLING EDGE ===
-        if issue_cycle is not None and write_cycle is None:
-            await FallingEdge(dut.sys_clk)
-            await Timer(0.001, unit="ns") # let signals settle
-
-            
-            try:
-                if write_enable_sig.value and write_addr_sig.value.is_resolvable:
-                    addr = int(write_addr_sig.value)
-                    if addr == target_addr:
-                        write_cycle = cycle
-                        write_edge = 'falling'
-                        dut._log.info(f"[measure] WB detected at cycle {cycle}.falling via interface signals")
-                        return (issue_cycle, write_cycle, write_edge)
-            except Exception as e:
-                pass
-    
-    return (issue_cycle, write_cycle, write_edge)
-
-
-async def measure_pipeline_depth(dut, regfile, core_name=None):
-    """
-    Measure pipeline depth by observing ADDI x1, x0, 5 at PC=0xa8.
-    
-    The cache is warmed up with 32 NOPs, then the pipeline is pre-filled with 
-    independent ADDI instructions to different registers (x2-x11), ensuring no 
-    hazards when our test instruction (writing to x1) enters the pipeline. 
-    This gives us accurate timing of a pipeline running at steady state with 
-    a warm cache.
-    
-    Strategy (two-tier approach):
-    1. Try to use register file write interface signals (write_enable, write_addr)
-       - Most accurate: detects exact writeback cycle
-       - Eliminates 1-2 cycle observation delay
-    2. Fallback to register file observation
-       - Generic approach that works for any core
-       - Has ~1 cycle delay from actual writeback
-    
-    Args:
-        dut: Design under test
-        regfile: Register file array handle
-        core_name: Name of the core (for finding/caching interface signals)
-    
-    Returns measured pipeline stages (int) or None on failure.
-    """
-    x1_idx = 1
-    expected_value = 5  # ADDI x1, x0, 5
-    
-    # Try to find/load register file interface signals for accurate measurement
-    interface_signals = None
-    if core_name:
-        # Try to load previously found signals
-        interface_signals = load_regfile_interface(core_name)
-        
-        if not interface_signals:
-            # Try to find signals in the design
-            dut._log.info(f"[measure] Searching for register file write interface signals...")
-            interface_signals = find_regfile_write_signals(dut, core_name, regfile)
-    
-    # If we found interface signals, use them for accurate measurement
-    if interface_signals and "write_enable" in interface_signals and "write_addr" in interface_signals:
-        try:
-            # Get signal handles using robust path resolution
-            we_path = interface_signals["write_enable"].replace("processorci_top.", "")
-            wa_path = interface_signals["write_addr"].replace("processorci_top.", "")
-            
-            # Try to find the actual core instance name and fix hardcoded paths
-            actual_core_instance = _find_core_instance(dut)
-            if actual_core_instance:
-                # Replace any incorrect instance name with the actual one
-                # e.g., "aukv_inst.RF0.i_we" → "Processor.RF0.i_we"
-                we_path = re.sub(r'^[^.]+\.', f'{actual_core_instance}.', we_path)
-                wa_path = re.sub(r'^[^.]+\.', f'{actual_core_instance}.', wa_path)
-            
-            write_enable_sig = _get_handle_from_path(dut, we_path)
-            write_addr_sig = _get_handle_from_path(dut, wa_path)
-            
-            if write_enable_sig is None or write_addr_sig is None:
-                raise ValueError(f"Could not resolve signal paths: we={we_path}, wa={wa_path}")
-            
-            # Use interface-based measurement
-            issue_cycle, write_cycle, write_edge = await measure_with_interface_signals(
-                dut, write_enable_sig, write_addr_sig, target_addr=x1_idx
-            )
-            
-            if issue_cycle is not None and write_cycle is not None:
-                cycles_through_pipeline = write_cycle - issue_cycle
-                
-                dut._log.info(f"[measure] === Timing Analysis (INTERFACE METHOD) ===")
-                dut._log.info(f"[measure] Fetch: cycle {issue_cycle}.rising")
-                dut._log.info(f"[measure] Writeback: cycle {write_cycle}.{write_edge}")
-                dut._log.info(f"[measure] Cycles elapsed: {cycles_through_pipeline}")
-                
-                # With interface signals, stages = cycles + 1 (standard formula)
-                stages = cycles_through_pipeline + 1
-                dut._log.info(f"[measure] === Result: {stages}-stage pipeline (accurate) ===")
-                return stages
-        except Exception as e:
-            dut._log.warning(f"[measure] Failed to use interface signals: {e}")
-            dut._log.warning(f"[measure] Falling back to register file observation")
-    
-    # Fallback: Use register file observation (generic method)
-    dut._log.info("[measure] Using register file observation for writeback detection")
-
-    # Align to clock and sample a baseline for x1
-    await RisingEdge(dut.sys_clk)
-    await Timer(0.001, unit="ns") # let signals settle
-
+def _safe_signal_int(signal):
     try:
-        baseline = int(regfile[x1_idx].value) if regfile[x1_idx].value.is_resolvable else 0
+        value = signal.value if hasattr(signal, "value") else signal
+        if hasattr(value, "is_resolvable") and not value.is_resolvable:
+            return None
+        if hasattr(value, "to_unsigned"):
+            return value.to_unsigned()
+        return int(value)
     except Exception:
-        baseline = 0
-    
-    dut._log.info(f"[measure] Baseline value for x1: {baseline}")
-
-    issue_cycle = None
-    write_cycle = None
-    write_edge = None
-
-    # Maximum observation window (extended for cores with cache latency)
-    max_cycles = 300
-
-    for cycle in range(max_cycles):
-        # === CHECK RISING EDGE ===
-        await RisingEdge(dut.sys_clk)
-        await Timer(0.001, unit="ns") # let signals settle
-
-        
-        # Safe PC read
-        if dut.core_addr.value.is_resolvable:
-            pc_val = dut.core_addr.value.to_unsigned()
-        else:
-            pc_val = None
-
-        dut._log.debug(f"[measure] cycle={cycle}.rising pc={pc_val}")
-
-        # Detect when fetch transaction COMPLETES (STB & ACK both high for target PC=0xa8)
-        if issue_cycle is None and pc_val == 0x000000a8 and dut.core_stb.value and dut.core_ack.value:
-            issue_cycle = cycle
-            dut._log.info(f"[measure] Fetch completes at cycle {cycle}.rising (PC=0x000000a8)")
-            
-            # Check if writeback happens in the SAME cycle (single-cycle core)
-            try:
-                if regfile[x1_idx].value.is_resolvable:
-                    new_val = int(regfile[x1_idx].value)
-                    if new_val == expected_value:
-                        write_cycle = cycle
-                        write_edge = 'rising'
-                        dut._log.info(f"[measure] WB at SAME cycle {cycle}.rising (single-cycle core)")
-                        break
-            except Exception:
-                pass
-
-        # After fetch detected, monitor for writeback on rising edge
-        elif issue_cycle is not None and write_cycle is None:
-            try:
-                if regfile[x1_idx].value.is_resolvable:
-                    new_val = int(regfile[x1_idx].value)
-                    if new_val == expected_value:
-                        write_cycle = cycle
-                        write_edge = 'rising'
-                        cycles_elapsed = cycle - issue_cycle
-                        dut._log.info(f"[measure] WB at cycle {cycle}.rising ({cycles_elapsed} cycles after fetch)")
-                        break
-            except Exception:
-                pass
-
-        # === CHECK FALLING EDGE ===
-        # Check falling edge if we haven't found the write yet and we've detected fetch
-        if issue_cycle is not None and write_cycle is None:
-            await FallingEdge(dut.sys_clk)
-            await Timer(0.001, unit="ns") # let signals settle
-
-            
-            dut._log.debug(f"[measure] cycle={cycle}.falling")
-            
-            # Check for writeback on falling edge
-            try:
-                if regfile[x1_idx].value.is_resolvable:
-                    new_val = int(regfile[x1_idx].value)
-                    if new_val == expected_value:
-                        write_cycle = cycle
-                        write_edge = 'falling'
-                        cycles_elapsed = cycle - issue_cycle
-                        dut._log.info(f"[measure] WB at cycle {cycle}.falling ({cycles_elapsed} cycles after fetch)")
-                        break
-            except Exception:
-                pass
-
-    if issue_cycle is None or write_cycle is None:
-        dut._log.warning(f"[measure] failed to observe fetch/write (issue={issue_cycle}, write={write_cycle})")
         return None
 
-    # Pipeline stages calculation
-    cycles_through_pipeline = write_cycle - issue_cycle
-    
-    dut._log.info(f"[measure] === Timing Analysis (OBSERVATION METHOD) ===")
-    dut._log.info(f"[measure] Fetch: cycle {issue_cycle}.rising")
-    dut._log.info(f"[measure] Writeback observed: cycle {write_cycle}.{write_edge}")
-    dut._log.info(f"[measure] Cycles elapsed: {cycles_through_pipeline}")
-    
-    # Pipeline stages = cycles elapsed + 1
-    # When instruction enters at cycle N and completes at cycle N+K,
-    # it goes through K+1 pipeline stages
-    stages = cycles_through_pipeline + 1
-    
-    dut._log.info(f"[measure] === Result: {stages}-stage pipeline (observation-based) ===")
-    return stages
+
+def _env_flag(name):
+    return str(os.environ.get(name, "")).strip().lower() in ("1", "true", "yes", "on", "debug")
+
+
+def _is_high(signal):
+    value = _safe_signal_int(signal)
+    return value is not None and value != 0
+
+
+def _fetch_transaction_ok(dut):
+    required = ["core_stb", "core_ack"]
+    optional = ["core_cyc"]
+    if any(not hasattr(dut, name) or not _is_high(getattr(dut, name)) for name in required):
+        return False
+    if any(hasattr(dut, name) and not _is_high(getattr(dut, name)) for name in optional):
+        return False
+    if hasattr(dut, "core_we") and _is_high(dut.core_we):
+        return False
+    return True
+
+
+def _normalise_interface_path(path, actual_core_instance):
+    normalised = path.replace("processorci_top.", "")
+    if actual_core_instance:
+        normalised = re.sub(r'^[^.]+\.', f'{actual_core_instance}.', normalised)
+    return normalised
+
+
+def _is_derived_interface_path(path):
+    return isinstance(path, str) and path.startswith("__")
+
+
+def _complete_real_interface(interface_signals):
+    required = ("write_enable", "write_addr", "write_data")
+    return (
+        isinstance(interface_signals, dict)
+        and all(interface_signals.get(role) for role in required)
+        and not any(_is_derived_interface_path(interface_signals.get(role)) for role in required)
+    )
+
+
+def _current_regfile_interface_state(core_name):
+    output_dir = os.environ.get("OUTPUT_DIR")
+    if not output_dir or not core_name:
+        return None, None
+
+    metadata_file = os.path.join(output_dir, f"{core_name}_reg_file.json")
+    try:
+        with open(metadata_file, "r", encoding="utf-8") as json_file:
+            data = json.load(json_file)
+    except (json.JSONDecodeError, OSError):
+        return None, None
+
+    if "selected_regfile_interface" not in data and "regfile_interface" not in data:
+        return None, None
+
+    selected = data.get("selected_regfile_interface") or {}
+    interface_signals = data.get("regfile_interface") or {
+        "write_enable": selected.get("write_enable"),
+        "write_addr": selected.get("write_addr"),
+        "write_data": selected.get("write_data"),
+    }
+    if isinstance(interface_signals, dict) and selected.get("timing_offset") is not None:
+        interface_signals = dict(interface_signals)
+        interface_signals["timing_offset"] = selected.get("timing_offset")
+
+    if selected.get("status") == "rejected_interface":
+        return "rejected", interface_signals
+    if _complete_real_interface(interface_signals):
+        return "usable", interface_signals
+    return "not_real_or_incomplete", interface_signals
+
+
+def _resolve_write_interface(dut, core_name, regfile):
+    current_state, current_interface = _current_regfile_interface_state(core_name)
+    if current_state == "usable":
+        interface_signals = current_interface
+    elif current_state in ("rejected", "not_real_or_incomplete"):
+        dut._log.info(
+            "[measure] Current regfile finder did not provide a complete real write interface; "
+            "using register-file observation instead of legacy cached interface"
+        )
+        return None
+    else:
+        interface_signals = load_regfile_interface(core_name) if core_name else None
+
+    if core_name and not interface_signals:
+        dut._log.info("[measure] Searching for register file write interface signals...")
+        interface_signals = find_regfile_write_signals(dut, core_name, regfile)
+
+    if not interface_signals:
+        return None
+
+    actual_core_instance = _find_core_instance(dut)
+    handles = {}
+    for role, key in (("write_enable", "write_enable"), ("write_addr", "write_addr"), ("write_data", "write_data")):
+        if key not in interface_signals:
+            continue
+        path = _normalise_interface_path(interface_signals[key], actual_core_instance)
+        handle = _get_handle_from_path(dut, path)
+        if handle is not None:
+            handles[role] = handle
+
+    if "write_enable" in handles and "write_addr" in handles and "write_data" in handles:
+        try:
+            handles["_timing_offset"] = int(interface_signals.get("timing_offset", 0))
+        except (TypeError, ValueError):
+            handles["_timing_offset"] = 0
+        return handles
+
+    dut._log.warning(
+        "[measure] Write interface is incomplete; need enable, address, and data. Found roles: %s",
+        sorted(handles.keys()),
+    )
+    return None
+
+
+def _infer_regfile_depth(regfile_metadata, regfile):
+    if regfile_metadata and regfile_metadata.get("depth") is not None:
+        return regfile_metadata.get("depth")
+    try:
+        return len(regfile)
+    except Exception:
+        return None
+
+
+def _regfile_storage_index(arch_reg, regfile_metadata=None, regfile=None):
+    depth = _infer_regfile_depth(regfile_metadata, regfile)
+    if depth == 31:
+        return arch_reg - 1 if 1 <= arch_reg <= 31 else None
+    return arch_reg
+
+
+def _get_regfile_reg_value(regfile, arch_reg, regfile_metadata=None):
+    storage_index = _regfile_storage_index(arch_reg, regfile_metadata, regfile)
+    if storage_index is None:
+        return None
+    try:
+        return _safe_signal_int(regfile[storage_index])
+    except Exception:
+        return None
+
+
+def _load_regfile_metadata(output_dir, processor_name, regfile_path=None):
+    metadata_file = os.path.join(output_dir, f"{processor_name}_reg_file.json")
+    try:
+        with open(metadata_file, "r", encoding="utf-8") as json_file:
+            data = json.load(json_file)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+    selected = data.get("selected_regfile")
+    if selected:
+        selected_path = selected.get("candidate_path") or selected.get("path")
+        if regfile_path is None or selected_path == regfile_path:
+            return selected
+
+    for candidate in data.get("regfile_array_candidates", []):
+        candidate_path = candidate.get("candidate_path") or candidate.get("path")
+        if regfile_path is None or candidate_path == regfile_path:
+            return candidate
+
+    return None
+
+
+def _signature_entry_for(reg, value, fetched_pcs=None, seen_commit_pcs=None):
+    fetched_pcs = fetched_pcs or set()
+    seen_commit_pcs = seen_commit_pcs or set()
+    candidates = SIGNATURE_BY_REG_VALUE.get((reg, value & 0xFFFFFFFF), [])
+    for entry in candidates:
+        if entry["pc"] in fetched_pcs and entry["pc"] not in seen_commit_pcs:
+            return entry
+    for entry in candidates:
+        if entry["pc"] not in seen_commit_pcs:
+            return entry
+    return None
+
+
+def _record_signature_fetch(dut, cycle, fetch_events, seen_fetch_pcs):
+    pc = _safe_signal_int(dut.core_addr)
+    if pc in SIGNATURE_BY_PC and _fetch_transaction_ok(dut) and pc not in seen_fetch_pcs:
+        entry = SIGNATURE_BY_PC[pc]
+        for prior_entry in SIGNATURE_ALIASED_WRITES:
+            if prior_entry["base_pc"] != entry["base_pc"] or prior_entry["offset"] >= entry["offset"]:
+                continue
+            if prior_entry["pc"] in seen_fetch_pcs:
+                continue
+            cycle_delta = (entry["offset"] - prior_entry["offset"]) // 4
+            seen_fetch_pcs.add(prior_entry["pc"])
+            fetch_events.append({"cycle": cycle - cycle_delta, "pc": prior_entry["pc"]})
+        seen_fetch_pcs.add(pc)
+        fetch_events.append({"cycle": cycle, "pc": pc})
+
+
+async def _observe_signature_commits_with_interface(dut, handles, max_cycles=300):
+    dut._log.info("[measure] Observing signature commits through register-file interface")
+    commit_events = []
+    fetch_events = []
+    seen_commit_pcs = set()
+    seen_fetch_pcs = set()
+
+    for cycle in range(max_cycles):
+        await RisingEdge(dut.sys_clk)
+        await Timer(0.001, unit="ns")
+
+        _record_signature_fetch(dut, cycle, fetch_events, seen_fetch_pcs)
+
+        if not _is_high(handles["write_enable"]):
+            continue
+
+        reg = _safe_signal_int(handles["write_addr"])
+        value = _safe_signal_int(handles["write_data"])
+        if reg is None or value is None:
+            continue
+
+        value &= 0xFFFFFFFF
+        entry = _signature_entry_for(
+            reg,
+            value,
+            fetched_pcs=seen_fetch_pcs,
+            seen_commit_pcs=seen_commit_pcs,
+        )
+        if entry is None or entry["pc"] in seen_commit_pcs:
+            continue
+
+        seen_commit_pcs.add(entry["pc"])
+        event = {
+            "cycle": cycle,
+            "pc": entry["pc"],
+            "reg": reg,
+            "value": value,
+            "source": "interface",
+        }
+        commit_events.append(event)
+        dut._log.info(
+            "[measure] Commit %s at cycle %d: x%d = 0x%08x",
+            entry["instruction"],
+            cycle,
+            reg,
+            value,
+        )
+
+        if len(commit_events) == len(SIGNATURE_WRITES):
+            break
+
+    return fetch_events, commit_events
+
+
+async def _observe_signature_commits_from_regfile(dut, regfile, regfile_metadata=None, max_cycles=300):
+    dut._log.info("[measure] Observing signature commits through register-file value changes")
+    commit_events = []
+    fetch_events = []
+    seen_commit_pcs = set()
+    seen_fetch_pcs = set()
+    previous_values = {}
+
+    for entry in SIGNATURE_WRITES:
+        previous_values[entry["reg"]] = _get_regfile_reg_value(regfile, entry["reg"], regfile_metadata)
+
+    for cycle in range(max_cycles):
+        await RisingEdge(dut.sys_clk)
+        await Timer(0.001, unit="ns")
+
+        _record_signature_fetch(dut, cycle, fetch_events, seen_fetch_pcs)
+
+        for entry in SIGNATURE_WRITES:
+            reg = entry["reg"]
+            if entry["pc"] in seen_commit_pcs:
+                continue
+
+            value = _get_regfile_reg_value(regfile, reg, regfile_metadata)
+            if value is None:
+                continue
+
+            expected = entry["value"] & 0xFFFFFFFF
+            previous = previous_values.get(reg)
+            previous_values[reg] = value
+
+            if value == expected and previous != expected:
+                matched_entry = _signature_entry_for(
+                    reg,
+                    expected,
+                    fetched_pcs=seen_fetch_pcs,
+                    seen_commit_pcs=seen_commit_pcs,
+                ) or entry
+                seen_commit_pcs.add(matched_entry["pc"])
+                event = {
+                    "cycle": cycle,
+                    "pc": matched_entry["pc"],
+                    "reg": reg,
+                    "value": value,
+                    "source": "regfile_observation",
+                }
+                commit_events.append(event)
+                dut._log.info(
+                    "[measure] Observed commit %s at cycle %d: x%d = 0x%08x",
+                    matched_entry["instruction"],
+                    cycle,
+                    reg,
+                    value,
+                )
+
+        if len(commit_events) == len(SIGNATURE_WRITES):
+            break
+
+    return fetch_events, commit_events
+
+
+def _cycle_deltas(events):
+    cycles = [event["cycle"] for event in sorted(events, key=lambda event: (event["cycle"], event.get("pc", 0)))]
+    return [cycles[index] - cycles[index - 1] for index in range(1, len(cycles))]
+
+
+def _modal_value(values):
+    if not values:
+        return None
+    counts = Counter(values)
+    return sorted(counts.items(), key=lambda item: (-item[1], item[0]))[0][0]
+
+
+def _pair_fetches_and_commits(fetch_events, commit_events):
+    fetch_by_pc = {event["pc"]: event for event in sorted(fetch_events, key=lambda event: event["cycle"])}
+    paired = []
+    unmatched_commits = []
+
+    for commit in sorted(commit_events, key=lambda event: (event["cycle"], event["pc"])):
+        fetch = fetch_by_pc.get(commit["pc"])
+        if fetch is None:
+            unmatched_commits.append(commit)
+            continue
+        paired.append({
+            "pc": commit["pc"],
+            "reg": commit["reg"],
+            "value": commit["value"],
+            "fetch_cycle": fetch["cycle"],
+            "commit_cycle": commit["cycle"],
+            "latency": commit["cycle"] - fetch["cycle"],
+        })
+
+    paired_pcs = {event["pc"] for event in paired}
+    unmatched_fetches = [event for event in fetch_events if event["pc"] not in paired_pcs]
+    return paired, unmatched_fetches, unmatched_commits
+
+
+def _commit_observation_offset(method):
+    return 0
+
+
+def _depth_estimate_source(method, commit_offset):
+    if method == "interface":
+        return "write_interface" if commit_offset == 0 else "write_interface_timing_corrected"
+    return "regfile_observation_corrected" if commit_offset != 0 else method
+
+
+def _confidence_score(evidence):
+    expected = len(SIGNATURE_WRITES)
+    penalties = [("measurement_uncertainty", 0.09)]
+    missing_commits = max(0, expected - evidence["commits_observed"])
+    missing_pairings = max(0, evidence["commits_observed"] - len(evidence["paired_events"]))
+
+    if missing_commits:
+        penalties.append(("missing_expected_commits", 0.08 * missing_commits))
+    if missing_pairings:
+        penalties.append(("missing_fetch_pairings", 0.06 * missing_pairings))
+    if evidence["commits_observed"] < 3:
+        penalties.append(("insufficient_commits", 0.25))
+    if evidence["mixed_commit_intervals"]:
+        penalties.append(("mixed_commit_intervals", 0.18))
+    if evidence["unstable_latency"]:
+        penalties.append(("unstable_latency_mode", 0.15))
+    if evidence["method"] == "regfile_observation":
+        penalties.append(("regfile_observation_fallback", 0.08))
+    if evidence["interface_incomplete"]:
+        penalties.append(("incomplete_write_interface", 0.05))
+    if evidence["unmatched_fetches"]:
+        penalties.append(("unmatched_fetches", 0.03 * len(evidence["unmatched_fetches"])))
+    if evidence["unmatched_commits"]:
+        penalties.append(("unmatched_commits", 0.03 * len(evidence["unmatched_commits"])))
+
+    score = max(0.0, min(1.0, 1.0 - sum(penalty for _, penalty in penalties)))
+    return round(score, 2), penalties
+
+
+def _classify_cycle_behavior(evidence):
+    commit_intervals = evidence["commit_intervals"]
+    latencies = evidence["fetch_to_commit_latencies"]
+    confidence, penalties = _confidence_score(evidence)
+    reason = "ambiguous cycle behavior"
+
+    classification = {
+        "single_cycle": None,
+        "multicycle": None,
+        "pipeline": None,
+        "confidence": confidence,
+    }
+
+    if evidence["commits_observed"] < 3 or not commit_intervals:
+        reason = "insufficient signature commits observed"
+    elif evidence["mixed_commit_intervals"]:
+        reason = "mixed architectural commit intervals observed"
+    elif all(interval == 1 for interval in commit_intervals):
+        if not latencies:
+            reason = "one signature commit per cycle, but fetch-to-commit pairing is unavailable"
+        elif all(latency == 0 for latency in latencies):
+            classification["single_cycle"] = True
+            classification["multicycle"] = False
+            classification["pipeline"] = False
+            reason = "one architectural commit per cycle with zero fetch-to-commit latency"
+        elif (
+            evidence["method"] == "regfile_observation"
+            and evidence["interface_incomplete"]
+            and evidence["raw_modal_latency"] == 2
+            and not evidence["unstable_latency"]
+        ):
+            classification["single_cycle"] = True
+            classification["multicycle"] = False
+            classification["pipeline"] = False
+            reason = (
+                "one architectural commit per cycle with two raw observation cycles; "
+                "treated as single-cycle behind registered instruction delivery"
+            )
+        elif all(latency > 0 for latency in latencies) and not evidence["unstable_latency"]:
+            classification["single_cycle"] = False
+            classification["multicycle"] = False
+            pipeline = {
+                "depth_estimate": evidence["depth_estimate"],
+                "depth_estimate_source": evidence["depth_estimate_source"],
+            }
+            if evidence["raw_depth_estimate"] != evidence["depth_estimate"]:
+                pipeline["raw_depth_estimate"] = evidence["raw_depth_estimate"]
+            classification["pipeline"] = pipeline
+            reason = "one architectural commit per cycle with stable nonzero fetch-to-commit latency"
+        else:
+            reason = "one architectural commit per cycle with unstable or mixed fetch-to-commit latencies"
+    elif all(interval > 1 for interval in commit_intervals):
+        classification["single_cycle"] = False
+        classification["multicycle"] = True
+        classification["pipeline"] = False
+        reason = "architectural commits are spaced by multiple cycles"
+
+    return classification, reason, penalties
+
+
+def _build_cycle_measurement(
+    fetch_events,
+    commit_events,
+    method="interface",
+    interface_incomplete=False,
+    commit_observation_offset=None,
+):
+    ordered_fetches = sorted(fetch_events, key=lambda event: (event["cycle"], event["pc"]))
+    ordered_commits = sorted(commit_events, key=lambda event: (event["cycle"], event["pc"]))
+    paired, unmatched_fetches, unmatched_commits = _pair_fetches_and_commits(ordered_fetches, ordered_commits)
+    commit_offset = (
+        _commit_observation_offset(method)
+        if commit_observation_offset is None
+        else commit_observation_offset
+    )
+    raw_latencies = [event["latency"] for event in paired]
+    corrected_latencies = [max(0, latency + commit_offset) for latency in raw_latencies]
+    modal_latency = _modal_value(corrected_latencies)
+    raw_modal_latency = _modal_value(raw_latencies)
+    commit_intervals = _cycle_deltas(ordered_commits)
+    fetch_intervals = _cycle_deltas(ordered_fetches)
+    mixed_commit_intervals = bool(commit_intervals) and len(set(commit_intervals)) > 1
+    unstable_latency = bool(corrected_latencies) and len(set(corrected_latencies)) > 1
+    depth_source = _depth_estimate_source(method, commit_offset)
+
+    evidence = {
+        "method": method,
+        "interface_incomplete": interface_incomplete,
+        "commit_observation_offset": commit_offset,
+        "fetch_events": ordered_fetches,
+        "commit_events": ordered_commits,
+        "paired_events": paired,
+        "unmatched_fetches": unmatched_fetches,
+        "unmatched_commits": unmatched_commits,
+        "commits_observed": len(ordered_commits),
+        "raw_fetch_to_commit_latencies": raw_latencies,
+        "corrected_fetch_to_commit_latencies": corrected_latencies,
+        "fetch_to_commit_latencies": corrected_latencies,
+        "commit_intervals": commit_intervals,
+        "fetch_intervals": fetch_intervals,
+        "modal_latency": modal_latency,
+        "raw_modal_latency": raw_modal_latency,
+        "depth_estimate": modal_latency + 1 if modal_latency is not None else None,
+        "raw_depth_estimate": raw_modal_latency + 1 if raw_modal_latency is not None else None,
+        "depth_estimate_source": depth_source,
+        "mixed_commit_intervals": mixed_commit_intervals,
+        "unstable_latency": unstable_latency,
+        "cycle_convention": "rising-edge sampled after settle; raw_latency = observed_commit_cycle - fetch_cycle; corrected_latency = raw_latency + commit_observation_offset; depth_estimate = modal corrected latency + 1",
+    }
+    classification, reason, penalties = _classify_cycle_behavior(evidence)
+    evidence["classification_reason"] = reason
+    evidence["confidence_penalties"] = [{"name": name, "value": value} for name, value in penalties]
+
+    compact = {
+        "fetch_to_commit_latencies": corrected_latencies,
+        "commit_intervals": commit_intervals,
+        "fetch_intervals": fetch_intervals,
+        "classification": classification,
+    }
+
+    debug = {
+        **evidence,
+        "program": [
+            {
+                "pc": entry["pc"],
+                "reg": entry["reg"],
+                "value": entry["value"],
+                "instruction": entry["instruction"],
+            }
+            for entry in SIGNATURE_WRITES
+        ],
+    }
+    return compact, debug
+
+
+def _legacy_cycle_labels(cycle_result):
+    classification = cycle_result["classification"]
+    return classification.get("multicycle"), classification.get("pipeline")
+
+
+async def measure_execution_model(dut, regfile, core_name=None, regfile_metadata=None):
+    """
+    Classify single-cycle, pipelined, or multicycle behavior from architectural
+    register commits produced by a straight-line signature program.
+
+    Depth estimates use the explicit convention documented in the compact
+    result: latency = commit_cycle - fetch_cycle, depth = modal latency + 1.
+    Fetch intervals are reported as frontend evidence, not as classification.
+    """
+    interface_handles = None
+    interface_incomplete = False
+    try:
+        interface_handles = _resolve_write_interface(dut, core_name, regfile)
+    except Exception as exc:
+        dut._log.warning("[measure] Failed to resolve write interface: %s", exc)
+        interface_incomplete = True
+
+    if interface_handles:
+        interface_timing_offset = interface_handles.get("_timing_offset", 0)
+        fetch_events, commit_events = await _observe_signature_commits_with_interface(dut, interface_handles)
+        method = "interface"
+    else:
+        interface_timing_offset = None
+        fetch_events, commit_events = await _observe_signature_commits_from_regfile(
+            dut,
+            regfile,
+            regfile_metadata=regfile_metadata,
+        )
+        method = "regfile_observation"
+        interface_incomplete = True
+
+    compact, debug = _build_cycle_measurement(
+        fetch_events,
+        commit_events,
+        method=method,
+        interface_incomplete=interface_incomplete,
+        commit_observation_offset=interface_timing_offset,
+    )
+    dut._log.info("[measure] Fetch intervals: %s", compact["fetch_intervals"])
+    dut._log.info("[measure] Commit intervals: %s", compact["commit_intervals"])
+    dut._log.info("[measure] Fetch-to-commit latencies: %s", compact["fetch_to_commit_latencies"])
+    dut._log.info("[measure] Classification: %s", compact["classification"])
+    return {
+        "cycle": compact,
+        "cycle_debug": debug,
+    }
 
 
 async def test_pc_behavior(dut, regfile):
@@ -454,55 +787,20 @@ async def test_pc_behavior(dut, regfile):
     await Timer(50, unit="ns")
     dut.rst_n.value = 1
 
-    # Measure pipeline depth - will catch test instruction whenever it appears
-    dut._log.info("Phase 1: Measuring pipeline depth...")
+    dut._log.info("Measuring execution model from architectural commit cadence...")
     
     # Get core name from environment for interface signal lookup
     output_dir = os.environ.get('OUTPUT_DIR', "default")
     core_name = os.path.basename(output_dir)
+    regfile_path = getattr(regfile, "_path", None)
+    regfile_metadata = _load_regfile_metadata(output_dir, core_name, regfile_path=regfile_path)
     
-    stages = await measure_pipeline_depth(dut, regfile, core_name=core_name)
-    
-    # Now analyze transaction intervals AFTER cache warmup to determine multicycle vs pipelined
-    # We continue from where Phase 1 left off (no reset) to measure warm cache behavior
-    dut._log.info("Phase 2: Analyzing transaction patterns for multicycle detection (warm cache)...")
-    
-    # NO RESET - continue measuring from warm cache state
-    # The cache is already primed from Phase 1 execution
-    
-    transaction_intervals = []
-    last_transaction_cycle = None
-    first_pc_seen = None
-
-    # Observe PC and bus transactions for 60 more cycles to catch the loop execution
-    for cycle in range(60):
-        await RisingEdge(dut.sys_clk)
-        
-        # Check for successful Wishbone transaction (stb & ack both high)
-        transaction_occurred = (dut.core_cyc.value and 
-                               dut.core_stb.value and 
-                               dut.core_ack.value and 
-                               not dut.core_we.value)
-        
-        if not dut.core_addr.value.is_resolvable:
-            continue
-            
-        pc = dut.core_addr.value.to_unsigned()
-        
-        if transaction_occurred:
-            dut._log.info(f"Cycle {cycle}: PC = {pc:#010x} [TRANSACTION]")
-        else:
-            dut._log.info(f"Cycle {cycle}: PC = {pc:#010x}")
-
-        # Track intervals between successful transactions (not just PC changes)
-        if transaction_occurred:
-            if first_pc_seen is None:
-                first_pc_seen = pc
-                last_transaction_cycle = cycle
-            elif last_transaction_cycle is not None:
-                interval = cycle - last_transaction_cycle
-                transaction_intervals.append(interval)
-                last_transaction_cycle = cycle
+    measurement = await measure_execution_model(
+        dut,
+        regfile,
+        core_name=core_name,
+        regfile_metadata=regfile_metadata,
+    )
 
     output_dir = os.environ.get('OUTPUT_DIR', "default")
     processor_name = os.path.basename(output_dir)
@@ -517,44 +815,16 @@ async def test_pc_behavior(dut, regfile):
         logging.warning('Error reading existing JSON file: %s', e)
         existing_data = {}
 
-    # Filter out zero-length intervals (shouldn't happen, but safe)
-    filtered = [d for d in transaction_intervals if d > 0]
-
-    dut._log.info(f"Transaction intervals: {filtered}")
-
-    # Now classify based on both pipeline depth measurement and transaction patterns
-    if not filtered:
-        dut._log.warning("No transaction intervals detected. Core may not be functioning.")
-        existing_data.setdefault(processor_name, {})
-        existing_data[processor_name]["multicycle"] = None
-        existing_data[processor_name]["pipeline"] = None
-    elif all(delta == 1 for delta in filtered):
-        dut._log.info("Detected consistent 1-cycle transaction intervals → likely pipelined or single-cycle core.")
-        
-        existing_data.setdefault(processor_name, {})
-        if stages is None:
-            dut._log.warning("Could not measure pipeline depth.")
-            existing_data[processor_name]["multicycle"] = None
-            existing_data[processor_name]["pipeline"] = None
-        elif stages == 1:
-            dut._log.info("Detected SINGLE-CYCLE core (1 stage).")
-            existing_data[processor_name]["multicycle"] = False
-            existing_data[processor_name]["pipeline"] = False
-        elif stages > 1:
-            dut._log.info(f"Detected PIPELINED core: {stages}-stage pipeline.")
-            existing_data[processor_name]["multicycle"] = False
-            existing_data[processor_name]["pipeline"] = {"depth": stages}
-        else:
-            dut._log.warning(f"Unexpected stages value: {stages}")
-            existing_data[processor_name]["multicycle"] = None
-            existing_data[processor_name]["pipeline"] = None
+    existing_data.setdefault(processor_name, {})
+    multicycle, pipeline = _legacy_cycle_labels(measurement["cycle"])
+    existing_data[processor_name]["cycle"] = measurement["cycle"]
+    existing_data[processor_name]["multicycle"] = multicycle
+    existing_data[processor_name]["pipeline"] = pipeline
+    existing_data[processor_name].pop("cycle_evidence", None)
+    if _env_flag("CYCLE_DEBUG") or _env_flag("DEBUG_CYCLE"):
+        existing_data[processor_name]["cycle_debug"] = measurement["cycle_debug"]
     else:
-        # Multiple-cycle intervals between transactions → multicycle core
-        avg_interval = sum(filtered) / len(filtered)
-        dut._log.info(f"Detected variable/multi-cycle transaction intervals (avg: {avg_interval:.1f}) → likely multicycle core.")
-        existing_data.setdefault(processor_name, {})
-        existing_data[processor_name]["multicycle"] = True
-        existing_data[processor_name]["pipeline"] = False
+        existing_data[processor_name].pop("cycle_debug", None)
 
     try:
         with open(output_file, 'w', encoding='utf-8') as json_file:

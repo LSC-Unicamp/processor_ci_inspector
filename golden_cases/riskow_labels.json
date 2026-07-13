@@ -1,0 +1,16 @@
+{
+    "riskow": {
+        "license_types": [
+            "Apache 2.0"
+        ],
+        "bits": 32,
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "Verilog",
+        "multicycle": true,
+        "pipeline": false,
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected"
+    }
+}
