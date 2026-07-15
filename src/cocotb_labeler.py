@@ -49,6 +49,7 @@ class _ArchitecturalRegfileView:
         self._path = candidate.get("path")
         self._width = int(candidate.get("word_width") or 32)
         self._depth = int(candidate.get("depth") or 32)
+        self._architectural_indexed = True
 
     def __len__(self):
         return self._depth
@@ -96,10 +97,14 @@ async def processor_test(dut):
         )
     dut._log.info(f"Register file candidates: {regfile_candidates}")    
 
-    regfile_path = regfile_candidates[0]
+    candidate = selected_candidate_metadata(discovery)
+    regfile_path = (
+        candidate.get("path") or candidate.get("candidate_path")
+        if candidate
+        else regfile_candidates[0]
+    )
     dut._log.info(f"Using register file: {regfile_path}")
 
-    candidate = selected_candidate_metadata(discovery)
     if candidate and candidate.get("kind") != "array_of_words":
         regfile = _ArchitecturalRegfileView(dut, candidate)
     else:

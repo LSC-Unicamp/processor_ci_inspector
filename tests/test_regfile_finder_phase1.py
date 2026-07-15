@@ -353,6 +353,13 @@ class Phase4SamplingTests(unittest.TestCase):
         self.assertEqual(values["packed_lsb_reg0"]["x0"], 0x22)
         self.assertEqual(values["packed_msb_reg0"]["x0"], 0x11)
 
+    def test_decodes_31_word_packed_vector_as_x1_through_x31(self):
+        values = finder._decode_packed_registers(0x22, 31, 8)
+
+        self.assertNotIn("x0", values)
+        self.assertEqual(values["x1"], 0x22)
+        self.assertIn("x31", values)
+
 
 def _trace_for_values(values_by_cycle, kind="array_of_words", candidate_path="dut.core.regs"):
     samples = []
@@ -373,6 +380,23 @@ def _trace_for_values(values_by_cycle, kind="array_of_words", candidate_path="du
 
 
 class Phase5ClassificationTests(unittest.TestCase):
+    def test_classifies_consistent_adjacent_physical_index_mapping(self):
+        program = finder.build_regfile_write_program()
+        zero_values = {f"x{i}": 0 for i in range(32)}
+        shifted_values = dict(zero_values)
+        for reg, value in program["expected_registers"].items():
+            index = int(reg[1:]) + 1
+            if index < 32:
+                shifted_values[f"x{index}"] = value
+        trace = _trace_for_values(
+            [zero_values, shifted_values, shifted_values, shifted_values]
+        )
+
+        result = finder.classify_regfile_candidates(trace, program)[0]
+
+        self.assertEqual(result["mapping_order"], "physical_index_plus_1")
+        self.assertGreaterEqual(result["score"], 70)
+
     def test_unavailable_physical_x0_does_not_reject_valid_regfile(self):
         expected = {"x0": 0, "x1": 0x11, "x2": 0x22, "x3": 0x33}
         samples = [
@@ -400,7 +424,7 @@ class Phase5ClassificationTests(unittest.TestCase):
         self.assertGreaterEqual(result["score"], 70)
         self.assertIn("x8", result["mapped_registers"])
 
-    def test_rejects_x0_mismatch(self):
+    def test_accepts_exact_regfile_when_only_physical_x0_changes(self):
         program = finder.build_regfile_write_program()
         values = dict(program["expected_registers"])
         values["x0"] = 123
@@ -408,8 +432,12 @@ class Phase5ClassificationTests(unittest.TestCase):
 
         result = finder.classify_regfile_candidates(trace, program)[0]
 
-        self.assertEqual(result["status"], "rejected_candidate")
-        self.assertIn("x0 behavior mismatch", result["failed_checks"])
+        self.assertEqual(result["status"], "likely_candidate")
+        self.assertIn("physical x0 storage changed", result["failed_checks"])
+        self.assertIn(
+            "physical x0 entry changed; architectural reads may be hard-wired",
+            result["reasons"],
+        )
 
     def test_detects_missing_persistence(self):
         program = finder.build_regfile_write_program()
@@ -638,6 +666,21 @@ class InterfaceDiscoveryTests(unittest.TestCase):
             [(5, 0x15), (6, 0x26), (5, 0x35)],
         )
 
+    def test_recovers_later_interface_writes_when_first_probe_is_skipped(self):
+        program = finder.build_regfile_interface_probe_program()
+        samples = [
+            {"cycle": 0, "pc": 0x00, "regfile_values": {"x5": 0, "x6": 0}},
+            {"cycle": 1, "pc": 0x10, "regfile_values": {"x5": 0, "x6": 0x26}},
+            {"cycle": 2, "pc": 0x18, "regfile_values": {"x5": 0x35, "x6": 0x26}},
+        ]
+
+        events = finder.detect_regfile_storage_update_events(samples, program)
+
+        self.assertEqual(
+            [(event["reg_index"], event["new_value"]) for event in events],
+            [(6, 0x26), (5, 0x35)],
+        )
+
     def test_scores_packed_multiwrite_address_and_data_buses(self):
         trace = [{
             "cycle": 3,
@@ -688,6 +731,31 @@ class InterfaceDiscoveryTests(unittest.TestCase):
 
         self.assertEqual(result["score"], 100)
         self.assertEqual(result["timing_offset"], 0)
+
+    def test_finds_register_index_inside_packed_instruction_record(self):
+        # Model a packed struct whose rd field occupies bits [99:95].
+        trace = [
+            {"cycle": 1, "signals": {"dut.wb_instr": 5 << 95}},
+            {"cycle": 2, "signals": {"dut.wb_instr": 6 << 95}},
+            {"cycle": 3, "signals": {"dut.wb_instr": 5 << 95}},
+        ]
+        events = [
+            {"cycle": 1, "reg_index": 5},
+            {"cycle": 2, "reg_index": 6},
+            {"cycle": 3, "reg_index": 5},
+        ]
+        candidate = {
+            "path": "dut.wb_instr",
+            "width": 105,
+            "search_register_index_window": True,
+            "name_score": 6,
+            "name_reasons": [],
+        }
+
+        result = finder._score_write_addr_candidate(candidate, trace, events)
+
+        self.assertGreaterEqual(result["score"], 80)
+        self.assertEqual(result["register_index_bit_offset"], 95)
 
     def test_classifies_perfect_interface_tuple(self):
         trace = _interface_trace(

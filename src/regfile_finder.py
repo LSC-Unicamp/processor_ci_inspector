@@ -9,6 +9,10 @@ from cocotb import simulator
 from cocotb.handle import _make_sim_object
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, Timer
+try:
+    from .riscv.encoding import ADD, ADDI, JAL, LUI, NOP, ORI, XORI
+except ImportError:
+    from riscv.encoding import ADD, ADDI, JAL, LUI, NOP, ORI, XORI
 
 # -----------------------------------------------------------------------------
 # Static register-file discovery
@@ -61,7 +65,7 @@ NON_REGFILE_NAME_HINTS = (
     "tlb", "csr", "scoreboard",
 )
 
-NOP_INSTRUCTION = 0x00000013
+NOP_INSTRUCTION = NOP
 REGFILE_WRITE_LOOP_PC = 0x0000002C
 # Bit-serial and heavily stalled implementations can need hundreds of clocks
 # per short probe. Fast cores still stop when the terminal loop is observed.
@@ -1077,56 +1081,12 @@ def check_regfile_candidate_visibility(dut, candidates):
 # Phase 3: deterministic register-write program
 # -----------------------------------------------------------------------------
 
-def _encode_i_type(imm, rs1, funct3, rd, opcode):
-    return ((imm & 0xFFF) << 20) | ((rs1 & 0x1F) << 15) | ((funct3 & 0x7) << 12) | ((rd & 0x1F) << 7) | (opcode & 0x7F)
-
-
-def _encode_u_type(imm20, rd, opcode):
-    return ((imm20 & 0xFFFFF) << 12) | ((rd & 0x1F) << 7) | (opcode & 0x7F)
-
-
-def _encode_r_type(funct7, rs2, rs1, funct3, rd, opcode):
-    return (
-        ((funct7 & 0x7F) << 25)
-        | ((rs2 & 0x1F) << 20)
-        | ((rs1 & 0x1F) << 15)
-        | ((funct3 & 0x7) << 12)
-        | ((rd & 0x1F) << 7)
-        | (opcode & 0x7F)
-    )
-
-
-def _encode_j_type(offset, rd, opcode=0x6F):
-    imm = offset & 0x1FFFFF
-    bit20 = (imm >> 20) & 0x1
-    bits10_1 = (imm >> 1) & 0x3FF
-    bit11 = (imm >> 11) & 0x1
-    bits19_12 = (imm >> 12) & 0xFF
-    return (bit20 << 31) | (bits10_1 << 21) | (bit11 << 20) | (bits19_12 << 12) | ((rd & 0x1F) << 7) | opcode
-
-
-def _addi(rd, rs1, imm):
-    return _encode_i_type(imm, rs1, 0x0, rd, 0x13)
-
-
-def _ori(rd, rs1, imm):
-    return _encode_i_type(imm, rs1, 0x6, rd, 0x13)
-
-
-def _xori(rd, rs1, imm):
-    return _encode_i_type(imm, rs1, 0x4, rd, 0x13)
-
-
-def _add(rd, rs1, rs2):
-    return _encode_r_type(0x00, rs2, rs1, 0x0, rd, 0x33)
-
-
-def _lui(rd, imm20):
-    return _encode_u_type(imm20, rd, 0x37)
-
-
-def _jal(rd, offset):
-    return _encode_j_type(offset, rd)
+_addi = ADDI
+_ori = ORI
+_xori = XORI
+_add = ADD
+_lui = LUI
+_jal = JAL
 
 
 def build_regfile_write_program(max_cycles=REGFILE_WRITE_MAX_CYCLES):
@@ -1181,14 +1141,26 @@ async def regfile_write_instr_mem_driver(dut, program_metadata):
 
         try:
             dut.core_ack.value = 1
-            addr = _safe_value_int(dut.core_addr)
+            addr = _instruction_address(dut)
             if addr is not None:
                 relative_addr = _program_relative_address(dut, program_metadata, addr)
                 dut.core_data_in.value = program.get(relative_addr, default_instruction)
+                if hasattr(dut, "core_data_in_hi"):
+                    dut.core_data_in_hi.value = program.get(relative_addr + 4, default_instruction)
             else:
                 dut.core_data_in.value = default_instruction
+                if hasattr(dut, "core_data_in_hi"):
+                    dut.core_data_in_hi.value = default_instruction
         except Exception:
             return
+
+
+def _program_loop_fetch_matches(dut, pc, loop_pc):
+    if pc == loop_pc:
+        return True
+    # A 64-bit fetch interface reports the aligned line address even when the
+    # self-loop occupies its upper 32-bit slot.
+    return hasattr(dut, "core_data_in_hi") and pc == (loop_pc & ~0x7)
 
 
 async def run_regfile_write_program(dut, program_metadata):
@@ -1234,14 +1206,12 @@ async def run_regfile_write_program(dut, program_metadata):
             await RisingEdge(dut.sys_clk)
             await Timer(0.001, unit="ns")
 
-            pc = _safe_value_int(dut.core_addr)
+            pc = _instruction_address(dut)
             if pc is None:
                 continue
             pc = _program_relative_address(dut, program_metadata, pc)
-            transaction_ok = True
-            if hasattr(dut, "core_stb"):
-                transaction_ok = bool(dut.core_stb.value)
-            if pc == loop_pc and transaction_ok:
+            transaction_ok = _instruction_transaction_ok(dut)
+            if _program_loop_fetch_matches(dut, pc, loop_pc) and transaction_ok:
                 if first_loop_cycle is None:
                     first_loop_cycle = cycle
                     result["loop_cycle"] = cycle
@@ -1366,8 +1336,13 @@ def _sample_scalar_bit_cluster_candidate(dut, candidate):
 def _decode_packed_registers(raw_value, depth, word_width, msb_reg0=False):
     values = {}
     mask = (1 << word_width) - 1
-    for reg_index in range(depth):
-        slice_index = depth - 1 - reg_index if msb_reg0 else reg_index
+    # A 31-word register file conventionally omits architectural x0 and stores
+    # x1..x31.  Keep the physical slice number separate from the architectural
+    # register number so the first word is not mislabeled as x0.
+    architectural_base = 1 if depth == 31 else 0
+    for slice_offset in range(depth):
+        reg_index = slice_offset + architectural_base
+        slice_index = depth - 1 - slice_offset if msb_reg0 else slice_offset
         values[_register_key(reg_index)] = (raw_value >> (slice_index * word_width)) & mask
     return values
 
@@ -1408,6 +1383,27 @@ def sample_candidate_value(dut, candidate):
 def _candidate_mapping_views(candidate_trace):
     kind = candidate_trace.get("kind")
     samples = candidate_trace.get("samples", [])
+    if kind == "array_of_words":
+        views = [("direct", samples)]
+        # Some cores pipeline the write address and data by different amounts,
+        # making architectural xN consistently appear in physical slot N+1 or
+        # N-1.  Test only the adjacent mappings and require the normal dynamic
+        # score/confirmation checks before accepting one.
+        for delta, name in ((1, "physical_index_plus_1"), (-1, "physical_index_minus_1")):
+            mapped_samples = []
+            for sample in samples:
+                values = sample.get("values") or {}
+                mapped_values = {
+                    _register_key(reg_index): values.get(_register_key(reg_index + delta))
+                    for reg_index in range(32)
+                    if 0 <= reg_index + delta < 32
+                }
+                mapped_sample = dict(sample)
+                mapped_sample["values"] = mapped_values
+                mapped_samples.append(mapped_sample)
+            views.append((name, mapped_samples))
+        return views
+
     if kind != "packed_flat_vector":
         return [("direct", samples)]
 
@@ -1424,6 +1420,25 @@ def _candidate_mapping_views(candidate_trace):
             mapped_samples.append(mapped_sample)
         views.append((mapping_order, mapped_samples))
     return views
+
+
+def _apply_selected_mapping(values, selected_regfile):
+    """Return values keyed by architectural register for a selected mapping."""
+    if selected_regfile.get("kind") == "packed_flat_vector":
+        return values.get(selected_regfile.get("mapping_order")) or {}
+
+    mapping_order = selected_regfile.get("mapping_order")
+    delta = {
+        "physical_index_plus_1": 1,
+        "physical_index_minus_1": -1,
+    }.get(mapping_order)
+    if delta is None:
+        return values
+    return {
+        _register_key(reg_index): values.get(_register_key(reg_index + delta))
+        for reg_index in range(32)
+        if 0 <= reg_index + delta < 32
+    }
 
 
 def _values_match(values, expected_registers):
@@ -1475,7 +1490,7 @@ def _score_mapping_samples(samples, expected_registers, written_registers):
         # unused physical storage entry absent or uninitialised.
         reasons.append("physical x0 storage was unavailable")
     else:
-        failed.append("x0 behavior mismatch")
+        failed.append("physical x0 storage changed")
 
     persistence_ok = False
     quiescence_samples = samples[-3:]
@@ -1507,7 +1522,11 @@ def _score_mapping_samples(samples, expected_registers, written_registers):
         failed.append("no dynamic update observed")
 
     if not x0_ok and not x0_unavailable:
-        score = min(score, 49)
+        # A storage array alone cannot prove architectural x0 behavior. Some
+        # cores permit writes to physical entry zero but hard-wire zero on the
+        # read ports. Preserve the diagnostic without rejecting otherwise
+        # exact, selective register matches.
+        reasons.append("physical x0 entry changed; architectural reads may be hard-wired")
 
     return {
         "score": min(score, 100),
@@ -1520,10 +1539,9 @@ def _score_mapping_samples(samples, expected_registers, written_registers):
 def _status_from_score(score, confirmed=False, x0_failed=False):
     # Repeating the same candidate and architectural mapping with a second
     # program is strong evidence even when a core only executes a subset of
-    # the probe instructions (for example, a wrapper with an 8-byte fetch
-    # cadence).  Seventy-five still requires exact values, x0 behavior,
-    # persistence, selectivity, and a dynamic update.
-    if confirmed and score >= 75:
+    # the probe instructions.  The confirmation caller applies the appropriate
+    # score threshold for the selected mapping before setting this flag.
+    if confirmed:
         return "confirmed_candidate"
     if x0_failed or score < 50:
         return "rejected_candidate"
@@ -1595,13 +1613,29 @@ async def _start_clock_once(dut):
         pass
 
 
-async def _reset_for_regfile_program(dut):
+async def _load_optional_internal_program(dut, program_metadata):
+    required = ("imem_prog_we", "imem_prog_addr", "imem_prog_data")
+    if not all(hasattr(dut, name) for name in required):
+        return
+    dut.imem_prog_we.value = 0
+    for address, instruction in sorted(program_metadata.get("program", {}).items()):
+        dut.imem_prog_addr.value = int(address)
+        dut.imem_prog_data.value = int(instruction)
+        dut.imem_prog_we.value = 1
+        await RisingEdge(dut.sys_clk)
+        await Timer(0.001, unit="ns")
+    dut.imem_prog_we.value = 0
+
+
+async def _reset_for_regfile_program(dut, program_metadata=None):
     if hasattr(dut, "rst_n"):
         dut.rst_n.value = 0
     if hasattr(dut, "reset_core"):
         dut.reset_core.value = 1
     dut.core_ack.value = 0
     dut.core_data_in.value = NOP_INSTRUCTION
+    if program_metadata:
+        await _load_optional_internal_program(dut, program_metadata)
     await Timer(50, unit="ns")
     if hasattr(dut, "rst_n"):
         dut.rst_n.value = 1
@@ -1612,15 +1646,33 @@ async def _reset_for_regfile_program(dut):
 def _program_relative_address(dut, program_metadata, address):
     """Translate a core's fixed reset-vector address into a probe offset."""
     base = program_metadata.get("_runtime_base_address")
-    transaction_ok = True
-    if hasattr(dut, "core_stb"):
+    # An explicit instruction-fetch address is valid independently of the data
+    # bus request signals.  Several internal-ROM wrappers keep core_stb low
+    # until a load/store while fetching normally from their private memory.
+    transaction_ok = hasattr(dut, "imem_fetch_addr")
+    if not transaction_ok and hasattr(dut, "core_stb"):
         transaction_ok = bool(_safe_value_int(dut.core_stb))
-    elif hasattr(dut, "core_cyc"):
+    elif not transaction_ok and hasattr(dut, "core_cyc"):
         transaction_ok = bool(_safe_value_int(dut.core_cyc))
     if base is None and transaction_ok:
         base = address & ~0x3
         program_metadata["_runtime_base_address"] = base
     return address - base if base is not None else address
+
+
+def _instruction_address(dut):
+    handle = dut.imem_fetch_addr if hasattr(dut, "imem_fetch_addr") else dut.core_addr
+    return _safe_value_int(handle)
+
+
+def _instruction_transaction_ok(dut):
+    if hasattr(dut, "imem_fetch_addr"):
+        return True
+    if hasattr(dut, "core_stb"):
+        return bool(_safe_value_int(dut.core_stb))
+    if hasattr(dut, "core_cyc"):
+        return bool(_safe_value_int(dut.core_cyc))
+    return True
 
 
 async def run_regfile_program_and_trace(dut, program_metadata, candidates):
@@ -1660,7 +1712,7 @@ async def run_regfile_program_and_trace(dut, program_metadata, candidates):
     try:
         await _start_clock_once(dut)
         driver_task = cocotb.start_soon(regfile_write_instr_mem_driver(dut, program_metadata))
-        await _reset_for_regfile_program(dut)
+        await _reset_for_regfile_program(dut, program_metadata)
 
         loop_pc = program_metadata["loop_pc"]
         max_cycles = program_metadata["max_cycles"]
@@ -1671,14 +1723,12 @@ async def run_regfile_program_and_trace(dut, program_metadata, candidates):
             await RisingEdge(dut.sys_clk)
             await Timer(0.001, unit="ns")
 
-            pc = _safe_value_int(dut.core_addr)
+            pc = _instruction_address(dut)
             if pc is not None:
                 pc = _program_relative_address(dut, program_metadata, pc)
-            transaction_ok = True
-            if hasattr(dut, "core_stb"):
-                transaction_ok = bool(_safe_value_int(dut.core_stb))
+            transaction_ok = _instruction_transaction_ok(dut)
 
-            in_loop = pc == loop_pc and transaction_ok
+            in_loop = _program_loop_fetch_matches(dut, pc, loop_pc) and transaction_ok
             if in_loop:
                 if first_loop_cycle is None:
                     first_loop_cycle = cycle
@@ -1689,6 +1739,10 @@ async def run_regfile_program_and_trace(dut, program_metadata, candidates):
                 trace_by_key[_candidate_id(candidate)]["samples"].append({
                     "cycle": cycle,
                     "pc": pc,
+                    "instruction": (
+                        _safe_value_int(dut.imem_fetch_data)
+                        if hasattr(dut, "imem_fetch_data") else None
+                    ),
                     "in_loop": in_loop,
                     "values": values or {},
                 })
@@ -1785,7 +1839,17 @@ def _confirm_classification_results(phase5_results, confirmation_classification)
             and previous.get("mapping_order") == result.get("mapping_order")
             and mapping_overlap >= 0.75
         )
-        confirmed = same_mapping and result.get("score", 0) >= 75
+        mapping_order = result.get("mapping_order")
+        adjacent_physical_mapping = mapping_order in (
+            "physical_index_plus_1",
+            "physical_index_minus_1",
+        )
+        # Six distinct exact writes reproduced by a second program are enough
+        # to confirm an adjacent physical-slot mapping.  Such cores commonly
+        # lose x0 and one or two tail writes because the address/data pipelines
+        # are misaligned, so they cannot reach the normal 75-point threshold.
+        confirmation_threshold = 70 if adjacent_physical_mapping else 75
+        confirmed = same_mapping and result.get("score", 0) >= confirmation_threshold
         result = dict(result)
         result["status"] = _status_from_score(
             result.get("score", 0),
@@ -1822,7 +1886,7 @@ WRITE_ENABLE_NAME_HINTS = (
     "write_enable", "write_en", "wen", "wren", "wr_en", "we",
 )
 WRITE_ADDR_NAME_HINTS = (
-    "regwr_sel", "waddr", "write_addr", "wr_addr", "rd_addr", "dest",
+    "regwr_sel", "writereg", "waddr", "write_addr", "wr_addr", "rd_addr", "dest", "dst",
     "rd_wb", "rd_w", "rd", "wa", "wsel", "wrsel",
 )
 WRITE_DATA_NAME_HINTS = (
@@ -1972,6 +2036,16 @@ def collect_nearby_regfile_interface_candidates(dut, selected_regfile):
         seen.add(path)
 
         width = leaf.get("width")
+        basename = str(leaf.get("name") or "").lower()
+        packed_control_record = bool(
+            width
+            and 17 <= width <= 256
+            and (
+                basename.endswith(("instr", "inst", "instruction"))
+                or "_instr_" in basename
+                or any(hint in basename for hint in ("bundle", "packet", "control", "ctrl"))
+            )
+        )
         roles = []
         if width == 1:
             roles.append("write_enable")
@@ -1981,6 +2055,11 @@ def collect_nearby_regfile_interface_candidates(dut, selected_regfile):
             # Typed destinations can carry a tag above the low five GPR bits.
             roles.append("write_addr")
         elif width and width <= 40 and width % 5 == 0:
+            roles.append("write_addr")
+        elif packed_control_record:
+            # Packed pipeline records often contain rd without exposing the
+            # struct member as a separate VPI handle (for example clarvi's
+            # instr_t). Locate the stable five-bit field dynamically.
             roles.append("write_addr")
         if width == word_width:
             roles.append("write_data")
@@ -1996,6 +2075,8 @@ def collect_nearby_regfile_interface_candidates(dut, selected_regfile):
             scored["role"] = role
             if role == "write_addr" and 8 <= width <= 16 and width % 5:
                 scored["register_index_lsb_width"] = 5
+            elif role == "write_addr" and packed_control_record:
+                scored["search_register_index_window"] = True
             elif role == "write_addr" and width not in (4, 5, 6, 7):
                 scored["packed_lane_width"] = 5
             if role == "write_data" and width != word_width:
@@ -2011,8 +2092,8 @@ def collect_nearby_regfile_interface_candidates(dut, selected_regfile):
 def build_regfile_interface_probe_program(max_cycles=REGFILE_WRITE_MAX_CYCLES):
     write_sequence = [
         {"pc": 0x08, "reg": "x5", "reg_index": 5, "value": 0x15, "opclass": "i_alu_add"},
-        {"pc": 0x10, "reg": "x6", "reg_index": 6, "value": 0x26, "opclass": "i_alu_add"},
-        {"pc": 0x18, "reg": "x5", "reg_index": 5, "value": 0x35, "opclass": "i_alu_add"},
+        {"pc": 0x0C, "reg": "x6", "reg_index": 6, "value": 0x26, "opclass": "i_alu_add"},
+        {"pc": 0x10, "reg": "x5", "reg_index": 5, "value": 0x35, "opclass": "i_alu_add"},
     ]
     return {
         "program_name": "regfile_interface_write_probe_v1",
@@ -2020,10 +2101,10 @@ def build_regfile_interface_probe_program(max_cycles=REGFILE_WRITE_MAX_CYCLES):
             0x00: NOP_INSTRUCTION,
             0x04: NOP_INSTRUCTION,
             0x08: _addi(5, 0, 0x15),
-            0x0C: NOP_INSTRUCTION,
-            0x10: _addi(6, 0, 0x26),
+            0x0C: _addi(6, 5, 0x11),
+            0x10: _addi(5, 6, 0x0F),
             0x14: NOP_INSTRUCTION,
-            0x18: _addi(5, 0, 0x35),
+            0x18: NOP_INSTRUCTION,
             0x1C: NOP_INSTRUCTION,
             REGFILE_INTERFACE_LOOP_PC: _jal(0, 0),
         },
@@ -2038,15 +2119,13 @@ def build_regfile_interface_probe_program(max_cycles=REGFILE_WRITE_MAX_CYCLES):
 
 def _watched_regfile_values(dut, selected_regfile):
     values = sample_candidate_value(dut, selected_regfile) or {}
-    if selected_regfile.get("kind") == "packed_flat_vector":
-        values = values.get(selected_regfile.get("mapping_order")) or {}
+    values = _apply_selected_mapping(values, selected_regfile)
     return {"x5": values.get("x5"), "x6": values.get("x6")}
 
 
 def _watched_regfile_values_for_program(dut, selected_regfile, program_metadata):
     values = sample_candidate_value(dut, selected_regfile) or {}
-    if selected_regfile.get("kind") == "packed_flat_vector":
-        values = values.get(selected_regfile.get("mapping_order")) or {}
+    values = _apply_selected_mapping(values, selected_regfile)
     watched = {}
     for entry in program_metadata.get("write_sequence", []):
         reg = entry.get("reg")
@@ -2111,6 +2190,45 @@ def detect_regfile_storage_update_events(trace_samples, program_metadata):
             expected_idx += 1
         previous_values = current_values
 
+    if events:
+        return events
+
+    # A wide-fetch wrapper can legitimately miss the first probe slot while
+    # still executing later distinctive writes. Recover those independently
+    # instead of letting one absent early event suppress all interface
+    # evidence. Values are unique within the probe, so each pair remains
+    # unambiguous.
+    expected_by_pair = {
+        (entry["reg"], entry["value"]): (index, entry)
+        for index, entry in enumerate(write_sequence)
+    }
+    previous_values = None
+    for sample in trace_samples:
+        current_values = sample.get("regfile_values") or {}
+        if previous_values is None:
+            previous_values = current_values
+            continue
+        for reg, new_value in current_values.items():
+            old_value = previous_values.get(reg)
+            match = expected_by_pair.get((reg, new_value))
+            if old_value == new_value or match is None:
+                continue
+            expected_index, expected = match
+            cycle = sample.get("cycle")
+            events.append({
+                "cycle": cycle,
+                "reg_index": expected["reg_index"],
+                "old_value": old_value,
+                "new_value": new_value,
+                "expected_write_index": expected_index,
+                "pc_window": [
+                    s.get("pc")
+                    for s in trace_samples
+                    if cycle is not None and cycle - 2 <= s.get("cycle", -999) <= cycle + 1
+                ],
+            })
+        previous_values = current_values
+
     return events
 
 
@@ -2122,7 +2240,9 @@ def _signal_values(trace_samples, path):
     return [(sample.get("signals") or {}).get(path) for sample in trace_samples]
 
 
-def _candidate_lane_values(candidate, value):
+def _candidate_lane_values(candidate, value, bit_offset=None):
+    if value is not None and bit_offset is not None:
+        return [(value >> bit_offset) & 0x1F]
     index_width = candidate.get("register_index_lsb_width")
     if value is not None and index_width:
         return [value & ((1 << index_width) - 1)]
@@ -2138,32 +2258,41 @@ def _score_write_addr_candidate(candidate, trace_samples, update_events):
     path = candidate.get("path")
     samples = _samples_by_cycle(trace_samples)
     best = {"score": 0, "timing_offset": None, "reasons": [], "failed_checks": ["no aligned write-address matches"]}
-    for offset in REGFILE_INTERFACE_TIMING_OFFSETS:
-        matched = 0
-        observed = []
-        for event in update_events:
-            sample = samples.get(event["cycle"] + offset)
-            value = (sample.get("signals") or {}).get(path) if sample else None
-            lane_values = _candidate_lane_values(candidate, value)
-            observed.extend(lane_values)
-            if event["reg_index"] in lane_values:
-                matched += 1
-        score = round(70 * matched / max(1, len(update_events))) + max(0, candidate.get("name_score", 0))
-        if len(set(v for v in observed if v is not None)) > 1:
-            score += 10
-        if matched < len(update_events):
-            score = min(score, 69)
-        result = {
-            "score": min(score, 100),
-            "timing_offset": offset,
-            "reasons": [f"{matched}/{len(update_events)} write-address values matched"] + candidate.get("name_reasons", []),
-            "failed_checks": [] if matched == len(update_events) else ["write address did not match every update event"],
-        }
-        if (result["score"], -abs(offset)) > (
-            best["score"],
-            -abs(best["timing_offset"]) if best["timing_offset"] is not None else -999,
-        ):
-            best = result
+    bit_offsets = [None]
+    if candidate.get("search_register_index_window"):
+        bit_offsets = range(max(1, int(candidate.get("width") or 5) - 4))
+    for bit_offset in bit_offsets:
+        for offset in REGFILE_INTERFACE_TIMING_OFFSETS:
+            matched = 0
+            observed = []
+            for event in update_events:
+                sample = samples.get(event["cycle"] + offset)
+                value = (sample.get("signals") or {}).get(path) if sample else None
+                lane_values = _candidate_lane_values(candidate, value, bit_offset=bit_offset)
+                observed.extend(lane_values)
+                expected_addr = event.get("write_addr_index", event["reg_index"])
+                if expected_addr in lane_values:
+                    matched += 1
+            score = round(70 * matched / max(1, len(update_events))) + max(0, candidate.get("name_score", 0))
+            if len(set(v for v in observed if v is not None)) > 1:
+                score += 10
+            if matched < len(update_events):
+                score = min(score, 69)
+            reasons = [f"{matched}/{len(update_events)} write-address values matched"] + candidate.get("name_reasons", [])
+            if bit_offset is not None:
+                reasons.append(f"register index found in bits [{bit_offset + 4}:{bit_offset}]")
+            result = {
+                "score": min(score, 100),
+                "timing_offset": offset,
+                "register_index_bit_offset": bit_offset,
+                "reasons": reasons,
+                "failed_checks": [] if matched == len(update_events) else ["write address did not match every update event"],
+            }
+            if (result["score"], -abs(offset)) > (
+                best["score"],
+                -abs(best["timing_offset"]) if best["timing_offset"] is not None else -999,
+            ):
+                best = result
     return best
 
 
@@ -2420,6 +2549,7 @@ def classify_regfile_interface(trace_result, interface_candidates):
                     "write_enable_timing_offset": we.get("timing_offset"),
                     "write_addr_timing_offset": wa.get("timing_offset"),
                     "write_data_timing_offset": wd.get("timing_offset"),
+                    "write_addr_bit_offset": wa.get("register_index_bit_offset"),
                     "reasons": reasons,
                     "failed_checks": failed,
                 })
@@ -2484,7 +2614,7 @@ async def run_regfile_interface_probe_and_trace(dut, selected_regfile, program_m
     try:
         await _start_clock_once(dut)
         driver_task = cocotb.start_soon(regfile_write_instr_mem_driver(dut, program_metadata))
-        await _reset_for_regfile_program(dut)
+        await _reset_for_regfile_program(dut, program_metadata)
 
         loop_pc = program_metadata["loop_pc"]
         first_loop_cycle = None
@@ -2493,13 +2623,11 @@ async def run_regfile_interface_probe_and_trace(dut, selected_regfile, program_m
             await RisingEdge(dut.sys_clk)
             await Timer(0.001, unit="ns")
 
-            pc = _safe_value_int(dut.core_addr)
+            pc = _instruction_address(dut)
             if pc is not None:
                 pc = _program_relative_address(dut, program_metadata, pc)
-            transaction_ok = True
-            if hasattr(dut, "core_stb"):
-                transaction_ok = bool(_safe_value_int(dut.core_stb))
-            in_loop = pc == loop_pc and transaction_ok
+            transaction_ok = _instruction_transaction_ok(dut)
+            in_loop = _program_loop_fetch_matches(dut, pc, loop_pc) and transaction_ok
             if in_loop and first_loop_cycle is None:
                 first_loop_cycle = cycle
                 trace_result["loop_cycle"] = cycle
@@ -2518,7 +2646,15 @@ async def run_regfile_interface_probe_and_trace(dut, selected_regfile, program_m
 
         if not trace_result["reached_loop"]:
             trace_result["error"] = f"loop PC 0x{loop_pc:08x} not reached within {program_metadata['max_cycles']} cycles"
-        trace_result["update_events"] = detect_regfile_storage_update_events(trace_result["samples"], program_metadata)
+        trace_result["update_events"] = detect_regfile_storage_update_events(
+            trace_result["samples"], program_metadata
+        )
+        storage_delta = {
+            "physical_index_plus_1": 1,
+            "physical_index_minus_1": -1,
+        }.get(selected_regfile.get("mapping_order"), 0)
+        for event in trace_result["update_events"]:
+            event["write_addr_index"] = event["reg_index"] + storage_delta
         return {"interface_candidates": interface_candidates, "trace_result": trace_result}
     except Exception as exc:
         trace_result["error"] = str(exc)
@@ -2601,6 +2737,7 @@ def _compact_selected_interface(selected_interface, interface_classification=Non
         "write_enable_timing_offset",
         "write_addr_timing_offset",
         "write_data_timing_offset",
+        "write_addr_bit_offset",
     )
     compact = {key: selected_interface.get(key) for key in keys if key in selected_interface}
     derived_roles = (interface_classification or {}).get("derived_roles")
