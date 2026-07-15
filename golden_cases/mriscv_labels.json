@@ -1,0 +1,17 @@
+{
+    "mriscv": {
+        "license_types": [
+            "Custom License",
+            "MIT"
+        ],
+        "bits": 32,
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "Verilog",
+        "multicycle": true,
+        "pipeline": false,
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected"
+    }
+}

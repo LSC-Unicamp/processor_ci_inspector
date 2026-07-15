@@ -1,47 +1,56 @@
 # ProcessorCI Inspector
 
-Welcome to ProcessorCI Inspector! This tool is designed to assist developers in inspecting and analyzing processor designs to find its characteristics and behaviors.
+ProcessorCI Inspector analyzes processor repositories and produces metadata used by
+the ProcessorCI suite. It focuses on repository-level and RTL-level facts such as
+license, HDL language, datapath style, cycle behavior, and register-file labels.
 
-## About this Project
+This repository is the inspection component of ProcessorCI. It is commonly used
+before wrapping, testing, or benchmarking a core because its outputs help the
+rest of the flow understand what kind of processor is being handled.
 
-Processor CI Inspector is part of the ProcessorCI suite, which aims to provide comprehensive tools for continuous integration and testing of processor designs. This specific tool focuses on inspecting various aspects of processor implementations, such as word size, datapath structure and more to come.
+## Repository Layout
 
-## Features
-
-Currently, ProcessorCI Inspector offers the following features:
-
-- **License Detection**: Automatically detects the licenses present in the processor repository.
-- **Language Identification**: Identifies the main programming language used in the processor design.
-- **Word Size Analysis**: Analyzes the processor design to determine its word size.
-- **Datapath Structure Analysis**: Examines the datapath structure of the processor and classifies it accordingly.
-
-## Getting Started
+```text
+src/              Inspector implementation and CLI entrypoint
+tests/            Unit tests for classifiers and register-file discovery
+golden_cases/     Expected label outputs for known processors
+scripts/          Maintenance and validation scripts
+docs/             Layout and maintenance notes
+requirements.txt  Python dependencies
+```
 
 ## Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/LSC-Unicamp/processor_ci_inspector.git
-    cd processor_ci_inspector
-   ```
+```bash
+git clone https://github.com/LSC-Unicamp/processor_ci_inspector.git
+cd processor_ci_inspector
+python3 -m venv env
+. env/bin/activate
+pip install -r requirements.txt
+```
 
-2. Set up a virtual environment and install dependencies:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```  
+Activate the virtual environment before running the tool in a new shell:
 
-**Note**: Every time you use the tool, ensure that the virtual environment is activated.
+```bash
+. env/bin/activate
+```
 
-## Configuration
+## Inputs
 
-Before running the ProcessorCI Inspector, you need to set up the configuration and wrapper files. These files are essential for the tool to function correctly.
+Inspector expects ProcessorCI-style configuration and wrapper inputs:
 
-1. **Configuration Files**: These files define the files required to simulate the processor core, the top module name, and other necessary settings. Place these files in a directory of your choice. Following is the structure of a sample configuration file (`darkriscv.json`):
+- A processor checkout or a directory containing processor checkouts.
+- A configuration directory with JSON files that describe source files, include
+  directories, top modules, language version, and repository metadata.
+- A wrapper directory with ProcessorCI-compatible wrapper files.
+- The ProcessorCI controller/bus adapter internals when simulation-based
+  inspection is needed.
+
+A typical configuration entry looks like:
 
 ```json
-"darkriscv": {
+{
+  "darkriscv": {
     "name": "darkriscv",
     "folder": "darkriscv",
     "sim_files": [],
@@ -51,88 +60,70 @@ Before running the ProcessorCI Inspector, you need to set up the configuration a
     "top_module": "darkriscv",
     "extra_flags": [],
     "language_version": "2005"
+  }
 }
 ```
 
-2. **Wrapper Files**: These files are used to create a wrapper around the processor core that allows for easier communication and testing during the inspection process. Place these files in a directory of your choice. Following is the structure of the template wrapper file (`wrapper.sv`):
+## Quick Start
 
-```verilog
-Controller #(
-    ...
-) Controller(
-    ...
-    .clk_core  (clk_core),
-    .reset_core(reset_core),
-    
-    .core_memory_response  (core_memory_response),
-    .core_read_memory      (memory_read),
-    .core_write_memory     (memory_write),
-    .core_address_memory   (address),
-    .core_write_data_memory(core_write_data),
-    .core_read_data_memory (core_read_data),
+Run a single processor inspection:
 
-    //sync memory bus
-    .core_read_data_memory_sync     (),
-    .core_memory_read_response_sync (),
-    .core_memory_write_response_sync(),
-
-    // Data memory
-    .core_memory_response_data  (),
-    .core_read_memory_data      (1'b0),
-    .core_write_memory_data     (1'b0),
-    .core_address_memory_data   (32'h00000000),
-    .core_write_data_memory_data(32'h00000000),
-    .core_read_data_memory_data ()
-);
-Core #(
-    .BOOT_ADDRESS(32'h00000000)
-) Core(
-    .clk            (clk_core),
-    .reset          (reset_core),
-    .memory_response(core_memory_response),
-    .memory_read    (memory_read),
-    .memory_write   (memory_write),
-    .write_data     (core_write_data),
-    .read_data      (core_read_data),
-    .address        (address)
-);
+```bash
+python src/main.py \
+  -s \
+  -d /path/to/processor \
+  -c /path/to/configs \
+  -o /path/to/output \
+  -t /path/to/wrappers
 ```
 
-More details are available in the [Controller documentation](https://lsc-unicamp.github.io/processor_ci-controller/). 
+Run batch inspection over a directory of processors:
 
-**Note**: This tool also requires the bus adapter wrapper files from ProcessorCI. They can be found in the internals folder of the [ProcessorCI Controller repository](https://github.com/LSC-Unicamp/processor_ci). The folder should be in the same parent directory as the wrappers folder used for this tool.
+```bash
+python src/main.py \
+  -b \
+  -d /path/to/processors \
+  -c /path/to/configs \
+  -o /path/to/output \
+  -t /path/to/wrappers
+```
 
-**Note**: The [ProcessorCI repository](https://github.com/LSC-Unicamp/processor_ci) includes sample configuration and wrapper files for several processors in the `configs` and `rtl` directories, respectively. You can use these as references or starting points for your own configurations. There are also scripts available to help generate these files automatically.
-   
+## Outputs
 
-## Usage
+Inspection results are written as JSON files in the selected output directory.
+Depending on the available inputs, results may include:
 
-To use the ProcessorCI Inspector, you have two options:
+- Detected license.
+- Main HDL language.
+- Word size.
+- Datapath/cycle classification.
+- Register-file labels or related metadata.
 
-1. **Run a single processor inspection**:
-   ```bash
-   python main.py -s -d <path_to_processor_directory> -c <path_to_config_directory> -o <output_directory> -t <path_to_wrapper_directory>
-    ```
-    This command inspects a single processor located at `<path_to_processor_directory>`, using the configuration files from `<path_to_config_directory>`, and outputs the results to `<output_directory>`. The `<path_to_wrapper_directory>` is the directory containing the wrapper files needed for the inspection.
+Golden outputs used for regression checks live in `golden_cases/`.
 
-2. **Run batch inspections**:
-   ```bash
-   python main.py -b -d <path_to_processors_directory> -c <path_to_config_directory> -o <output_directory> -t <path_to_wrapper_directory>
-    ```
-    This command inspects all processors located in `<path_to_processors_directory>`, using the configuration files from `<path_to_config_directory>`, and outputs the results to `<output_directory>`. The `<path_to_wrapper_directory>` is the directory containing the wrapper files needed for the inspection.
- 
-## Output
+## Development
 
-The results of the inspections will be saved in the specified output directory in JSON format. Each processor will have its own JSON file containing the inspection results, including detected license, programming language, word size, and datapath structure.
+Run the unit tests with:
 
-## Questions and Suggestions
+```bash
+pytest
+```
 
-Questions and suggestions can be submitted in the Issues section on Github. Contributions are welcome, whether it's reporting bugs, suggesting new features, or improvements to the documentation. All contributions will be reviewed and considered for inclusion in future releases.
-   
+Validate golden cases with:
+
+```bash
+python scripts/validate_golden_cases.py
+```
+
+Keep generated files out of commits when possible, especially `__pycache__/`,
+virtual environments, simulation output, and temporary inspection artifacts.
+See [docs/README.md](docs/README.md) for maintenance notes.
+
 ## Contributing
 
-We still don't have a contributing guide, but if you want to contribute, feel free to fork the repository and submit a pull request with your changes. Make sure to follow best practices for coding and documentation.
+Issues and pull requests are welcome. Keep changes focused, include tests for
+new classifiers or discovery behavior, and document any new output fields.
 
 ## License
 
-This project is licensed under the [MIT License](./LICENSE), granting full freedom for use, modification, and distribution.
+This project is licensed under the [MIT License](LICENSE).

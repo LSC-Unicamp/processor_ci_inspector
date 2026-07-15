@@ -1,0 +1,18 @@
+{
+    "kronos": {
+        "license_types": [
+            "Apache 2.0"
+        ],
+        "bits": 32,
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "SystemVerilog",
+        "multicycle": false,
+        "pipeline": {
+            "depth": 5
+        },
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected"
+    }
+}

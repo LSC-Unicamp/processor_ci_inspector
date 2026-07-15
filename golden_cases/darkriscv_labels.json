@@ -1,0 +1,21 @@
+{
+    "darkriscv": {
+        "license_types": [
+            "Custom License",
+            "GPLv3",
+            "BSD 3-Clause",
+            "GPLv2"
+        ],
+        "bits": 32,
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "Verilog",
+        "multicycle": false,
+        "pipeline": {
+            "depth": 3
+        },
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected"
+    }
+}

@@ -135,7 +135,10 @@ def generate_labels_file(
         logging.warning('Error writing to JSON file: %s', e)
 
 
-def core_labeler(directory, config_file, output_dir, top_dir, ollama_flag: bool) -> None:
+def core_labeler(
+    directory, config_file, output_dir, top_dir, ollama_flag: bool,
+    core_timeout: Optional[int] = 180,
+) -> bool:
     """Main function to find LICENSE files and generate labels.
 
     Args:
@@ -186,6 +189,8 @@ def core_labeler(directory, config_file, output_dir, top_dir, ollama_flag: bool)
     language = identify_language(directory, config)
     print(f"Identified language: {language}")
 
+    label_path = Path(output_dir) / processor_name / f'{processor_name}_labels.json'
+    previous_labels = label_path.read_bytes() if label_path.exists() else None
     generate_labels_file(processor_name, license_types, cpu_bits, cache, language, output_dir)
 
     print(language)
@@ -197,30 +202,55 @@ def core_labeler(directory, config_file, output_dir, top_dir, ollama_flag: bool)
             sim_files[i] = os.path.join(directory, sim_files[i])
         top_module = config['top_module']
 
+        extra_flags = [str(flag) for flag in config.get('extra_flags', [])]
+        ghdl_flags = [flag for flag in extra_flags if flag != '--latches']
+        synth_flags = extra_flags if '--latches' in extra_flags else ['--latches', *extra_flags]
         try:
             BUILD_DIR.mkdir(exist_ok=True)
-            run_ghdl_import(processor_name, sim_files)
-            run_ghdl_elaborate(processor_name, top_module)
+            run_ghdl_import(processor_name, sim_files, ghdl_flags)
+            run_ghdl_elaborate(processor_name, top_module, ghdl_flags)
             verilog_output = BUILD_DIR / f'{processor_name}.v'
-            synthesize_to_verilog(processor_name, verilog_output, top_module)
+            synthesize_to_verilog(processor_name, verilog_output, top_module, synth_flags)
             fix_protected_instances(verilog_output)
         except Exception as e:
             logging.warning('Error during VHDL processing: %s', e)
-            pass
+            _restore_labels(label_path, previous_labels)
+            return False
 
     # Create a Makefile for cocotb simulation
     print(f"Directory being passed to cocotb_makefile_creator: {directory}") # debug
     makefile = create_cocotb_makefile(processor_name, language, config_file, top_dir, output_dir, directory, ollama_flag)
     path_to_main = os.path.abspath(os.path.join(BASE_DIR, 'processor_ci_inspector/src'))
-    bash_command = f"make -f {makefile} clean && PYTHONPATH={path_to_main} make -f {makefile}"
-
     try:
-        subprocess.run(bash_command, shell=True, check=True, executable="/bin/bash")
-    except subprocess.CalledProcessError as e:
+        environment = os.environ.copy()
+        environment['PYTHONPATH'] = path_to_main
+        subprocess.run(['make', '-f', makefile, 'clean'], check=True)
+        subprocess.run(
+            ['make', '-f', makefile], check=True, env=environment,
+            timeout=core_timeout,
+        )
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         logging.warning('Error executing make command: %s', e)
-        return
+        _restore_labels(label_path, previous_labels)
+        return False
+    return True
 
-def main(directory, config_directory, output_directory, top_directory, ollama_flag: bool) -> None:
+
+def _restore_labels(label_path: Path, previous_labels: Optional[bytes]) -> None:
+    """Roll back provisional label output after a failed analysis."""
+    if previous_labels is None:
+        label_path.unlink(missing_ok=True)
+        try:
+            label_path.parent.rmdir()
+        except OSError:
+            pass
+    else:
+        label_path.write_bytes(previous_labels)
+
+def main(
+    directory, config_directory, output_directory, top_directory,
+    ollama_flag: bool, core_timeout: Optional[int] = 180,
+) -> bool:
     """Main function to execute the core labeler.
 
     Args:
@@ -236,8 +266,13 @@ def main(directory, config_directory, output_directory, top_directory, ollama_fl
     # Ensure the output folder exists
     os.makedirs(output_directory, exist_ok=True)
 
+    wrapper_names = {
+        path.stem for path in Path(top_directory).glob('*.sv')
+    }
     for config_file in os.listdir(config_directory):
         processor_name = os.path.splitext(config_file)[0]
+        if processor_name not in wrapper_names:
+            continue
         config = load_config(config_directory, processor_name)
         print(f"Trying to clone: {processor_name}") # debug
         try:
@@ -252,32 +287,48 @@ def main(directory, config_directory, output_directory, top_directory, ollama_fl
                 clone_repo(url, processor_name)
             else:
                 print(f'Repository {processor_name} already exists. Skipping clone.')
-        except:
-            logging.warning(f'Error cloning repository for {processor_name}. Skipping.')
+        except (KeyError, OSError, json.JSONDecodeError) as error:
+            logging.warning('Error cloning repository for %s: %s. Skipping.', processor_name, error)
         
 
     # Get all subdirectories in the given directory
     subdirectories = [
-        os.path.join(directory, d)
-        for d in os.listdir(directory)
+        os.path.join(directory, d) for d in sorted(wrapper_names)
         if os.path.isdir(os.path.join(directory, d))
     ]
+    missing_cores = sorted(
+        name for name in wrapper_names
+        if not os.path.isdir(os.path.join(directory, name))
+    )
+    for name in missing_cores:
+        logging.warning('Wrapper exists but core directory is missing: %s', name)
 
+    failures = list(missing_cores)
     for subdirectory in subdirectories:
         if ('@' in subdirectory):
              continue
         print(f"Processing labeler on {subdirectory}...")
         try:
-            core_labeler(
+            succeeded = core_labeler(
                 subdirectory,
                 config_directory,
                 output_directory,
                 top_directory,
-                ollama_flag
+                ollama_flag,
+                core_timeout,
             )
-            print(f'Processed {subdirectory}')
+            if succeeded:
+                print(f'Processed {subdirectory}')
+            else:
+                failures.append(os.path.basename(subdirectory))
         except Exception as e:
             logging.warning(f'Error processing {subdirectory}: {e}')
+            failures.append(os.path.basename(subdirectory))
+
+    if failures:
+        logging.warning('Batch completed with %d failure(s): %s', len(failures), ', '.join(failures))
+        return False
+    return True
 
         
 if __name__ == '__main__':
@@ -312,8 +363,14 @@ if __name__ == '__main__':
         '-n',
         '--ollama_flag',
         default=False,
-        type=bool,
+        action='store_true',
         help='Flag to enable ollama integration.',
+    )
+    parser.add_argument(
+        '--core-timeout',
+        type=int,
+        default=180,
+        help='Maximum seconds allowed for each core build and simulation.',
     )
     # Mutually exclusive run modes
     run_mode = parser.add_mutually_exclusive_group(required=True)
@@ -335,18 +392,25 @@ if __name__ == '__main__':
     batch_mode = args.batch
     top_folder = args.top
     ollama_flag = args.ollama_flag
+    core_timeout = args.core_timeout
     single_processor = args.single_processor
     if batch_mode:
         # Run in batch mode
-        main(dir_to_search, config_json, output_folder, top_folder, ollama_flag)
+        if not main(
+            dir_to_search, config_json, output_folder, top_folder,
+            ollama_flag, core_timeout,
+        ):
+            sys.exit(1)
     else:
         # Run in interactive mode
         single_dir = os.path.join(dir_to_search, single_processor)
         print(f"Processing labeler on {single_dir}...") # debug
-        core_labeler(
+        if not core_labeler(
             single_dir,
             config_json,
             output_folder,
             top_folder,
-            ollama_flag
-        )
+            ollama_flag,
+            core_timeout,
+        ):
+            sys.exit(1)

@@ -3,7 +3,12 @@ import re
 import os
 import json
 import logging
-from regfile_finder import find_register_file
+from regfile_finder import (
+    run_register_file_finder,
+    sample_candidate_value,
+    selected_candidate_metadata,
+    simulator_safe_hierarchy,
+)
 from cycle import instr_mem_driver, test_pc_behavior
 from cocotb.triggers import RisingEdge, Timer
 from cocotb.clock import Clock
@@ -26,6 +31,41 @@ def resolve_path(dut, path: str):
     return handle
 
 
+class _RegisterValue:
+    def __init__(self, value, width):
+        self.value = value
+        self._width = width
+
+    def __len__(self):
+        return self._width
+
+
+class _ArchitecturalRegfileView:
+    """Present every discovered storage representation as x0..x31 words."""
+
+    def __init__(self, dut, candidate):
+        self._dut = dut
+        self._candidate = candidate
+        self._path = candidate.get("path")
+        self._width = int(candidate.get("word_width") or 32)
+        self._depth = int(candidate.get("depth") or 32)
+        self._architectural_indexed = True
+
+    def __len__(self):
+        return self._depth
+
+    def __getitem__(self, index):
+        sampled = sample_candidate_value(self._dut, self._candidate) or {}
+        mapping = self._candidate.get("mapping_order")
+        if self._candidate.get("kind") == "packed_flat_vector":
+            mapping = mapping or "packed_lsb_reg0"
+            sampled = sampled.get(mapping) or {}
+        value = sampled.get(f"x{int(index)}")
+        if value is None:
+            raise IndexError(index)
+        return _RegisterValue(value, self._width)
+
+
 @cocotb.test()
 async def processor_test(dut):
     """Test function for the processor.
@@ -34,10 +74,10 @@ async def processor_test(dut):
         dut: The design under test.
     """
 
+    dut = simulator_safe_hierarchy(dut)
     bits = None
 
-    # Importing find_register_file registers the finder as a cocotb test.
-    # Cocotb runs it before this labeler test, so the JSON should already exist.
+    discovery = await run_register_file_finder(dut)
 
     output_dir = os.environ.get('OUTPUT_DIR', "default")
     processor_name = os.path.basename(output_dir)
@@ -52,14 +92,23 @@ async def processor_test(dut):
     except (json.JSONDecodeError, OSError) as e:
         logging.warning('Error reading register file candidates: %s', e)
     if not regfile_candidates:
-        dut._log.error("No register file candidates found. Please run regfile_finder.py first.")
-        return
+        raise AssertionError(
+            "No visible register file candidates were found; analysis is incomplete"
+        )
     dut._log.info(f"Register file candidates: {regfile_candidates}")    
 
-    regfile_path = regfile_candidates[0]
+    candidate = selected_candidate_metadata(discovery)
+    regfile_path = (
+        candidate.get("path") or candidate.get("candidate_path")
+        if candidate
+        else regfile_candidates[0]
+    )
     dut._log.info(f"Using register file: {regfile_path}")
 
-    regfile = resolve_path(dut, regfile_path)
+    if candidate and candidate.get("kind") != "array_of_words":
+        regfile = _ArchitecturalRegfileView(dut, candidate)
+    else:
+        regfile = resolve_path(dut, regfile_path)
     dut._log.info(f"Resolved register file: {regfile}")
 
     bits = len(regfile[7])
@@ -80,7 +129,7 @@ async def processor_test(dut):
         logging.warning('Error reading existing JSON file: %s', e)
         existing_data = {}
 
-    existing_data[processor_name]["bits"] = bits
+    existing_data.setdefault(processor_name, {})["bits"] = bits
 
     # Save the updated data back to the JSON file
     try:
