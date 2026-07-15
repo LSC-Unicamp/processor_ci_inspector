@@ -4,41 +4,44 @@ import json
 import logging
 import re
 from collections import Counter
+from statistics import median
 from cocotb.triggers import RisingEdge, Timer
-from cocotb.clock import Clock
-from regfile_finder import find_regfile_write_signals, load_regfile_interface
+try:
+    from .regfile_finder import (
+        _start_clock_once,
+        find_regfile_write_signals,
+        load_regfile_interface,
+    )
+except ImportError:
+    from regfile_finder import (
+        _start_clock_once,
+        find_regfile_write_signals,
+        load_regfile_interface,
+    )
+try:
+    from .probe_programs import CYCLE_SIGNATURE, FORWARDING_PROBES, forwarding_distance_variant, forwarding_probe_pair
+    from .riscv.encoding import ADD, ADDI, JAL, LW, NOP, SUB, SW
+    from .simulation import DataMemory, ProgramMemory
+except ImportError:
+    from probe_programs import CYCLE_SIGNATURE, FORWARDING_PROBES, forwarding_distance_variant, forwarding_probe_pair
+    from riscv.encoding import ADD, ADDI, JAL, LW, NOP, SUB, SW
+    from simulation import DataMemory, ProgramMemory
 
 
-NOP_INSTRUCTION = 0x00000013
-
-
-def _addi(rd, rs1, imm):
-    return ((imm & 0xFFF) << 20) | ((rs1 & 0x1F) << 15) | (0 << 12) | ((rd & 0x1F) << 7) | 0x13
-
-
-def _jal(rd, offset):
-    bit20 = (offset >> 20) & 0x1
-    bits10_1 = (offset >> 1) & 0x3FF
-    bit11 = (offset >> 11) & 0x1
-    bits19_12 = (offset >> 12) & 0xFF
-    return (bit20 << 31) | (bits10_1 << 21) | (bit11 << 20) | (bits19_12 << 12) | ((rd & 0x1F) << 7) | 0x6F
+NOP_INSTRUCTION = NOP
+_addi, _add, _sub, _lw, _sw, _jal = ADDI, ADD, SUB, LW, SW, JAL
 
 
 # Straight-line execution signature. Each measured instruction writes a unique
 # register/value pair exactly once, then the core parks in a self-loop after the
 # measured window. Keep the signature away from regfile-finder loop addresses so
 # cores without a real reset can still NOP-forward into this probe.
-SIGNATURE_BASE_PC = 0x40
-SIGNATURE_BASE_PCS = (SIGNATURE_BASE_PC, 0x200)
+SIGNATURE_BASE_PC = CYCLE_SIGNATURE.base_addresses[0]
+SIGNATURE_BASE_PCS = CYCLE_SIGNATURE.base_addresses
 SIGNATURE_WRITE_TEMPLATES = [
-    {"offset": 0x00, "reg": 5, "value": 0x135, "instruction": "addi x5, x0, 0x135"},
-    {"offset": 0x04, "reg": 6, "value": 0x246, "instruction": "addi x6, x0, 0x246"},
-    {"offset": 0x08, "reg": 7, "value": 0x357, "instruction": "addi x7, x0, 0x357"},
-    {"offset": 0x0C, "reg": 8, "value": 0x468, "instruction": "addi x8, x0, 0x468"},
-    {"offset": 0x10, "reg": 9, "value": 0x579, "instruction": "addi x9, x0, 0x579"},
-    {"offset": 0x14, "reg": 10, "value": 0x68A, "instruction": "addi x10, x0, 0x68a"},
+    {**entry, "instruction": f"addi x{entry['reg']}, x0, {entry['value']:#x}"}
+    for entry in CYCLE_SIGNATURE.entries()
 ]
-
 
 def _signature_entries_for_base(base_pc):
     return [
@@ -57,19 +60,47 @@ SIGNATURE_BY_PC = {entry["pc"]: entry for entry in SIGNATURE_ALIASED_WRITES}
 SIGNATURE_BY_REG_VALUE = {}
 for entry in SIGNATURE_ALIASED_WRITES:
     SIGNATURE_BY_REG_VALUE.setdefault((entry["reg"], entry["value"] & 0xFFFFFFFF), []).append(entry)
-SIGNATURE_LOOP_PC = SIGNATURE_BASE_PC + 0x30
+SIGNATURE_LOOP_PC = 0xB0
 
-prog = {entry["pc"]: _addi(entry["reg"], 0, entry["value"]) for entry in SIGNATURE_ALIASED_WRITES}
-for base_pc in SIGNATURE_BASE_PCS:
-    prog[base_pc + 0x30] = _jal(0, 0)
+# Regfile discovery runs before cycle analysis in the same simulation and may
+# leave a self-loop below the signature (currently at 0x20 or 0x2c).  Explicitly
+# overwrite the path from the reset vector to the primary signature with NOPs
+# when a wrapper offers internal instruction-memory programming.
+program_memory = ProgramMemory(CYCLE_SIGNATURE)
+prog = program_memory.image  # Read-only compatibility view for existing tests.
+HAZARD_BASE_PC = FORWARDING_PROBES["alu_to_alu"].base_addresses[0]
+HAZARD_BASE_PCS = FORWARDING_PROBES["alu_to_alu"].base_addresses
+HAZARD_WRITE_TEMPLATE = [
+    {**entry, "instruction": FORWARDING_PROBES["alu_to_alu"].instructions[entry["offset"]]}
+    for entry in FORWARDING_PROBES["alu_to_alu"].entries()
+]
+hazard_prog = FORWARDING_PROBES["alu_to_alu"].image()
 
 
-async def instr_mem_driver(dut):
+async def _load_optional_internal_program(dut, program):
+    required = ("imem_prog_we", "imem_prog_addr", "imem_prog_data")
+    if not all(hasattr(dut, name) for name in required):
+        return
+    dut.imem_prog_we.value = 0
+    # Program high aliases first. Some wrappers expose fewer address bits than
+    # imem_prog_addr, so the 0x200 fallback image aliases onto low memory. In
+    # that case the primary reset-vector image must be the final value written.
+    for address, instruction in sorted(program.items(), reverse=True):
+        dut.imem_prog_addr.value = int(address)
+        dut.imem_prog_data.value = int(instruction)
+        dut.imem_prog_we.value = 1
+        await RisingEdge(dut.sys_clk)
+        await Timer(0.001, unit="ns")
+    dut.imem_prog_we.value = 0
+
+
+async def instr_mem_driver(dut, memory=None):
     """
     Zero-wait-state memory driver that responds immediately.
     For cores that check valid/ack before asserting request (like AUK-V),
     we keep ACK high and data ready at all times.
     """
+    memory = memory or program_memory
     dut.core_data_in.value = 0
     dut.core_ack.value = 1  # Keep ACK high - zero wait state memory
     cycle_count = 0
@@ -79,11 +110,14 @@ async def instr_mem_driver(dut):
         cycle_count += 1
         
         # Always provide valid data based on current address
-        addr_val = dut.core_addr.value
+        addr_signal = dut.imem_fetch_addr if hasattr(dut, "imem_fetch_addr") else dut.core_addr
+        addr_val = addr_signal.value
         if addr_val.is_resolvable:
             addr = addr_val.to_unsigned()
-            instr = prog.get(addr, 0x00000013)  # default NOP
+            instr = memory.read(addr)
             dut.core_data_in.value = instr
+            if hasattr(dut, "core_data_in_hi"):
+                dut.core_data_in_hi.value = memory.read(addr + 4)
             
             if cycle_count <= 20:
                 cyc_val = dut.core_cyc.value if hasattr(dut, 'core_cyc') else 'N/A'
@@ -91,26 +125,67 @@ async def instr_mem_driver(dut):
                 dut._log.info(f"[mem_driver cycle {cycle_count}] cyc={cyc_val} stb={stb_val} addr={addr:#010x} data={instr:#010x}")
         else:
             dut.core_data_in.value = 0x00000013  # NOP if address not ready
+            if hasattr(dut, "core_data_in_hi"):
+                dut.core_data_in_hi.value = 0x00000013
 
 
-async def data_mem_driver(dut):
+async def data_mem_driver(dut, memory=None):
     """
     Data memory driver for cores with separate instruction and data buses.
     Zero-wait-state: keeps ACK high and provides immediate responses.
     """
+    memory = memory or DataMemory()
+    memory.reset()
     # Check if core has separate data memory interface
     if not hasattr(dut, 'data_mem_ack'):
-        return  # Core doesn't have separate data memory, exit
-    
+        memory.supported = False
+        return
+
+    memory.supported = all(hasattr(dut, name) for name in (
+        "data_mem_addr", "data_mem_we", "data_mem_data_out"
+    ))
     dut.data_mem_data_in.value = 0
     dut.data_mem_ack.value = 1  # Keep ACK high - zero wait state
-    
+    cycle = 0
+    active_transaction = None
+    active_generation = memory.generation
     while True:
         await RisingEdge(dut.sys_clk)
         await Timer(0.001, unit="ns") # let signals settle
-
-        # Always provide data (0 for all loads)
-        dut.data_mem_data_in.value = 0
+        cycle += 1
+        memory.current_cycle = cycle
+        if active_generation != memory.generation:
+            active_transaction = None
+            active_generation = memory.generation
+        if not memory.supported:
+            dut.data_mem_data_in.value = 0
+            continue
+        requested = (
+            (not hasattr(dut, "data_mem_cyc") or _is_high(dut.data_mem_cyc))
+            and (not hasattr(dut, "data_mem_stb") or _is_high(dut.data_mem_stb))
+        )
+        if not requested:
+            active_transaction = None
+            dut.data_mem_data_in.value = 0
+            continue
+        address = _safe_signal_int(dut.data_mem_addr)
+        is_write = _is_high(dut.data_mem_we)
+        value = _safe_signal_int(dut.data_mem_data_out)
+        transaction = (address, is_write, value)
+        if address is None:
+            continue
+        if transaction != active_transaction:
+            if is_write:
+                byte_enable = None
+                for name in ("data_mem_wstrb", "data_mem_sel", "data_mem_be"):
+                    if hasattr(dut, name):
+                        byte_enable = _safe_signal_int(getattr(dut, name))
+                        break
+                memory.write_word(address, value or 0, byte_enable, cycle=cycle)
+            else:
+                memory.read_word(address, cycle=cycle)
+            active_transaction = transaction
+        dut.data_mem_data_in.value = memory.read_word(address)
 
 
 def _get_handle_from_path(obj, path_str):
@@ -211,6 +286,8 @@ def _is_high(signal):
 
 
 def _fetch_transaction_ok(dut):
+    if hasattr(dut, "imem_fetch_addr"):
+        return True
     required = ["core_stb", "core_ack"]
     optional = ["core_cyc"]
     if any(not hasattr(dut, name) or not _is_high(getattr(dut, name)) for name in required):
@@ -220,6 +297,30 @@ def _fetch_transaction_ok(dut):
     if hasattr(dut, "core_we") and _is_high(dut.core_we):
         return False
     return True
+
+
+def _program_address_aliases(address):
+    """Return common byte-address aliases used by wrapper-local memories."""
+    if address is None:
+        return ()
+    address = int(address)
+    aliases = []
+    for candidate in (address, address & 0xFFF, address & 0x3FF, address & 0x7F):
+        if candidate not in aliases:
+            aliases.append(candidate)
+    return tuple(aliases)
+
+
+def _cycle_program_instruction(address):
+    return program_memory.read(address)
+
+
+def _canonical_signature_pc(address):
+    """Map a relocated fetch PC back to the signature's programmed offset."""
+    for candidate in _program_address_aliases(address):
+        if candidate in SIGNATURE_BY_PC:
+            return candidate
+    return None
 
 
 def _normalise_interface_path(path, actual_core_instance):
@@ -266,6 +367,13 @@ def _current_regfile_interface_state(core_name):
     if isinstance(interface_signals, dict) and selected.get("timing_offset") is not None:
         interface_signals = dict(interface_signals)
         interface_signals["timing_offset"] = selected.get("timing_offset")
+        for role in ("write_enable", "write_addr", "write_data"):
+            offset_key = f"{role}_timing_offset"
+            if selected.get(offset_key) is not None:
+                interface_signals[offset_key] = selected.get(offset_key)
+    if isinstance(interface_signals, dict) and selected.get("write_addr_bit_offset") is not None:
+        interface_signals = dict(interface_signals)
+        interface_signals["write_addr_bit_offset"] = selected.get("write_addr_bit_offset")
 
     if selected.get("status") == "rejected_interface":
         return "rejected", interface_signals
@@ -309,6 +417,19 @@ def _resolve_write_interface(dut, core_name, regfile):
             handles["_timing_offset"] = int(interface_signals.get("timing_offset", 0))
         except (TypeError, ValueError):
             handles["_timing_offset"] = 0
+        handles["_role_timing_offsets"] = {}
+        for role in ("write_enable", "write_addr", "write_data"):
+            try:
+                handles["_role_timing_offsets"][role] = int(
+                    interface_signals.get(f"{role}_timing_offset", handles["_timing_offset"])
+                )
+            except (TypeError, ValueError):
+                handles["_role_timing_offsets"][role] = handles["_timing_offset"]
+        try:
+            bit_offset = interface_signals.get("write_addr_bit_offset")
+            handles["_write_addr_bit_offset"] = int(bit_offset) if bit_offset is not None else None
+        except (TypeError, ValueError):
+            handles["_write_addr_bit_offset"] = None
         return handles
 
     dut._log.warning(
@@ -327,11 +448,39 @@ def _infer_regfile_depth(regfile_metadata, regfile):
         return None
 
 
+def _declared_regfile_indices(regfile):
+    """Return HDL array indices when cocotb exposes the declared range."""
+    declared_range = getattr(regfile, "range", None)
+    if declared_range is None:
+        return None
+    try:
+        return {int(index) for index in declared_range}
+    except (TypeError, ValueError):
+        return None
+
+
 def _regfile_storage_index(arch_reg, regfile_metadata=None, regfile=None):
+    if not 0 <= arch_reg <= 31:
+        return None
+
+    if getattr(regfile, "_architectural_indexed", False):
+        return arch_reg
+
+    mapping_order = (regfile_metadata or {}).get("mapping_order")
+    mapping_delta = {
+        "physical_index_plus_1": 1,
+        "physical_index_minus_1": -1,
+    }.get(mapping_order, 0)
+    physical_index = arch_reg + mapping_delta
+
+    declared_indices = _declared_regfile_indices(regfile)
+    if declared_indices is not None:
+        return physical_index if physical_index in declared_indices else None
+
     depth = _infer_regfile_depth(regfile_metadata, regfile)
     if depth == 31:
-        return arch_reg - 1 if 1 <= arch_reg <= 31 else None
-    return arch_reg
+        return physical_index - 1 if 1 <= physical_index <= 31 else None
+    return physical_index if 0 <= physical_index < (depth or 32) else None
 
 
 def _get_regfile_reg_value(regfile, arch_reg, regfile_metadata=None):
@@ -366,10 +515,22 @@ def _load_regfile_metadata(output_dir, processor_name, regfile_path=None):
     return None
 
 
+def _measurement_cycle_budget(regfile_metadata):
+    if isinstance(regfile_metadata, dict) and regfile_metadata.get("kind") == "bit_sliced_array":
+        return 2000
+    return 300
+
+
 def _signature_entry_for(reg, value, fetched_pcs=None, seen_commit_pcs=None):
     fetched_pcs = fetched_pcs or set()
     seen_commit_pcs = seen_commit_pcs or set()
     candidates = SIGNATURE_BY_REG_VALUE.get((reg, value & 0xFFFFFFFF), [])
+    # The same architectural signature is installed at multiple address
+    # aliases. A level write-enable may remain asserted for more than one
+    # sampled cycle; once any alias has committed, do not count another alias
+    # as a second architectural instruction.
+    if any(entry["pc"] in seen_commit_pcs for entry in candidates):
+        return None
     for entry in candidates:
         if entry["pc"] in fetched_pcs and entry["pc"] not in seen_commit_pcs:
             return entry
@@ -380,8 +541,12 @@ def _signature_entry_for(reg, value, fetched_pcs=None, seen_commit_pcs=None):
 
 
 def _record_signature_fetch(dut, cycle, fetch_events, seen_fetch_pcs):
-    pc = _safe_signal_int(dut.core_addr)
-    if pc in SIGNATURE_BY_PC and _fetch_transaction_ok(dut) and pc not in seen_fetch_pcs:
+    pc_handle = dut.imem_fetch_addr if hasattr(dut, "imem_fetch_addr") else dut.core_addr
+    raw_pc = _safe_signal_int(pc_handle)
+    pc = _canonical_signature_pc(raw_pc)
+    if pc is None and cycle < 40 and (_env_flag("CYCLE_DEBUG") or _env_flag("DEBUG_CYCLE")):
+        dut._log.info("[measure] Unmatched raw fetch PC at cycle %d: %s", cycle, raw_pc)
+    if pc is not None and _fetch_transaction_ok(dut) and pc not in seen_fetch_pcs:
         entry = SIGNATURE_BY_PC[pc]
         for prior_entry in SIGNATURE_ALIASED_WRITES:
             if prior_entry["base_pc"] != entry["base_pc"] or prior_entry["offset"] >= entry["offset"]:
@@ -395,12 +560,63 @@ def _record_signature_fetch(dut, cycle, fetch_events, seen_fetch_pcs):
         fetch_events.append({"cycle": cycle, "pc": pc})
 
 
-async def _observe_signature_commits_with_interface(dut, handles, max_cycles=300):
+def _record_probe_fetch(dut, cycle, spec, fetch_events, seen_offsets):
+    """Record the first accepted fetch of each instruction in a probe image."""
+    pc_handle = dut.imem_fetch_addr if hasattr(dut, "imem_fetch_addr") else dut.core_addr
+    raw_pc = _safe_signal_int(pc_handle)
+    if raw_pc is None:
+        return
+    for candidate in _program_address_aliases(raw_pc):
+        for base in spec.base_addresses:
+            offset = candidate - base
+            if offset in spec.instructions and offset not in seen_offsets:
+                seen_offsets.add(offset)
+                fetch_events.append({"cycle": cycle, "offset": offset, "pc": raw_pc})
+                return
+    if cycle < 25 and (_env_flag("CYCLE_DEBUG") or _env_flag("DEBUG_CYCLE")):
+        dut._log.info("[forwarding] unmatched probe fetch cycle=%d raw_pc=%s probe=%s", cycle, raw_pc, spec.name)
+
+
+def _aligned_interface_values(samples_by_cycle, reference_cycle, reference_offset, role_offsets):
+    values = {}
+    for role in ("write_enable", "write_addr", "write_data"):
+        signal_cycle = reference_cycle + role_offsets.get(role, reference_offset) - reference_offset
+        sample = samples_by_cycle.get(signal_cycle)
+        if sample is None:
+            return None
+        values[role] = sample.get(role)
+    return values
+
+
+async def _observe_signature_commits_with_interface(
+    dut,
+    handles,
+    regfile=None,
+    regfile_metadata=None,
+    max_cycles=300,
+):
     dut._log.info("[measure] Observing signature commits through register-file interface")
     commit_events = []
     fetch_events = []
     seen_commit_pcs = set()
     seen_fetch_pcs = set()
+    samples_by_cycle = {}
+    previous_regfile_values = {}
+    if regfile is not None:
+        for entry in SIGNATURE_WRITES:
+            previous_regfile_values[entry["reg"]] = _get_regfile_reg_value(
+                regfile,
+                entry["reg"],
+                regfile_metadata,
+            )
+    reference_offset = handles.get("_timing_offset", 0)
+    role_offsets = handles.get("_role_timing_offsets") or {
+        role: reference_offset for role in ("write_enable", "write_addr", "write_data")
+    }
+    max_alignment_delta = max(
+        role_offsets.get(role, reference_offset) - reference_offset
+        for role in ("write_enable", "write_addr", "write_data")
+    )
 
     for cycle in range(max_cycles):
         await RisingEdge(dut.sys_clk)
@@ -408,40 +624,86 @@ async def _observe_signature_commits_with_interface(dut, handles, max_cycles=300
 
         _record_signature_fetch(dut, cycle, fetch_events, seen_fetch_pcs)
 
-        if not _is_high(handles["write_enable"]):
-            continue
-
-        reg = _safe_signal_int(handles["write_addr"])
-        value = _safe_signal_int(handles["write_data"])
-        if reg is None or value is None:
-            continue
-
-        value &= 0xFFFFFFFF
-        entry = _signature_entry_for(
-            reg,
-            value,
-            fetched_pcs=seen_fetch_pcs,
-            seen_commit_pcs=seen_commit_pcs,
-        )
-        if entry is None or entry["pc"] in seen_commit_pcs:
-            continue
-
-        seen_commit_pcs.add(entry["pc"])
-        event = {
-            "cycle": cycle,
-            "pc": entry["pc"],
-            "reg": reg,
-            "value": value,
-            "source": "interface",
+        samples_by_cycle[cycle] = {
+            role: _safe_signal_int(handles[role])
+            for role in ("write_enable", "write_addr", "write_data")
         }
-        commit_events.append(event)
-        dut._log.info(
-            "[measure] Commit %s at cycle %d: x%d = 0x%08x",
-            entry["instruction"],
-            cycle,
-            reg,
-            value,
+        reference_cycle = cycle - max(0, max_alignment_delta)
+        aligned = _aligned_interface_values(
+            samples_by_cycle,
+            reference_cycle,
+            reference_offset,
+            role_offsets,
         )
+        if aligned is not None and _is_high(aligned["write_enable"]):
+            reg = aligned["write_addr"]
+            value = aligned["write_data"]
+            if reg is not None and value is not None:
+                bit_offset = handles.get("_write_addr_bit_offset")
+                if bit_offset is not None:
+                    reg = (reg >> bit_offset) & 0x1F
+
+                value &= 0xFFFFFFFF
+                entry = _signature_entry_for(
+                    reg,
+                    value,
+                    fetched_pcs=seen_fetch_pcs,
+                    seen_commit_pcs=seen_commit_pcs,
+                )
+                if entry is not None and entry["pc"] not in seen_commit_pcs:
+                    seen_commit_pcs.add(entry["pc"])
+                    commit_events.append({
+                        "cycle": reference_cycle,
+                        "pc": entry["pc"],
+                        "reg": reg,
+                        "value": value,
+                        "source": "interface",
+                    })
+                    dut._log.info(
+                        "[measure] Commit %s at cycle %d: x%d = 0x%08x",
+                        entry["instruction"],
+                        reference_cycle,
+                        reg,
+                        value,
+                    )
+
+        # Keep architectural storage observation active alongside a real
+        # interface. This recovers from an otherwise plausible interface whose
+        # role timing is incomplete without discarding valid interface events.
+        if regfile is not None:
+            for signature_entry in SIGNATURE_WRITES:
+                reg = signature_entry["reg"]
+                value = _get_regfile_reg_value(regfile, reg, regfile_metadata)
+                if value is None:
+                    continue
+                previous = previous_regfile_values.get(reg)
+                previous_regfile_values[reg] = value
+                expected = signature_entry["value"] & 0xFFFFFFFF
+                if value != expected or previous == expected:
+                    continue
+                entry = _signature_entry_for(
+                    reg,
+                    expected,
+                    fetched_pcs=seen_fetch_pcs,
+                    seen_commit_pcs=seen_commit_pcs,
+                ) or signature_entry
+                if entry["pc"] in seen_commit_pcs:
+                    continue
+                seen_commit_pcs.add(entry["pc"])
+                commit_events.append({
+                    "cycle": cycle,
+                    "pc": entry["pc"],
+                    "reg": reg,
+                    "value": value,
+                    "source": "regfile_observation",
+                })
+                dut._log.info(
+                    "[measure] Observed fallback commit %s at cycle %d: x%d = 0x%08x",
+                    entry["instruction"],
+                    cycle,
+                    reg,
+                    value,
+                )
 
         if len(commit_events) == len(SIGNATURE_WRITES):
             break
@@ -521,6 +783,14 @@ def _modal_value(values):
     return sorted(counts.items(), key=lambda item: (-item[1], item[0]))[0][0]
 
 
+def _dominant_value(values, minimum_fraction=0.8):
+    """Return the mode only when it represents a strong majority."""
+    if not values:
+        return None
+    mode = _modal_value(values)
+    return mode if values.count(mode) / len(values) >= minimum_fraction else None
+
+
 def _pair_fetches_and_commits(fetch_events, commit_events):
     fetch_by_pc = {event["pc"]: event for event in sorted(fetch_events, key=lambda event: event["cycle"])}
     paired = []
@@ -587,6 +857,8 @@ def _confidence_score(evidence):
 def _classify_cycle_behavior(evidence):
     commit_intervals = evidence["commit_intervals"]
     latencies = evidence["fetch_to_commit_latencies"]
+    dominant_commit_interval = _dominant_value(commit_intervals)
+    dominant_latency = _dominant_value(latencies)
     confidence, penalties = _confidence_score(evidence)
     reason = "ambiguous cycle behavior"
 
@@ -597,23 +869,49 @@ def _classify_cycle_behavior(evidence):
         "confidence": confidence,
     }
 
+    burst_pipeline = (
+        evidence["commits_observed"] >= 3
+        and any(interval == 0 for interval in commit_intervals)
+        and all(interval >= 0 for interval in commit_intervals)
+        and len(latencies) >= 3
+        and all(latency > 0 for latency in latencies)
+    )
+
     if evidence["commits_observed"] < 3 or not commit_intervals:
         reason = "insufficient signature commits observed"
-    elif evidence["mixed_commit_intervals"]:
-        reason = "mixed architectural commit intervals observed"
-    elif all(interval == 1 for interval in commit_intervals):
+    elif burst_pipeline:
+        classification["single_cycle"] = False
+        classification["multicycle"] = False
+        classification["pipeline"] = {
+            "depth_estimate": evidence["depth_estimate"],
+            "depth_estimate_source": evidence["depth_estimate_source"],
+            "superscalar_commit_evidence": True,
+        }
+        reason = "multiple architectural commits in sampled cycles with positive fetch-to-commit latency"
+    elif all(interval > 1 for interval in commit_intervals):
+        classification["single_cycle"] = False
+        classification["multicycle"] = True
+        classification["pipeline"] = False
+        reason = (
+            "architectural commits are consistently spaced by multiple cycles"
+            if evidence["mixed_commit_intervals"]
+            else "architectural commits are spaced by multiple cycles"
+        )
+    elif dominant_commit_interval is None:
+        reason = "no dominant architectural commit interval observed"
+    elif dominant_commit_interval == 1:
         if not latencies:
             reason = "one signature commit per cycle, but fetch-to-commit pairing is unavailable"
-        elif all(latency == 0 for latency in latencies):
+        elif dominant_latency == 0:
             classification["single_cycle"] = True
             classification["multicycle"] = False
             classification["pipeline"] = False
-            reason = "one architectural commit per cycle with zero fetch-to-commit latency"
+            reason = "dominant one-per-cycle commit cadence with zero modal fetch-to-commit latency"
         elif (
             evidence["method"] == "regfile_observation"
             and evidence["interface_incomplete"]
             and evidence["raw_modal_latency"] == 2
-            and not evidence["unstable_latency"]
+            and dominant_latency == 2
         ):
             classification["single_cycle"] = True
             classification["multicycle"] = False
@@ -622,7 +920,7 @@ def _classify_cycle_behavior(evidence):
                 "one architectural commit per cycle with two raw observation cycles; "
                 "treated as single-cycle behind registered instruction delivery"
             )
-        elif all(latency > 0 for latency in latencies) and not evidence["unstable_latency"]:
+        elif dominant_latency is not None and dominant_latency > 0:
             classification["single_cycle"] = False
             classification["multicycle"] = False
             pipeline = {
@@ -632,14 +930,18 @@ def _classify_cycle_behavior(evidence):
             if evidence["raw_depth_estimate"] != evidence["depth_estimate"]:
                 pipeline["raw_depth_estimate"] = evidence["raw_depth_estimate"]
             classification["pipeline"] = pipeline
-            reason = "one architectural commit per cycle with stable nonzero fetch-to-commit latency"
+            reason = "dominant one-per-cycle commit cadence with stable nonzero modal latency"
         else:
-            reason = "one architectural commit per cycle with unstable or mixed fetch-to-commit latencies"
-    elif all(interval > 1 for interval in commit_intervals):
+            reason = "one architectural commit per cycle without a dominant fetch-to-commit latency"
+    elif dominant_commit_interval > 1:
         classification["single_cycle"] = False
         classification["multicycle"] = True
         classification["pipeline"] = False
-        reason = "architectural commits are spaced by multiple cycles"
+        reason = (
+            "dominant architectural commit interval is multiple cycles"
+            if evidence["mixed_commit_intervals"]
+            else "architectural commits are spaced by multiple cycles"
+        )
 
     return classification, reason, penalties
 
@@ -735,6 +1037,7 @@ async def measure_execution_model(dut, regfile, core_name=None, regfile_metadata
     """
     interface_handles = None
     interface_incomplete = False
+    max_cycles = _measurement_cycle_budget(regfile_metadata)
     try:
         interface_handles = _resolve_write_interface(dut, core_name, regfile)
     except Exception as exc:
@@ -743,7 +1046,13 @@ async def measure_execution_model(dut, regfile, core_name=None, regfile_metadata
 
     if interface_handles:
         interface_timing_offset = interface_handles.get("_timing_offset", 0)
-        fetch_events, commit_events = await _observe_signature_commits_with_interface(dut, interface_handles)
+        fetch_events, commit_events = await _observe_signature_commits_with_interface(
+            dut,
+            interface_handles,
+            regfile=regfile,
+            regfile_metadata=regfile_metadata,
+            max_cycles=max_cycles,
+        )
         method = "interface"
     else:
         interface_timing_offset = None
@@ -751,6 +1060,7 @@ async def measure_execution_model(dut, regfile, core_name=None, regfile_metadata
             dut,
             regfile,
             regfile_metadata=regfile_metadata,
+            max_cycles=max_cycles,
         )
         method = "regfile_observation"
         interface_incomplete = True
@@ -771,19 +1081,512 @@ async def measure_execution_model(dut, regfile, core_name=None, regfile_metadata
         "cycle_debug": debug,
     }
 
+def _is_pipeline_classification(pipeline):
+    """Only a positive pipeline classification enables forwarding probing."""
+    return isinstance(pipeline, dict)
+
+
+async def _observe_probe_commits(dut, regfile, regfile_metadata, handles, spec, max_cycles=300, fetch_events=None):
+    """Return ordered architectural commits for a declarative probe."""
+    commits = []
+    expected_by_pair = {
+        (entry["reg"], entry["value"] & 0xFFFFFFFF): entry
+        for entry in spec.entries()
+    }
+    seen_offsets = set()
+    previous_values = {
+        entry["reg"]: _get_regfile_reg_value(regfile, entry["reg"], regfile_metadata)
+        for entry in spec.entries()
+    }
+    samples_by_cycle = {}
+    reference_offset = handles.get("_timing_offset", 0) if handles else 0
+    role_offsets = (handles or {}).get("_role_timing_offsets") or {
+        role: reference_offset for role in ("write_enable", "write_addr", "write_data")
+    }
+    max_alignment_delta = max(
+        role_offsets.get(role, reference_offset) - reference_offset
+        for role in ("write_enable", "write_addr", "write_data")
+    )
+    fetch_events = fetch_events if fetch_events is not None else []
+    seen_fetch_offsets = set()
+
+    for cycle in range(max_cycles):
+        await RisingEdge(dut.sys_clk)
+        await Timer(0.001, unit="ns")
+        _record_probe_fetch(dut, cycle, spec, fetch_events, seen_fetch_offsets)
+
+        if handles:
+            samples_by_cycle[cycle] = {
+                role: _safe_signal_int(handles[role])
+                for role in ("write_enable", "write_addr", "write_data")
+            }
+            reference_cycle = cycle - max(0, max_alignment_delta)
+            aligned = _aligned_interface_values(
+                samples_by_cycle, reference_cycle, reference_offset, role_offsets
+            )
+            if aligned is not None and _is_high(aligned["write_enable"]):
+                reg = aligned["write_addr"]
+                value = aligned["write_data"]
+                bit_offset = handles.get("_write_addr_bit_offset")
+                if reg is not None and bit_offset is not None:
+                    reg = (reg >> bit_offset) & 0x1F
+                entry = expected_by_pair.get((reg, (value or 0) & 0xFFFFFFFF))
+                if entry is not None and entry["offset"] not in seen_offsets:
+                    seen_offsets.add(entry["offset"])
+                    commits.append({
+                        "cycle": reference_cycle,
+                        "offset": entry["offset"],
+                        "reg": reg,
+                        "value": value & 0xFFFFFFFF,
+                        "source": "interface",
+                    })
+
+        # Also watch architectural storage. This is the primary fallback when
+        # no write interface exists and recovers from imperfect interface timing.
+        for entry in spec.entries():
+            reg = entry["reg"]
+            value = _get_regfile_reg_value(regfile, reg, regfile_metadata)
+            previous = previous_values.get(reg)
+            previous_values[reg] = value
+            if (
+                entry["offset"] not in seen_offsets
+                and value == (entry["value"] & 0xFFFFFFFF)
+                and previous != value
+            ):
+                seen_offsets.add(entry["offset"])
+                commits.append({
+                    "cycle": cycle,
+                    "offset": entry["offset"],
+                    "reg": reg,
+                    "value": value,
+                    "source": "regfile_observation",
+                })
+
+        if len(seen_offsets) == len(spec.expected_writes):
+            break
+
+    return sorted(commits, key=lambda event: event["offset"])
+
+
+def _classify_forwarding_probe(spec, commits, memory, memory_epoch, pipeline_depth):
+    complete = len(commits) == len(spec.expected_writes)
+    result = {
+        "present": None,
+        "status": "inconclusive",
+        "commits_observed": len(commits),
+        "commits_expected": len(spec.expected_writes),
+    }
+    if not complete:
+        result["reason"] = "expected architectural results were not all observed"
+        return result
+
+    by_role = {event.get("role"): event for event in commits}
+    if spec.name.startswith("alu_to_alu"):
+        dependent = [event for event in commits if event.get("role") == "dependent"]
+        if len(dependent) == 1:
+            producer = next(event for event in commits if event.get("role") == "producer")
+            interval = dependent[0]["cycle"] - producer["cycle"]
+            instruction_distance = (dependent[0]["offset"] - producer["offset"]) // 4
+            stalls = max(0, interval - instruction_distance)
+            result.update({"present": stalls == 0, "dependent_commit_interval": interval, "stall_cycles": stalls})
+        else:
+            intervals = _cycle_deltas(dependent)
+            result.update({
+                "present": bool(intervals) and all(interval == 1 for interval in intervals),
+                "dependent_commit_intervals": intervals,
+                "stall_cycles": sum(max(0, interval - 1) for interval in intervals),
+            })
+    elif spec.name.startswith("load_to_alu"):
+        interval = commits[-1]["cycle"] - commits[-2]["cycle"]
+        instruction_distance = (commits[-1]["offset"] - commits[-2]["offset"]) // 4
+        stalls = max(0, interval - instruction_distance)
+        # Waiting for architectural writeback costs roughly the remaining
+        # pipeline depth. A shorter separation is positive bypass evidence.
+        no_bypass_distance = max(2, int(pipeline_depth or 2) - 1)
+        result.update({
+            "present": stalls <= 1,
+            "dependent_commit_interval": interval,
+            "stall_cycles": stalls,
+            "no_bypass_distance_estimate": no_bypass_distance,
+        })
+    else:
+        transactions = [
+            {**item, "cycle": item["cycle"] - memory_epoch}
+            for item in memory.transactions
+        ] if memory and memory.supported else []
+        stores = [item for item in transactions if item["kind"] == "store"]
+        loads = [item for item in transactions if item["kind"] == "load"]
+        result["memory_transactions"] = transactions
+        if not memory or not memory.supported:
+            result["reason"] = "separate data-memory transaction interface is unavailable"
+            return result
+        if spec.name.startswith("alu_to_store_data") or spec.name.startswith("alu_to_store_address"):
+            producer_role = "producer" if spec.name.startswith("alu_to_store_data") else "address_producer"
+            producer = by_role.get(producer_role)
+            if not stores or producer is None:
+                result["reason"] = "producer commit or store request was not observed"
+                return result
+            request_distance = stores[0]["cycle"] - producer["cycle"]
+            result.update({
+                # Correct store data/address proves that the RAW dependency was
+                # handled, but external request timing cannot distinguish an
+                # operand bypass from a stall until register-file writeback.
+                # Leave capability undecided until the distance sweep can
+                # compare this observation with a timing baseline.
+                "present": None,
+                "architectural_dependency_handled": True,
+                "store_request_relative_to_producer_commit": request_distance,
+                "reason": (
+                    "architectural result is correct, but external store timing "
+                    "cannot distinguish forwarding from a writeback stall"
+                ),
+            })
+        elif spec.name.startswith("store_to_load"):
+            if not stores or not loads:
+                result["reason"] = "store/load transaction pair was not observed"
+                return result
+            distance = loads[-1]["cycle"] - stores[0]["cycle"]
+            result.update({
+                "present": loads[-1]["value"] == stores[0]["value"],
+                "transaction_distance": distance,
+            })
+
+    if result["present"] is not None:
+        result["status"] = "detected" if result["present"] else "not_detected"
+    return result
+
+
+def _summarize_forwarding_distance_sweep(name, classified_by_gap, pipeline_depth):
+    """Combine focused probes without confusing fixed core latency with RAW stalls."""
+    adjacent = dict(classified_by_gap[0])
+    ordered = [(gap, classified_by_gap[gap]) for gap in sorted(classified_by_gap)]
+
+    if name in ("alu_to_alu", "load_to_alu"):
+        measured = [
+            (gap, item.get("stall_cycles"))
+            for gap, item in ordered
+            if item.get("stall_cycles") is not None
+        ]
+        if not measured:
+            return adjacent
+
+        # Commit observation and some pipelines add a fixed cycle between all
+        # instructions. Only delay above the best observed floor is evidence of
+        # a dependency stall.
+        structural_floor = min(stalls for _, stalls in measured)
+        adjacent_stalls = measured[0][1]
+        raw_penalty = max(0, adjacent_stalls - structural_floor)
+        adjacent["structural_stall_floor"] = structural_floor
+        adjacent["raw_dependency_penalty"] = raw_penalty
+
+        allowed_penalty = 1 if name == "load_to_alu" else 0
+        if raw_penalty <= allowed_penalty:
+            adjacent["present"] = True
+            adjacent["status"] = "detected"
+            adjacent["evidence"] = "no dependency-specific delay above the measured structural floor"
+        else:
+            # A declining penalty across increasing gaps is consistent with a
+            # consumer waiting for architectural availability. It is negative
+            # behavioral evidence, not proof that the RTL lacks all bypasses.
+            penalties = [max(0, stalls - structural_floor) for _, stalls in measured]
+            adjacent["present"] = False
+            adjacent["status"] = "not_detected"
+            adjacent["evidence"] = "dependency-specific delay decreases as producer-consumer distance increases"
+            adjacent["raw_dependency_penalty_sweep"] = penalties
+        return adjacent
+
+    if name in ("alu_to_store_data", "alu_to_store_address"):
+        # There is no safe black-box absence inference here: both a forwarded
+        # store and a correctly stalled store produce the same architectural
+        # value at the memory interface.
+        if adjacent.get("architectural_dependency_handled"):
+            adjacent["present"] = None
+            adjacent["status"] = "inconclusive"
+        return adjacent
+
+    return adjacent
+
+
+def _trial_latency(name, spec, fetch_events, commits, transactions):
+    fetch = next((item for item in fetch_events if item["offset"] == spec.consumer_offset), None)
+    if fetch is None:
+        return None
+    if name in ("alu_to_store_data", "alu_to_store_address"):
+        store = next((item for item in transactions if item.get("kind") == "store"), None)
+        return None if store is None else store["cycle"] - fetch["cycle"]
+    commit = next((item for item in commits if item.get("role") == "consumer"), None)
+    return None if commit is None else commit["cycle"] - fetch["cycle"]
+
+
+def _timing_series(trials):
+    return [item["latency"] for item in trials if item.get("latency") is not None]
+
+
+def _paired_trials_need_extension(dependent, control):
+    """Use five trials when the initial three do not produce identical evidence."""
+    for trials in (dependent, control):
+        latencies = _timing_series(trials)
+        completions = [item.get("complete", False) for item in trials]
+        if len(latencies) != len(trials) or len(set(latencies)) > 1 or len(set(completions)) > 1:
+            return True
+    penalties = [d["latency"] - c["latency"] for d, c in zip(dependent, control)]
+    return len(set(penalties)) > 1
+
+
+def _classify_paired_forwarding(name, dependent, control, relaxed=None):
+    """Classify effective bypass behavior from layout-matched trial timings."""
+    category = "register_forwarding"
+    result = {
+        "status": "inconclusive",
+        "present": None,
+        "category": category,
+        "register_forwarding_test": True,
+        "architectural_dependency_handled": all(item.get("complete") for item in dependent),
+        "dependent_trials": _timing_series(dependent),
+        "control_trials": _timing_series(control),
+        "timing_stable": False,
+        "confidence": 0.35,
+    }
+    dep_complete = [item.get("complete", False) for item in dependent]
+    ctl_complete = [item.get("complete", False) for item in control]
+    dep = result["dependent_trials"]
+    ctl = result["control_trials"]
+    completion_stable = len(set(dep_complete)) == 1 and len(set(ctl_complete)) == 1
+
+    if completion_stable and all(ctl_complete) and not any(dep_complete):
+        result.update({
+            "status": "not_detected", "present": False, "confidence": 0.6,
+            "evidence": "control completed consistently but the dependent program did not",
+        })
+        return result
+    if not completion_stable or not all(dep_complete) or not all(ctl_complete) or len(dep) != len(dependent) or len(ctl) != len(control):
+        result["evidence"] = "paired programs did not complete consistently"
+        return result
+
+    stable = (max(dep) - min(dep) <= 1) and (max(ctl) - min(ctl) <= 1)
+    result["timing_stable"] = stable
+    result["dependent_median_latency"] = median(dep)
+    result["control_median_latency"] = median(ctl)
+    penalty = median(dep) - median(ctl)
+    result["raw_penalty_cycles"] = penalty
+    if not stable:
+        result["evidence"] = "final paired timing range exceeds one cycle"
+        return result
+
+    relaxed_penalty = None
+    if relaxed:
+        rdep = _timing_series(relaxed[0])
+        rctl = _timing_series(relaxed[1])
+        if rdep and rctl:
+            relaxed_penalty = median(rdep) - median(rctl)
+            result["relaxed_raw_penalty_cycles"] = relaxed_penalty
+
+    confidence = 0.92 if len(dependent) == 5 else 0.9
+    if penalty <= 0:
+        bypass = {
+            "alu_to_alu": "alu_to_ex",
+            "load_to_alu": "load_to_ex_zero_stall",
+            "alu_to_store_data": "alu_to_store_data",
+            "alu_to_store_address": "alu_to_store_address",
+        }[name]
+        result.update({
+            "status": "detected", "present": True, "bypass_kind": bypass,
+            "confidence": confidence,
+            "evidence": "dependent and control median latencies are equal",
+        })
+    elif name == "load_to_alu" and penalty == 1 and relaxed_penalty is not None and relaxed_penalty <= 0:
+        result.update({
+            "status": "detected", "present": True,
+            "bypass_kind": "load_to_ex_after_interlock", "confidence": confidence,
+            "evidence": "one-cycle adjacent load-use interlock disappears at relaxed distance",
+        })
+    else:
+        result.update({
+            "status": "stall_handled", "present": False, "confidence": min(confidence, 0.88),
+            "evidence": "dependency is architecturally correct but adds latency relative to control",
+        })
+    return result
+
+
+async def forwarding_presence_test(dut, regfile, pipeline=None, data_memory=None):
+    """
+    Compare layout-matched dependent/control programs on pipelined cores.
+
+    ``detected`` is behavioral evidence that the RAW dependency adds no latency
+    relative to its control (or is a recognized one-cycle load interlock). It
+    does not claim structural proof that a particular RTL bypass mux exists.
+    """
+
+    if not _is_pipeline_classification(pipeline):
+        dut._log.info("[forwarding] Skipped: processor was not classified as pipelined")
+        return None
+
+    dut._log.info("[forwarding] Running isolated forwarding probes...")
+    data_memory = data_memory or DataMemory()
+    results = {"applicable": True}
+    try:
+        output_dir = os.environ.get("OUTPUT_DIR", "default")
+        processor_name = os.path.basename(output_dir)
+
+        regfile_path = getattr(regfile, "_path", None)
+        regfile_metadata = _load_regfile_metadata(
+            output_dir,
+            processor_name,
+            regfile_path=regfile_path,
+        )
+
+        interface_handles = _resolve_write_interface(
+            dut,
+            processor_name,
+            regfile,
+        )
+        labels_file = os.path.join(
+            output_dir,
+            f"{processor_name}_labels.json",
+        )
+
+        debug_results = {}
+        pipeline_depth = pipeline.get("depth_estimate")
+
+        async def run_probe(spec):
+            program_memory.select(spec)
+            data_memory.reset(spec.initial_memory)
+            dut.rst_n.value = 0
+            dut.core_ack.value = 0
+            await _load_optional_internal_program(dut, program_memory.image)
+            await Timer(50, unit="ns")
+            data_memory.reset(spec.initial_memory)
+            dut.rst_n.value = 1
+            memory_epoch = data_memory.current_cycle
+            fetch_events = []
+            commits = await _observe_probe_commits(
+                dut, regfile, regfile_metadata, interface_handles, spec,
+                max_cycles=_measurement_cycle_budget(regfile_metadata),
+                fetch_events=fetch_events,
+            )
+            entries = {item["offset"]: item for item in spec.entries()}
+            for event in commits:
+                event["role"] = entries[event["offset"]]["role"]
+            classified = _classify_forwarding_probe(
+                spec, commits, data_memory, memory_epoch, pipeline_depth
+            )
+            transactions = [
+                {**item, "cycle": item["cycle"] - memory_epoch}
+                for item in data_memory.transactions
+            ] if data_memory.supported else []
+            trial = {
+                "complete": len(commits) == len(spec.expected_writes),
+                "latency": _trial_latency(spec.name.split("_dependent_")[0].split("_control_")[0], spec, fetch_events, commits, transactions),
+            }
+            details = {
+                "program": spec.entries(), "instructions": spec.instructions,
+                "fetch_events": fetch_events, "commit_events": commits,
+                "memory_transactions": transactions, "classified": classified,
+            }
+            return trial, details
+
+        async def run_pair_trials(name, gap):
+            dependent_trials, control_trials, trial_debug = [], [], []
+            for trial_index in range(3):
+                dependent_spec, control_spec = forwarding_probe_pair(name, gap, trial_index)
+                for role, spec, target in (
+                    ("dependent", dependent_spec, dependent_trials),
+                    ("control", control_spec, control_trials),
+                ):
+                    observation, details = await run_probe(spec)
+                    target.append(observation)
+                    trial_debug.append({"trial": trial_index, "role": role, **details, "observation": observation})
+            if _paired_trials_need_extension(dependent_trials, control_trials):
+                for trial_index in range(3, 5):
+                    dependent_spec, control_spec = forwarding_probe_pair(name, gap, trial_index)
+                    for role, spec, target in (
+                        ("dependent", dependent_spec, dependent_trials),
+                        ("control", control_spec, control_trials),
+                    ):
+                        observation, details = await run_probe(spec)
+                        target.append(observation)
+                        trial_debug.append({"trial": trial_index, "role": role, **details, "observation": observation})
+            debug_results[f"{name}_paired_gap_{gap}"] = trial_debug
+            return dependent_trials, control_trials
+
+        for name in ("alu_to_alu", "alu_to_store_data", "alu_to_store_address", "load_to_alu"):
+            adjacent = await run_pair_trials(name, 0)
+            relaxed = None
+            relaxed_gap = None
+            if name in ("alu_to_alu", "load_to_alu"):
+                relaxed_gap = max(1, int(pipeline_depth or 2) - 1)
+                relaxed = await run_pair_trials(name, relaxed_gap)
+            results[name] = _classify_paired_forwarding(name, *adjacent, relaxed=relaxed)
+            results[name]["trial_count"] = len(adjacent[0])
+            if relaxed_gap is not None:
+                results[name]["relaxed_gap"] = relaxed_gap
+
+        # Store-to-load is memory ordering, not register operand forwarding.
+        memory_spec = forwarding_distance_variant("store_to_load", 0)
+        memory_trial, memory_details = await run_probe(memory_spec)
+        memory_classified = memory_details["classified"]
+        results["store_to_load"] = {
+            **memory_classified,
+            "category": "memory_ordering",
+            "register_forwarding_test": False,
+            "architectural_dependency_handled": memory_trial["complete"],
+            "confidence": 0.85 if memory_classified["status"] != "inconclusive" else 0.35,
+            "evidence": "store/load ordering and returned memory value",
+        }
+        debug_results["store_to_load"] = [memory_details]
+
+        #
+        # Save result
+        #
+        try:
+            with open(labels_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            data = {}
+
+        data.setdefault(processor_name, {})
+        data[processor_name]["forwarding"] = results
+
+        if _env_flag("CYCLE_DEBUG") or _env_flag("DEBUG_CYCLE"):
+            data[processor_name]["forwarding_debug"] = {
+                "probes": debug_results,
+            }
+        else:
+            data[processor_name].pop("forwarding_debug", None)
+
+        with open(labels_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+
+        dut._log.info(
+            "[forwarding] probe results: %s",
+            {name: value.get("status") for name, value in results.items() if isinstance(value, dict)},
+        )
+
+        return results
+
+    finally:
+        program_memory.select(CYCLE_SIGNATURE)
+
+
+# Compatibility for callers which used the misspelled draft name.
+fowarding_presence_test = forwarding_presence_test
+
 
 async def test_pc_behavior(dut, regfile):
     # initialize driven signals
     dut.core_ack.value = 0
     dut.core_data_in.value = 0
 
-    cocotb.start_soon(Clock(dut.sys_clk, 10, unit="ns").start())
-    cocotb.start_soon(instr_mem_driver(dut))
-    cocotb.start_soon(data_mem_driver(dut))  # For cores with separate data memory
+    await _start_clock_once(dut)
+    data_memory = DataMemory()
+    program_memory.select(CYCLE_SIGNATURE)
+    instruction_driver_task = cocotb.start_soon(instr_mem_driver(dut, program_memory))
+    data_driver_task = cocotb.start_soon(data_mem_driver(dut, data_memory))
 
     # Reset
     dut.rst_n.value = 0
     dut.core_ack.value = 0
+    await _load_optional_internal_program(dut, program_memory.image)
     await Timer(50, unit="ns")
     dut.rst_n.value = 1
 
@@ -821,6 +1624,9 @@ async def test_pc_behavior(dut, regfile):
     existing_data[processor_name]["multicycle"] = multicycle
     existing_data[processor_name]["pipeline"] = pipeline
     existing_data[processor_name].pop("cycle_evidence", None)
+    if not _is_pipeline_classification(pipeline):
+        existing_data[processor_name].pop("forwarding", None)
+        existing_data[processor_name].pop("forwarding_debug", None)
     if _env_flag("CYCLE_DEBUG") or _env_flag("DEBUG_CYCLE"):
         existing_data[processor_name]["cycle_debug"] = measurement["cycle_debug"]
     else:
@@ -832,3 +1638,24 @@ async def test_pc_behavior(dut, regfile):
         dut._log.info(f'Results saved to {output_file}')
     except OSError as e:
         logging.warning('Error writing to JSON file: %s', e)
+
+    # Forwarding is a pipeline-specific property. Do not run a second program
+    # (or emit a misleading false label) for single-cycle, multicycle, or
+    # ambiguous classifications.
+    if _is_pipeline_classification(pipeline):
+        await forwarding_presence_test(
+            dut, regfile, pipeline=pipeline, data_memory=data_memory
+        )
+    else:
+        dut._log.info("[forwarding] Not applicable to this execution model")
+
+    # Do not leave VPI-backed driver coroutines alive during simulator teardown.
+    # Some Verilator designs otherwise abort in heap cleanup after a passing test.
+    for task in (instruction_driver_task, data_driver_task):
+        try:
+            if hasattr(task, "cancel"):
+                task.cancel()
+            else:
+                task.kill()
+        except Exception:
+            pass
