@@ -1,0 +1,42 @@
+{
+  "Grande-Risco-5": {
+    "present": true,
+    "direction": "two_bit_saturating",
+    "direct_target": true,
+    "indirect_target": true
+  },
+  "ZC-RISCV-CORE": {
+    "present": true,
+    "direction": "two_bit_saturating",
+    "direct_target": true,
+    "general_register_jalr": false
+  },
+  "rv3n": {
+    "present": true,
+    "direction": "five_outcome_per_pc_history",
+    "history_bits": 5
+  },
+  "SuperScalar-RISCV-CPU": {
+    "present": true,
+    "direction": "five_outcome_per_pc_history",
+    "history_bits": 5
+  },
+  "yarvi": {
+    "present": true,
+    "direction": "yags_global_history",
+    "direct_target": true,
+    "ras_depth": 3
+  },
+  "RISCVPipelinedProcessor": {
+    "present": true,
+    "direction": "local_global_tournament",
+    "global_history_bits": 8,
+    "direct_target": true
+  },
+  "cve2": {
+    "present": false,
+    "direction": "none_in_tested_configuration",
+    "repository_optional_direction": "static_btfnt",
+    "stateful": false
+  }
+}

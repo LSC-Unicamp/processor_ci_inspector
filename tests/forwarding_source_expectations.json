@@ -1,0 +1,126 @@
+{
+    "AdamRiscv": {
+        "configured_sources": [
+            "module/CORE/RTL_V1_2/forwarding.v",
+            "module/CORE/RTL_V1_2/hazard_detection.v",
+            "module/CORE/RTL_V1_2/stage_mem.v"
+        ],
+        "structural_expectations": {
+            "load_to_store_data": true,
+            "load_to_store_address": false
+        },
+        "behavioral_expectations": {
+            "load_to_store_data": {
+                "allowed_statuses": ["detected"],
+                "allowed_present": [true],
+                "architectural_dependency_handled": true,
+                "maximum_raw_penalty_cycles": 0,
+                "allowed_bypass_kinds": ["load_to_store_data"],
+                "expected_forwarding_required": true
+            },
+            "load_to_store_address": {
+                "allowed_statuses": ["stall_handled"],
+                "allowed_present": [false],
+                "architectural_dependency_handled": true,
+                "minimum_raw_penalty_cycles": 1,
+                "allowed_bypass_kinds": [null]
+            }
+        },
+        "required_compact_fields": [
+            "producer_available_cycle",
+            "consumer_fetch_cycle",
+            "consumer_effect_cycle",
+            "producer_consumer_overlap"
+        ],
+        "required_debug_events": ["fetch", "load_response", "store_request", "signature_commit"]
+    },
+    "RISCVPipelinedProcessor": {
+        "structural_expectations": {
+            "load_to_store_data": true,
+            "load_to_store_address": false
+        },
+        "behavioral_expectations": {
+            "load_to_store_data": {
+                "allowed_statuses": ["detected", "inconclusive"],
+                "allowed_present": [true, null],
+                "architectural_dependency_handled": true,
+                "maximum_raw_penalty_cycles": 0,
+                "allowed_bypass_kinds": ["load_to_store_data", null]
+            },
+            "load_to_store_address": {
+                "allowed_statuses": ["stall_handled"],
+                "allowed_present": [false],
+                "architectural_dependency_handled": true,
+                "minimum_raw_penalty_cycles": 1,
+                "allowed_bypass_kinds": [null]
+            }
+        },
+        "required_compact_fields": ["producer_available_cycle", "consumer_fetch_cycle", "consumer_effect_cycle", "producer_consumer_overlap"],
+        "required_debug_events": ["fetch", "load_response", "store_request", "signature_commit"]
+    },
+    "cv32e40p": {
+        "structural_expectations": {
+            "load_to_store_data": true,
+            "load_to_store_address": true
+        },
+        "behavioral_expectations": {
+            "load_to_store_data": {
+                "allowed_statuses": ["stall_handled"],
+                "allowed_present": [false],
+                "architectural_dependency_handled": true,
+                "minimum_raw_penalty_cycles": 1,
+                "allowed_bypass_kinds": [null]
+            },
+            "load_to_store_address": {
+                "allowed_statuses": ["stall_handled"],
+                "allowed_present": [false],
+                "architectural_dependency_handled": true,
+                "minimum_raw_penalty_cycles": 1,
+                "allowed_bypass_kinds": [null]
+            }
+        },
+        "required_compact_fields": ["producer_available_cycle", "consumer_fetch_cycle", "consumer_effect_cycle", "producer_consumer_overlap"],
+        "required_debug_events": ["fetch", "load_response", "store_request", "signature_commit"]
+    },
+    "cve2": {
+        "structural_expectations": {
+            "load_to_store_data": false,
+            "load_to_store_address": false
+        },
+        "behavioral_expectations": {
+            "alu_to_alu": {
+                "allowed_statuses": ["inconclusive"],
+                "allowed_present": [null],
+                "architectural_dependency_handled": true,
+                "maximum_raw_penalty_cycles": 0,
+                "allowed_bypass_kinds": [null],
+                "expected_forwarding_required": null
+            }
+        },
+        "required_compact_fields": [],
+        "required_debug_events": []
+    },
+    "mmRISC-1": {
+        "structural_expectations": {
+            "load_to_store_data": true
+        },
+        "behavioral_expectations": {
+            "load_to_store_data": {
+                "allowed_statuses": ["stall_handled"],
+                "allowed_present": [false],
+                "architectural_dependency_handled": true,
+                "minimum_raw_penalty_cycles": 1,
+                "allowed_bypass_kinds": [null]
+            },
+            "load_to_store_address": {
+                "allowed_statuses": ["stall_handled"],
+                "allowed_present": [false],
+                "architectural_dependency_handled": true,
+                "minimum_raw_penalty_cycles": 1,
+                "allowed_bypass_kinds": [null]
+            }
+        },
+        "required_compact_fields": ["producer_available_cycle", "consumer_fetch_cycle", "consumer_effect_cycle", "producer_consumer_overlap"],
+        "required_debug_events": ["fetch", "load_response", "store_request", "signature_commit"]
+    }
+}

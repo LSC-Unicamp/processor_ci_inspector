@@ -64,7 +64,9 @@ def load_config(config_path: str, processor_name: str) -> dict:
     # source list. Normalize that public config schema once so downstream
     # language detection and Makefile generation do not disagree. Include
     # directories and extra flags are optional by nature.
-    if 'files' not in config_data and 'sim_files' in config_data:
+    if config_data.get('prefer_sim_files') and config_data.get('sim_files'):
+        config_data['files'] = list(config_data['sim_files'])
+    elif 'files' not in config_data and 'sim_files' in config_data:
         config_data['files'] = list(config_data['sim_files'])
     config_data.setdefault('include_dirs', [])
     config_data.setdefault('extra_flags', [])

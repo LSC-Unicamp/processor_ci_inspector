@@ -10,7 +10,9 @@ from config import load_config
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 VERILATOR_VISIBILITY_FLAGS = "--public-flat-rw --trace --trace-structs --trace-underscore"
-TRACE_UNDERSCORE_INCOMPATIBLE_CORES = {"cv32e40x"}
+TRACE_UNDERSCORE_INCOMPATIBLE_CORES = {
+    "cv32e40x",
+}
 
 VERILATOR_LANGUAGE_ALIASES = {
     '2005': '1364-2005',
@@ -46,8 +48,18 @@ def verilator_compile_args(config: dict, requires_timing: bool = False) -> str:
         language_version = '1800-2017'
 
     visibility_flags = VERILATOR_VISIBILITY_FLAGS.split()
-    if config.get('name') in TRACE_UNDERSCORE_INCOMPATIBLE_CORES:
+    core_name = config.get('name')
+    if core_name in TRACE_UNDERSCORE_INCOMPATIBLE_CORES:
         visibility_flags.remove('--trace-underscore')
+    if config.get('verilator_public_depth') is not None:
+        # A shallow VPI core intentionally exposes only wrapper-level aliases.
+        # Recursive structure/underscore tracing retains implementation state
+        # despite that bound and corrupts some large Verilator models. Keep
+        # basic tracing because Cocotb's Verilator harness links against it.
+        visibility_flags = [
+            flag for flag in visibility_flags
+            if flag not in {'--trace-structs', '--trace-underscore'}
+        ]
 
     args = [
         '--language', language_version, *extension_language, '-DSIMULATION', '-Wno-fatal',
@@ -73,6 +85,50 @@ def source_requires_timing(path: str) -> bool:
     # timing controls. Numeric ``#10`` delays are sufficient for the wrappers
     # currently supported and avoid that false positive.
     return re.search(r'(?<![\w$])#\s*\d', text) is not None
+
+
+def resolve_internal_rtl_directory(top_folder: str) -> Path:
+    """Locate the shared Processor CI protocol bridges for any wrapper set."""
+    top_path = Path(top_folder)
+    candidates = (
+        top_path / 'internal',
+        top_path.parent / 'wrappers_golden' / 'internal',
+        BASE_DIR / 'RV-Bench' / 'wrappers_golden' / 'internal',
+    )
+    required = (
+        'ahblite_to_wishbone.sv',
+        'axi4lite_to_wishbone.sv',
+        'axi4_to_wishbone.sv',
+    )
+    for candidate in candidates:
+        if all((candidate / filename).is_file() for filename in required):
+            return candidate
+    raise FileNotFoundError(
+        f"Could not locate shared Processor CI bridge RTL for wrapper folder {top_folder}"
+    )
+
+
+def _write_isolated_verilator_vpath(makefile) -> None:
+    """Keep runtime sources visible without searching neighboring builds."""
+    # Generated Vtop.mk files add parent/source directories to VPATH. A nested
+    # build can then accept sim_build/verilator.o from a different processor,
+    # even though it was compiled against an incompatible Vtop layout.
+    # Command-line VPATH overrides those broad entries; retain only the actual
+    # Verilator runtime sources and Cocotb's simulator harness.
+    makefile.write(
+        'PROCESSOR_CI_VERILATOR_ROOT = $(shell verilator -V | '
+        "sed -n 's/^[[:space:]]*VERILATOR_ROOT[[:space:]]*=[[:space:]]*//p' | head -1)\n"
+    )
+    makefile.write(
+        'PROCESSOR_CI_COCOTB_VERILATOR_DIR = '
+        '$(shell cocotb-config --share)/lib/verilator\n'
+    )
+    makefile.write(
+        'BUILD_ARGS += VPATH=$(PROCESSOR_CI_COCOTB_VERILATOR_DIR):'
+        '$(PROCESSOR_CI_VERILATOR_ROOT)/include:'
+        '$(PROCESSOR_CI_VERILATOR_ROOT)/include/vltstd\n'
+    )
+
 
 def standard_makefile(processor_name: str, language: str, config_folder: str, output_dir: str, makefile_path: str, core_directory: str, cocotb_name: str = 'cocotb_labeler'):
 
@@ -117,6 +173,7 @@ def standard_makefile(processor_name: str, language: str, config_folder: str, ou
         makefile.write(f'MODULE = {cocotb_name}\n')
         makefile.write(f'OUTPUT_DIR = {output_dir}/{processor_name}\n')
         makefile.write(f'SIM_BUILD = sim_build/{processor_name}\n')
+        _write_isolated_verilator_vpath(makefile)
         makefile.write('export OUTPUT_DIR\n')
         makefile.write('include $(shell cocotb-config --makefiles)/Makefile.sim\n')
 
@@ -132,9 +189,7 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
     two_memories = config.get('two_memory', config.get('two_memories', False))
     wrapper_path = os.path.join(top_folder, f"{processor_name}.sv")
     
-    # Extract processor_ci base path from top_folder (e.g., "processor_ci/rtl" -> "processor_ci")
-    normalized_path = os.path.normpath(top_folder)
-    processor_ci_base = os.path.dirname(normalized_path) if normalized_path.endswith('rtl') else normalized_path
+    internal_rtl = resolve_internal_rtl_directory(top_folder)
 
     # Write the Makefile content
     with open(makefile_path, 'a', encoding='utf-8') as makefile:
@@ -146,6 +201,17 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
             makefile.write(
                 f'COMPILE_ARGS ?= {verilator_compile_args(config, source_requires_timing(wrapper_path))}\n'
             )
+            public_depth = config.get('verilator_public_depth')
+            if public_depth is not None:
+                public_depth = int(public_depth)
+                if public_depth < 1:
+                    raise ValueError('verilator_public_depth must be at least 1')
+                # Cocotb appends --public-flat-rw after COMPILE_ARGS. EXTRA_ARGS
+                # is the only later hook, so explicitly narrow VPI visibility
+                # to wrapper-level ports for designs that expose stable aliases.
+                makefile.write(
+                    f'EXTRA_ARGS += --no-public-flat-rw --public-depth {public_depth}\n'
+                )
             makefile.write(f'VERILOG_INCLUDE_DIRS += {escape_spaces(core_directory)}\n')
             for dirs in inc_dir:
                 path = escape_spaces(f'{core_directory}/{dirs}')
@@ -157,16 +223,17 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
             makefile.write(f'COMPILE_ARGS ?= --language 1800-2012 -DSIMULATION -Wno-fatal -Wno-lint {VERILATOR_VISIBILITY_FLAGS}\n')
             # directory from where the script is being called
             makefile.write(f'VERILOG_SOURCES += {BASE_DIR}/build/{processor_name}.v\n')
-        makefile.write(f'VERILOG_SOURCES += {processor_ci_base}/internal/ahblite_to_wishbone.sv\n')
-        makefile.write(f'VERILOG_SOURCES += {processor_ci_base}/internal/axi4lite_to_wishbone.sv\n')
-        makefile.write(f'VERILOG_SOURCES += {processor_ci_base}/internal/axi4_to_wishbone.sv\n')
+        makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "ahblite_to_wishbone.sv"))}\n')
+        makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "axi4lite_to_wishbone.sv"))}\n')
+        makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "axi4_to_wishbone.sv"))}\n')
         if processor_name == 'soft_riscv':
-            makefile.write(f'VERILOG_SOURCES += {processor_ci_base}/internal/memory.sv\n')
+            makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "memory.sv"))}\n')
         makefile.write(f'VERILOG_SOURCES += {wrapper_path}\n')
         makefile.write(f'TOPLEVEL = {top_module}\n')
         makefile.write(f'MODULE = {cocotb_name}\n')
         makefile.write(f'OUTPUT_DIR = {output_dir}/{processor_name}\n')
         makefile.write(f'SIM_BUILD = sim_build/{processor_name}\n')
+        _write_isolated_verilator_vpath(makefile)
         makefile.write('export OUTPUT_DIR\n')
         makefile.write('include $(shell cocotb-config --makefiles)/Makefile.sim\n') 
 

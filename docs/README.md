@@ -6,6 +6,12 @@ Inspector turns processor repositories into structured metadata for the rest of
 ProcessorCI. It should be treated as an analysis tool: it reads processor source,
 configuration, wrappers, and optional simulation assets, then writes JSON output.
 
+## Feature Guides
+
+- [Forwarding detection workflow](forwarding_detection_workflow.md) explains
+  the current probe programs, dynamic pipeline-interface discovery, distance
+  sweep, classification rules, and auditing process.
+
 ## Maintenance Boundaries
 
 - `src/` is the implementation area. Keep public behavior reachable through

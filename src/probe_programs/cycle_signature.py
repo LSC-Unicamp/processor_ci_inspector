@@ -5,6 +5,7 @@ except ImportError:
 from .model import ExpectedWrite, ProgramSpec
 
 _values = (0x135, 0x246, 0x357, 0x468, 0x579, 0x68A)
+
 CYCLE_SIGNATURE = ProgramSpec(
     name="cycle_signature",
     instructions={index * 4: ADDI(5 + index, 0, value) for index, value in enumerate(_values)},

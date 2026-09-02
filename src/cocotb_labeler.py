@@ -9,26 +9,16 @@ from regfile_finder import (
     selected_candidate_metadata,
     simulator_safe_hierarchy,
 )
-from cycle import instr_mem_driver, test_pc_behavior
-from cocotb.triggers import RisingEdge, Timer
-from cocotb.clock import Clock
-
-def resolve_path(dut, path: str):
-    """Resolve a string path like 'processorci_top.u_core.regs[5]' into a cocotb handle."""
-    parts = path.split('.')
-    # Drop the first part if it matches top-level name
-    if parts[0] == dut._name:
-        parts = parts[1:]
-
-    handle = dut
-    for part in parts:
-        if '[' in part and ']' in part:
-            # Array element, e.g. regs[5]
-            name, idx = part[:-1].split('[')
-            handle = getattr(handle, name)[int(idx)]
-        else:
-            handle = getattr(handle, part)
-    return handle
+try:
+    from . import Branch, Datapath, Forwarding
+    from . import _discovery_shared as _discovery
+    from .simulation import DataMemory
+except ImportError:
+    import Branch
+    import Datapath
+    import Forwarding
+    import _discovery_shared as _discovery
+    from simulation import DataMemory
 
 
 class _RegisterValue:
@@ -64,6 +54,24 @@ class _ArchitecturalRegfileView:
         if value is None:
             raise IndexError(index)
         return _RegisterValue(value, self._width)
+
+
+def resolve_path(dut, path: str):
+    """Resolve a string path like 'processorci_top.u_core.regs[5]' into a cocotb handle."""
+    parts = path.split('.')
+    # Drop the first part if it matches top-level name
+    if parts[0] == dut._name:
+        parts = parts[1:]
+
+    handle = dut
+    for part in parts:
+        if '[' in part and ']' in part:
+            # Array element, e.g. regs[5]
+            name, idx = part[:-1].split('[')
+            handle = getattr(handle, name)[int(idx)]
+        else:
+            handle = getattr(handle, part)
+    return handle
 
 
 @cocotb.test()
@@ -113,7 +121,64 @@ async def processor_test(dut):
 
     bits = len(regfile[7])
 
-    await test_pc_behavior(dut, regfile)
+    # All discovery phases share one pair of memory drivers. Individual probes
+    # select/reset their program and data images without spawning competing
+    # coroutines.
+    dut.core_ack.value = 0
+    dut.core_data_in.value = 0
+    if hasattr(dut, "dmem_prog_we"):
+        dut.dmem_prog_we.value = 0
+        dut.dmem_prog_addr.value = 0
+        dut.dmem_prog_data.value = 0
+
+    await _discovery._start_clock_once(dut)
+    data_memory = DataMemory()
+    _discovery.program_memory.select(_discovery.CYCLE_SIGNATURE)
+    instruction_driver_task = cocotb.start_soon(
+        _discovery.instr_mem_driver(dut, _discovery.program_memory)
+    )
+    data_driver_task = cocotb.start_soon(
+        _discovery.data_mem_driver(dut, data_memory)
+    )
+
+    try:
+        dut.rst_n.value = 0
+        dut.core_ack.value = 0
+        await _discovery._load_optional_internal_program(
+            dut, _discovery.program_memory.image,
+        )
+        await _discovery.Timer(50, unit="ns")
+        dut.rst_n.value = 1
+
+        datapath = await Datapath.test_datapath_structure(
+            dut, regfile, regfile_discovery=discovery,
+        )
+        pipeline = datapath["pipeline"]
+        if Forwarding._is_pipeline_classification(pipeline):
+            await Forwarding.forwarding_presence_test(
+                dut,
+                regfile,
+                pipeline=pipeline,
+                data_memory=data_memory,
+                regfile_discovery=discovery,
+            )
+        else:
+            dut._log.info("[forwarding] Not applicable to this execution model")
+            Forwarding.record_not_applicable(dut)
+
+        await Branch.branch_prediction_presence_test(
+            dut, regfile, pipeline=pipeline, data_memory=data_memory,
+        )
+    finally:
+        # Do not leave VPI-backed coroutines alive during simulator teardown.
+        for task in (instruction_driver_task, data_driver_task):
+            try:
+                if hasattr(task, "cancel"):
+                    task.cancel()
+                else:
+                    task.kill()
+            except Exception:
+                pass
 
     output_file = os.path.join(output_dir, f"{processor_name}_labels.json")
 

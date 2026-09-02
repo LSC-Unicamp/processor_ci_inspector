@@ -76,6 +76,48 @@ REGFILE_INTERFACE_TIMING_OFFSETS = (-2, -1, 0, 1)
 DERIVED_WRITE_ENABLE_PATH = "__storage_update_event__"
 DERIVED_WRITE_DATA_PATH = "__storage_update_value__"
 
+WRITE_ENABLE_NAME_HINTS = (
+    "rf_wen", "regfile_wen", "gpr_wen", "reg_wen", "regwr_en",
+    "write_enable", "write_en", "wen", "wren", "wr_en", "we",
+)
+WRITE_ADDR_NAME_HINTS = (
+    "regwr_sel", "writereg", "waddr", "write_addr", "wr_addr", "rd_addr", "dest", "dst",
+    "rd_wb", "rd_w", "rd", "wa", "wsel", "wrsel",
+)
+WRITE_DATA_NAME_HINTS = (
+    "regwr_data", "wdata", "write_data", "wr_data", "wb_data",
+    "writeback", "rd_data", "wd", "data_i",
+)
+INTERFACE_EXCLUDE_HINTS = (
+    "clk", "clock", "rst", "reset", "debug", "dbg", "trace", "jtag",
+    "csr", "cache", "mem", "memory", "ram", "rom",
+)
+
+
+class _SimulatorSafeHierarchyView:
+    """Resolve top-level children from one raw snapshot before cocotb fallback."""
+
+    def __init__(self, target):
+        object.__setattr__(self, "_target", target)
+        object.__setattr__(self, "_safe_children", None)
+
+    def _children(self):
+        children = object.__getattribute__(self, "_safe_children")
+        if children is None:
+            target = object.__getattribute__(self, "_target")
+            children = {name: child for name, child in _iter_sim_children(target)}
+            object.__setattr__(self, "_safe_children", children)
+        return children
+
+    def __getattr__(self, name):
+        child = self._children().get(name)
+        if child is not None:
+            return child
+        return getattr(object.__getattribute__(self, "_target"), name)
+
+    def __setattr__(self, name, value):
+        setattr(object.__getattribute__(self, "_target"), name, value)
+
 
 def _safe_type(handle):
     """Return the simulator/GPI type string, or an empty string if unavailable."""
@@ -752,29 +794,6 @@ def _iter_sim_children(module):
         yield name, child
 
 
-class _SimulatorSafeHierarchyView:
-    """Resolve top-level children from one raw snapshot before cocotb fallback."""
-
-    def __init__(self, target):
-        object.__setattr__(self, "_target", target)
-        object.__setattr__(self, "_safe_children", None)
-
-    def _children(self):
-        children = object.__getattribute__(self, "_safe_children")
-        if children is None:
-            target = object.__getattribute__(self, "_target")
-            children = {name: child for name, child in _iter_sim_children(target)}
-            object.__setattr__(self, "_safe_children", children)
-        return children
-
-    def __getattr__(self, name):
-        child = self._children().get(name)
-        if child is not None:
-            return child
-        return getattr(object.__getattribute__(self, "_target"), name)
-
-    def __setattr__(self, name, value):
-        setattr(object.__getattribute__(self, "_target"), name, value)
 
 
 def simulator_safe_hierarchy(root):
@@ -1818,6 +1837,19 @@ def _select_best_regfile(classification_results, confirmation_results=None):
     return None
 
 
+def _is_interface_probe_eligible(selected_regfile_candidate, selected_regfile):
+    """Allow strong likely storage candidates to gain independent interface evidence."""
+    if selected_regfile_candidate is None or not selected_regfile:
+        return False
+    if selected_regfile.get("status") == "confirmed_candidate":
+        return True
+    return bool(
+        selected_regfile.get("status") == "likely_candidate"
+        and selected_regfile.get("score", 0) >= 85
+        and selected_regfile.get("confidence") in ("high", "medium")
+    )
+
+
 def _confirm_classification_results(phase5_results, confirmation_classification):
     phase5_by_signature = {
         _candidate_signature(result): result
@@ -1881,22 +1913,6 @@ async def confirm_regfile_candidate(dut, candidates, phase5_results):
 # Dynamic register-file write-interface discovery
 # -----------------------------------------------------------------------------
 
-WRITE_ENABLE_NAME_HINTS = (
-    "rf_wen", "regfile_wen", "gpr_wen", "reg_wen", "regwr_en",
-    "write_enable", "write_en", "wen", "wren", "wr_en", "we",
-)
-WRITE_ADDR_NAME_HINTS = (
-    "regwr_sel", "writereg", "waddr", "write_addr", "wr_addr", "rd_addr", "dest", "dst",
-    "rd_wb", "rd_w", "rd", "wa", "wsel", "wrsel",
-)
-WRITE_DATA_NAME_HINTS = (
-    "regwr_data", "wdata", "write_data", "wr_data", "wb_data",
-    "writeback", "rd_data", "wd", "data_i",
-)
-INTERFACE_EXCLUDE_HINTS = (
-    "clk", "clock", "rst", "reset", "debug", "dbg", "trace", "jtag",
-    "csr", "cache", "mem", "memory", "ram", "rom",
-)
 
 
 def _parent_path(path):
@@ -2228,6 +2244,51 @@ def detect_regfile_storage_update_events(trace_samples, program_metadata):
                 ],
             })
         previous_values = current_values
+
+    if events:
+        return events
+
+    # Some legacy cores execute the interface probe but produce an incorrect
+    # arithmetic value (for example because their forwarding logic retains a
+    # stale operand).  Storage movement is still valid interface evidence:
+    # retain changes only for the explicitly watched architectural registers,
+    # then let the independent enable/address/data scorers prove or reject the
+    # interface.  Require multiple registers so a single incidental toggle is
+    # never sufficient.
+    observed_events = []
+    previous_values = None
+    watched_indices = {
+        entry.get("reg"): entry.get("reg_index")
+        for entry in write_sequence
+        if entry.get("reg") and entry.get("reg_index") is not None
+    }
+    for sample in trace_samples:
+        current_values = sample.get("regfile_values") or {}
+        if previous_values is not None:
+            for reg, reg_index in watched_indices.items():
+                old_value = previous_values.get(reg)
+                new_value = current_values.get(reg)
+                if old_value is None or new_value is None or old_value == new_value:
+                    continue
+                cycle = sample.get("cycle")
+                observed_events.append({
+                    "cycle": cycle,
+                    "reg_index": reg_index,
+                    "old_value": old_value,
+                    "new_value": new_value,
+                    "expected_write_index": None,
+                    "observed_value_fallback": True,
+                    "pc_window": [
+                        s.get("pc")
+                        for s in trace_samples
+                        if cycle is not None
+                        and cycle - 2 <= s.get("cycle", -999) <= cycle + 1
+                    ],
+                })
+        previous_values = current_values
+
+    if len({event["reg_index"] for event in observed_events}) >= 2:
+        return observed_events
 
     return events
 
@@ -3320,12 +3381,29 @@ async def run_register_file_finder(dut):
             "failed_checks": ["no confirmed register file selected"],
         },
     }
-    if selected_regfile_candidate is not None and selected_regfile and selected_regfile.get("status") == "confirmed_candidate":
+    interface_probe_eligible = _is_interface_probe_eligible(
+        selected_regfile_candidate, selected_regfile,
+    )
+    if interface_probe_eligible:
         interface_probe = await run_regfile_interface_probe_and_trace(dut, selected_regfile_candidate, interface_probe_program)
         interface_classification = classify_regfile_interface(
             interface_probe["trace_result"],
             interface_probe["interface_candidates"],
         )
+        # A high-scoring architectural candidate plus an independently
+        # confirmed write port is stronger evidence than either observation
+        # alone.  This matters for legacy cores that do not fully reset their
+        # pipeline between the two storage confirmation programs.
+        if (
+            selected_regfile.get("status") == "likely_candidate"
+            and interface_classification["selected"].get("status")
+            == "confirmed_interface"
+        ):
+            selected_regfile = dict(selected_regfile)
+            selected_regfile["status"] = "confirmed_candidate"
+            selected_regfile["reasons"] = list(
+                selected_regfile.get("reasons", [])
+            ) + ["candidate confirmed by matching dynamic write interface"]
     dynamic_program_output = dict(dynamic_program)
     dynamic_program_output["run_result"] = {
         "ran": trace_result.get("ran"),

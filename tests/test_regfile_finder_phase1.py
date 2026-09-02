@@ -60,6 +60,19 @@ class Phase1DiscoveryTests(unittest.TestCase):
         self.assertEqual(config["include_dirs"], [])
         self.assertEqual(config["extra_flags"], [])
 
+    def test_config_can_prefer_curated_sim_files(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_path = Path(temp_dir) / "demo.json"
+            config_path.write_text(
+                '{"files": ["rtl/all.v"], "sim_files": ["rtl/sim.v"], '
+                '"prefer_sim_files": true}',
+                encoding="utf-8",
+            )
+
+            config = load_config(temp_dir, "demo")
+
+        self.assertEqual(config["files"], ["rtl/sim.v"])
+
     def test_static_checkpoint_keeps_all_ranked_candidates(self):
         compact = finder._compact_regfile_output({
             "regfile_candidates": ["dut.counter", "dut.regfile"],
@@ -234,6 +247,24 @@ class Phase2VisibilityTests(unittest.TestCase):
 
 
 class Phase3ProgramTests(unittest.TestCase):
+    def test_wrapper_set_reuses_sibling_golden_internal_rtl(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            rv_bench = Path(temp_dir) / "RV-Bench"
+            wrapper_set = rv_bench / "wrappers_not_tested"
+            internal = rv_bench / "wrappers_golden" / "internal"
+            wrapper_set.mkdir(parents=True)
+            internal.mkdir(parents=True)
+            for filename in (
+                "ahblite_to_wishbone.sv",
+                "axi4lite_to_wishbone.sv",
+                "axi4_to_wishbone.sv",
+            ):
+                (internal / filename).write_text("", encoding="utf-8")
+
+            resolved = cocotb_makefile_creator.resolve_internal_rtl_directory(str(wrapper_set))
+
+            self.assertEqual(resolved, internal)
+
     def test_program_generation_has_loop_and_expected_registers(self):
         metadata = finder.build_regfile_write_program()
 
@@ -283,6 +314,48 @@ class Phase3ProgramTests(unittest.TestCase):
         self.assertIn("--trace-structs", args)
         self.assertNotIn("--trace-underscore", args)
 
+    def test_processor_top_makefile_can_limit_verilator_visibility_depth(self):
+        config = {
+            "include_dirs": [],
+            "files": [],
+            "verilator_public_depth": 1,
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            wrapper_set = root / "RV-Bench" / "wrappers_not_tested"
+            internal = root / "RV-Bench" / "wrappers_golden" / "internal"
+            wrapper_set.mkdir(parents=True)
+            internal.mkdir(parents=True)
+            (wrapper_set / "core.sv").write_text("", encoding="utf-8")
+            for filename in (
+                "ahblite_to_wishbone.sv",
+                "axi4lite_to_wishbone.sv",
+                "axi4_to_wishbone.sv",
+            ):
+                (internal / filename).write_text("", encoding="utf-8")
+            makefile_path = root / "core.mk"
+            makefile_path.write_text("", encoding="utf-8")
+
+            with mock.patch.object(cocotb_makefile_creator, "load_config", return_value=config):
+                cocotb_makefile_creator.processor_top_makefile(
+                    "core",
+                    "SystemVerilog",
+                    "config",
+                    str(wrapper_set),
+                    str(root / "output"),
+                    str(makefile_path),
+                    str(root / "cores" / "core"),
+                    False,
+                )
+
+            makefile_text = makefile_path.read_text(encoding="utf-8")
+            self.assertIn(
+                "EXTRA_ARGS += --no-public-flat-rw --public-depth 1",
+                makefile_text,
+            )
+            self.assertNotIn("--trace-structs", makefile_text)
+            self.assertNotIn("--trace-underscore", makefile_text)
+            self.assertIn("BUILD_ARGS += VPATH=", makefile_text)
 
 class Phase4SamplingTests(unittest.TestCase):
     def test_samples_array_candidate_by_register_index(self):
@@ -905,7 +978,40 @@ class RegfileJsonOutputTests(unittest.TestCase):
 
             text = output_file.read_text(encoding="utf-8")
             self.assertIn("trace_runs", text)
-            self.assertIn("interface_candidates", text)
+        self.assertIn("interface_candidates", text)
+
+
+class InterfaceProbeEligibilityTests(unittest.TestCase):
+    def test_high_confidence_likely_candidate_is_probed(self):
+        selected = {
+            "status": "likely_candidate",
+            "score": 90,
+            "confidence": "high",
+        }
+
+        self.assertTrue(finder._is_interface_probe_eligible({"path": "dut.rf"}, selected))
+
+    def test_weak_likely_candidate_is_not_probed(self):
+        selected = {
+            "status": "likely_candidate",
+            "score": 80,
+            "confidence": "medium",
+        }
+
+        self.assertFalse(finder._is_interface_probe_eligible({"path": "dut.rf"}, selected))
+
+    def test_storage_events_fall_back_to_distinct_watched_register_changes(self):
+        program = finder.build_regfile_interface_probe_program()
+        samples = [
+            {"cycle": 0, "pc": 0, "regfile_values": {"x5": 0, "x6": 0}},
+            {"cycle": 1, "pc": 4, "regfile_values": {"x5": 0xDEAD, "x6": 0}},
+            {"cycle": 2, "pc": 8, "regfile_values": {"x5": 0xDEAD, "x6": 0xBEEF}},
+        ]
+
+        events = finder.detect_regfile_storage_update_events(samples, program)
+
+        self.assertEqual([event["reg_index"] for event in events], [5, 6])
+        self.assertTrue(all(event["observed_value_fallback"] for event in events))
 
 
 def _interface_candidates():
