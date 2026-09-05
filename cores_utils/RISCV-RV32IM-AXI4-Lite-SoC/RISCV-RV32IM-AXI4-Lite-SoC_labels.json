@@ -1,0 +1,28 @@
+{
+    "RISCV-RV32IM-AXI4-Lite-SoC": {
+        "license_types": [
+            "MIT"
+        ],
+        "bits": "Undetected",
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "Verilog",
+        "multicycle": "Undetected",
+        "pipeline": "Undetected",
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected",
+        "forwarding": {
+            "schema_version": 2,
+            "probe_suite_version": "paired-forwarding-v8",
+            "implementation_revision": 11,
+            "execution": {
+                "state": "failed",
+                "run_id": "1116744a-88f9-4d7f-851a-a71139938729",
+                "reason": "Command '['make', '-f', 'cores_utils/RISCV-RV32IM-AXI4-Lite-SoC/RISCV-RV32IM-AXI4-Lite-SoC.mk']' returned non-zero exit status 2.",
+                "error_type": "CalledProcessError"
+            },
+            "applicable": null
+        }
+    }
+}

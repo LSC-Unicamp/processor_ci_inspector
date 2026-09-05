@@ -1,0 +1,22 @@
+{
+    "schema_version": 4,
+    "discovery_version": "dynamic-stage-signals-v4",
+    "implementation_revision": 11,
+    "state": "failed",
+    "error": "Command '['ghdl', '-i', '--std=08', '--work=Rudi-RV32I', '--workdir=build', '-Pbuild', 'RV-Bench/cores/Rudi-RV32I/src/cpu/alu.vhd', 'RV-Bench/cores/Rudi-RV32I/src/cpu/data_bus_mux_b.vhd', 'RV-Bench/cores/Rudi-RV32I/src/cpu/register_file.vhd', 'RV-Bench/cores/Rudi-RV32I/src/cpu/decode.vhd', 'RV-Bench/cores/Rudi-RV32I/src/cpu/sign_extender.vhd', 'RV-Bench/cores/Rudi-RV32I/src/cpu/shifter.vhd', 'RV-Bench/cores/Rudi-RV32I/src/cpu/data_bus_mux_a.vhd', 'RV-Bench/cores/Rudi-RV32I/src/cpu/riscv_cpu.vhd', 'RV-Bench/cores/Rudi-RV32I/src/cpu/program_counter.vhd', 'RV-Bench/cores/Rudi-RV32I/src/cpu/result_bus_mux.vhd', 'RV-Bench/cores/Rudi-RV32I/src/cpu/branch_test.vhd']' returned non-zero exit status 1.",
+    "failure_details": {},
+    "stages": [],
+    "capabilities": {
+        "consumer_stage_observable": false,
+        "execute_stage_observable": false,
+        "memory_stage_observable": false,
+        "multi_lane": false,
+        "lane_identity": false,
+        "source_ids": false,
+        "operand_values": false,
+        "store_data_capture": false,
+        "writeback_event": false,
+        "phase_ordering": false,
+        "sampling_phases": false
+    }
+}

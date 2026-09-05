@@ -1,0 +1,30 @@
+{
+    "regfile_candidates": [
+        "processorci_top.Processor.u_e203_exu.u_e203_exu_regfile.rf_r"
+    ],
+    "selected_regfile": {
+        "candidate_path": "processorci_top.Processor.u_e203_exu.u_e203_exu_regfile.rf_r",
+        "kind": "array_of_words",
+        "status": "rejected_candidate",
+        "score": 35,
+        "confidence": "none",
+        "mapping_order": "direct",
+        "mapped_registers": {
+            "x0": 0
+        }
+    },
+    "regfile_interface": {
+        "write_enable": null,
+        "write_addr": null,
+        "write_data": null
+    },
+    "selected_regfile_interface": {
+        "status": "rejected_interface",
+        "score": 0,
+        "confidence": "none",
+        "write_enable": null,
+        "write_addr": null,
+        "write_data": null,
+        "timing_offset": null
+    }
+}

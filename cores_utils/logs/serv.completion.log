@@ -1,0 +1,19 @@
+Processing labeler on /home/gabcro/Code/Processor_CI/cores/serv...
+Process processor-ci-serv:
+Traceback (most recent call last):
+  File "/home/gabcro/.pyenv/versions/3.13.2/lib/python3.13/multiprocessing/process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "/home/gabcro/.pyenv/versions/3.13.2/lib/python3.13/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gabcro/Code/Processor_CI/processor_ci_inspector/src/main.py", line 189, in _core_worker
+    'succeeded': bool(_core_labeler_impl(*args)),
+                      ~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/gabcro/Code/Processor_CI/processor_ci_inspector/src/main.py", line 122, in _core_labeler_impl
+    config = load_config(config_file, processor_name)
+  File "/home/gabcro/Code/Processor_CI/processor_ci_inspector/src/config.py", line 56, in load_config
+    raise FileNotFoundError(
+        f'The configuration file {full_config_path} was not found.'
+    )
+FileNotFoundError: The configuration file /home/gabcro/Code/Processor_CI/RV-Bench/config/cores/serv.json was not found.

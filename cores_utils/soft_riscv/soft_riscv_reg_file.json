@@ -1,0 +1,18 @@
+{
+    "regfile_candidates": [
+        "processorci_top.Processor.GPREGS"
+    ],
+    "selected_regfile": {
+        "candidate_path": "processorci_top.Processor.GPREGS",
+        "kind": "array_of_words",
+        "status": "static_candidate",
+        "score": 111,
+        "confidence": "static_only"
+    },
+    "regfile_interface": {
+        "write_enable": null,
+        "write_addr": null,
+        "write_data": null
+    },
+    "selected_regfile_interface": null
+}

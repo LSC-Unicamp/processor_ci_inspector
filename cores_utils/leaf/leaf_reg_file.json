@@ -1,0 +1,30 @@
+{
+    "regfile_candidates": [
+        "processorci_top.Processor.leaf_core.core_id_ex_stage.stage_int_strg.int_strg_rf.regs"
+    ],
+    "selected_regfile": {
+        "candidate_path": "processorci_top.Processor.leaf_core.core_id_ex_stage.stage_int_strg.int_strg_rf.regs",
+        "kind": "packed_flat_vector",
+        "status": "rejected_candidate",
+        "score": 35,
+        "confidence": "none",
+        "mapping_order": "packed_lsb_reg0",
+        "mapped_registers": {
+            "x0": 0
+        }
+    },
+    "regfile_interface": {
+        "write_enable": null,
+        "write_addr": null,
+        "write_data": null
+    },
+    "selected_regfile_interface": {
+        "status": "rejected_interface",
+        "score": 0,
+        "confidence": "none",
+        "write_enable": null,
+        "write_addr": null,
+        "write_data": null,
+        "timing_offset": null
+    }
+}

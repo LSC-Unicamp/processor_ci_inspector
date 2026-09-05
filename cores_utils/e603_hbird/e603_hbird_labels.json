@@ -1,0 +1,30 @@
+{
+    "e603_hbird": {
+        "license_types": [
+            "Apache 2.0",
+            "Custom License",
+            "MIT"
+        ],
+        "bits": "Undetected",
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "Verilog",
+        "multicycle": "Undetected",
+        "pipeline": "Undetected",
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected",
+        "forwarding": {
+            "schema_version": 2,
+            "probe_suite_version": "paired-forwarding-v8",
+            "implementation_revision": 11,
+            "execution": {
+                "state": "failed",
+                "run_id": "2ce6189b-b4ff-462a-8cff-fa2baa3ecd81",
+                "reason": "Command '['make', '-f', 'cores_utils/e603_hbird/e603_hbird.mk']' returned non-zero exit status 2.",
+                "error_type": "CalledProcessError"
+            },
+            "applicable": null
+        }
+    }
+}

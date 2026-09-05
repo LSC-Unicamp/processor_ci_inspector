@@ -1,0 +1,28 @@
+{
+    "vanilla-riscv": {
+        "license_types": [
+            "MIT"
+        ],
+        "bits": "Undetected",
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "Verilog",
+        "multicycle": "Undetected",
+        "pipeline": "Undetected",
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected",
+        "forwarding": {
+            "schema_version": 2,
+            "probe_suite_version": "paired-forwarding-v8",
+            "implementation_revision": 11,
+            "execution": {
+                "state": "failed",
+                "run_id": "77ec9e69-77c0-416d-8127-1e83987db031",
+                "reason": "Command '['make', '-f', 'cores_utils/vanilla-riscv/vanilla-riscv.mk']' returned non-zero exit status 2.",
+                "error_type": "CalledProcessError"
+            },
+            "applicable": null
+        }
+    }
+}

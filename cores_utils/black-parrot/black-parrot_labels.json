@@ -1,0 +1,30 @@
+{
+    "black-parrot": {
+        "license_types": [
+            "BSD 3-Clause",
+            "Custom License",
+            "Solderpad"
+        ],
+        "bits": "Undetected",
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "SystemVerilog",
+        "multicycle": "Undetected",
+        "pipeline": "Undetected",
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected",
+        "forwarding": {
+            "schema_version": 2,
+            "probe_suite_version": "paired-forwarding-v8",
+            "implementation_revision": 11,
+            "execution": {
+                "state": "failed",
+                "run_id": "5366d213-be26-495f-9509-7017191950e9",
+                "reason": "Command '['make', '-f', 'cores_utils/black-parrot/black-parrot.mk']' returned non-zero exit status 2.",
+                "error_type": "CalledProcessError"
+            },
+            "applicable": null
+        }
+    }
+}

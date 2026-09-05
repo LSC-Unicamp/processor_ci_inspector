@@ -1,0 +1,30 @@
+{
+    "ysyx_riscv64_cpu": {
+        "license_types": [
+            "GPLv3",
+            "Custom License",
+            "MIT"
+        ],
+        "bits": "Undetected",
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "SystemVerilog",
+        "multicycle": "Undetected",
+        "pipeline": "Undetected",
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected",
+        "forwarding": {
+            "schema_version": 2,
+            "probe_suite_version": "paired-forwarding-v8",
+            "implementation_revision": 11,
+            "execution": {
+                "state": "failed",
+                "run_id": "bd41e10b-54b3-4482-928d-dd9ff44f1237",
+                "reason": "Command '['make', '-f', 'cores_utils/ysyx_riscv64_cpu/ysyx_riscv64_cpu.mk']' returned non-zero exit status 2.",
+                "error_type": "CalledProcessError"
+            },
+            "applicable": null
+        }
+    }
+}

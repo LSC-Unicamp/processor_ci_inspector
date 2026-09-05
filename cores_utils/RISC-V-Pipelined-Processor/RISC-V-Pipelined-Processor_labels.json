@@ -1,0 +1,28 @@
+{
+    "RISC-V-Pipelined-Processor": {
+        "license_types": [
+            "MIT"
+        ],
+        "bits": "Undetected",
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "SystemVerilog",
+        "multicycle": "Undetected",
+        "pipeline": "Undetected",
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected",
+        "forwarding": {
+            "schema_version": 2,
+            "probe_suite_version": "paired-forwarding-v8",
+            "implementation_revision": 11,
+            "execution": {
+                "state": "failed",
+                "run_id": "4bc1588c-e597-4892-9a99-070fe3985473",
+                "reason": "Command '['make', '-f', 'cores_utils/RISC-V-Pipelined-Processor/RISC-V-Pipelined-Processor.mk']' returned non-zero exit status 2.",
+                "error_type": "CalledProcessError"
+            },
+            "applicable": null
+        }
+    }
+}

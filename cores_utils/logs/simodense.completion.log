@@ -1,0 +1,275 @@
+Processing labeler on /home/gabcro/Code/Processor_CI/cores/simodense...
+rm -f results.xml
+"make" -f /home/gabcro/Code/Processor_CI/cores_utils/simodense/simodense.mk results.xml
+make[1]: Entering directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector'
+mkdir -p sim_build/simodense
+/usr/bin/verilator -cc --exe -Mdir sim_build/simodense --top-module processorci_top --language 1800-2017 -DSIMULATION -Wno-fatal -Wno-lint --public-flat-rw --trace --trace-structs --trace-underscore --timescale 1ns/1ps --vpi --public-flat-rw --prefix Vtop -o Vtop -LDFLAGS "-Wl,-rpath,/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -L/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -lcocotbvpi_verilator" +incdir+/home/gabcro/Code/Processor_CI/cores/simodense +incdir+/home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral  /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/caches.v /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/cpu.v /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/system.v /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/custom.v /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/internal/ahblite_to_wishbone.sv /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/internal/axi4lite_to_wishbone.sv /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/internal/axi4_to_wishbone.sv /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/simodense.sv /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/share/lib/verilator/verilator.cpp
+%Warning-NULLPORT: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/cpu.v:298:3: Null port on module (perhaps extraneous comma)
+  298 |   );
+      |   ^
+                   ... For warning description see https://verilator.org/warn/NULLPORT?v=5.050
+                   ... Use "/* verilator lint_off NULLPORT */" and lint_on around source to disable this message.
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/cpu.v:45:8: Duplicate declaration of module: 'IDecoder'
+   45 | module IDecoder(instr, iformat, rs1, rs2, rd, immediate, alui_en, auipc_en, load_en, absolute_pc, m_inst, counters, simd_inst, c1_en, c2_en, c3_en);
+      |        ^~~~~~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/system.v:26:1: ... note: In file included from 'system.v'
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/cpu.v:45:8: ... Location of original declaration
+   45 | module IDecoder(instr, iformat, rs1, rs2, rd, immediate, alui_en, auipc_en, load_en, absolute_pc, m_inst, counters, simd_inst, c1_en, c2_en, c3_en);
+      |        ^~~~~~~~
+                 ... For warning description see https://verilator.org/warn/MODDUP?v=5.050
+                 ... Use "/* verilator lint_off MODDUP */" and lint_on around source to disable this message.
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/cpu.v:126:8: Duplicate declaration of module: 'ALUint'
+  126 | module ALUint(data1, data2, func, result);
+      |        ^~~~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/system.v:26:1: ... note: In file included from 'system.v'
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/cpu.v:126:8: ... Location of original declaration
+  126 | module ALUint(data1, data2, func, result);
+      |        ^~~~~~
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/cpu.v:162:8: Duplicate declaration of module: 'ALUintM'
+  162 | module ALUintM(clk, reset, valid, rdin, data1, data2, func, result, rd, ready, accepting);
+      |        ^~~~~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/system.v:26:1: ... note: In file included from 'system.v'
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/cpu.v:162:8: ... Location of original declaration
+  162 | module ALUintM(clk, reset, valid, rdin, data1, data2, func, result, rd, ready, accepting);
+      |        ^~~~~~~
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/cpu.v:242:8: Duplicate declaration of module: 'ALUbranch'
+  242 | module ALUbranch(data1, data2, func, result);
+      |        ^~~~~~~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/system.v:26:1: ... note: In file included from 'system.v'
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/cpu.v:242:8: ... Location of original declaration
+  242 | module ALUbranch(data1, data2, func, result);
+      |        ^~~~~~~~~
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/cpu.v:274:8: Duplicate declaration of module: 'PClogic'
+  274 | module PClogic (clk, reset, next_direction, next_step, PC, PCnext);
+      |        ^~~~~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/system.v:26:1: ... note: In file included from 'system.v'
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/cpu.v:274:8: ... Location of original declaration
+  274 | module PClogic (clk, reset, next_direction, next_step, PC, PCnext);
+      |        ^~~~~~~
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/cpu.v:294:8: Duplicate declaration of module: 'Core'
+  294 | module Core (clk, reset,  
+      |        ^~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/system.v:26:1: ... note: In file included from 'system.v'
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/cpu.v:294:8: ... Location of original declaration
+  294 | module Core (clk, reset,  
+      |        ^~~~
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/caches.v:53:8: Duplicate declaration of module: 'IL1Cache'
+   53 | module IL1Cache (clk, reset, PC, instr, ready,
+      |        ^~~~~~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/system.v:27:1: ... note: In file included from 'system.v'
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/caches.v:53:8: ... Location of original declaration
+   53 | module IL1Cache (clk, reset, PC, instr, ready,
+      |        ^~~~~~~~
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/caches.v:124:8: Duplicate declaration of module: 'DL1cache'
+  124 | module DL1cache (clk, reset, 
+      |        ^~~~~~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/system.v:27:1: ... note: In file included from 'system.v'
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/caches.v:124:8: ... Location of original declaration
+  124 | module DL1cache (clk, reset, 
+      |        ^~~~~~~~
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/caches.v:451:8: Duplicate declaration of module: 'DL2cache'
+  451 | module DL2cache (clk, reset, 
+      |        ^~~~~~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/system.v:27:1: ... note: In file included from 'system.v'
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/caches.v:451:8: ... Location of original declaration
+  451 | module DL2cache (clk, reset, 
+      |        ^~~~~~~~
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/caches.v:799:8: Duplicate declaration of module: 'DL2cacheU'
+  799 | module DL2cacheU (clk, reset, 
+      |        ^~~~~~~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/system.v:27:1: ... note: In file included from 'system.v'
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/caches.v:799:8: ... Location of original declaration
+  799 | module DL2cacheU (clk, reset, 
+      |        ^~~~~~~~~
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/custom.v:25:8: Duplicate declaration of module: 'Merger2x8x32bit'
+   25 | module Merger2x8x32bit (clk, reset, rd, vrd1, vrd2, in_v, in8A, in8B, out_v, out8A, out8B, out_rd, out_vrd1, out_vrd2, next_source_v, next_source, not_accepting);
+      |        ^~~~~~~~~~~~~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/custom.v:25:8: ... Location of original declaration
+   25 | module Merger2x8x32bit (clk, reset, rd, vrd1, vrd2, in_v, in8A, in8B, out_v, out8A, out8B, out_rd, out_vrd1, out_vrd2, next_source_v, next_source, not_accepting);
+      |        ^~~~~~~~~~~~~~~
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/custom.v:169:8: Duplicate declaration of module: 'Sorter1x8x32bit'
+  169 | module Sorter1x8x32bit (clk, reset, vrd, in_v, in8, out_v, out8, out_vrd);
+      |        ^~~~~~~~~~~~~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/custom.v:169:8: ... Location of original declaration
+  169 | module Sorter1x8x32bit (clk, reset, vrd, in_v, in8, out_v, out8, out_vrd);
+      |        ^~~~~~~~~~~~~~~
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/custom.v:244:8: Duplicate declaration of module: 'CAS_unit'
+  244 | module CAS_unit(clk, inA, inB, outA, outB);
+      |        ^~~~~~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/custom.v:244:8: ... Location of original declaration
+  244 | module CAS_unit(clk, inA, inB, outA, outB);
+      |        ^~~~~~~~
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/custom.v:260:8: Duplicate declaration of module: 'SR_module'
+  260 | module SR_module(clk, din, dout);
+      |        ^~~~~~~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/custom.v:260:8: ... Location of original declaration
+  260 | module SR_module(clk, din, dout);
+      |        ^~~~~~~~~
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/custom.v:269:8: Duplicate declaration of module: 'PrefixSum1x8x32bit'
+  269 | module PrefixSum1x8x32bit (clk, reset, vrd, in_v, in8, out_v, out8, out_vrd);
+      |        ^~~~~~~~~~~~~~~~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/custom.v:269:8: ... Location of original declaration
+  269 | module PrefixSum1x8x32bit (clk, reset, vrd, in_v, in8, out_v, out8, out_vrd);
+      |        ^~~~~~~~~~~~~~~~~~
+%Warning-MODDUP: /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/custom.v:351:8: Duplicate declaration of module: 'ADD_module'
+  351 | module ADD_module(clk, reset, valid, data_inA, data_inB, data_out);
+      |        ^~~~~~~~~~
+                 /home/gabcro/Code/Processor_CI/cores/simodense/FPGA_Implementation_AXI_peripheral/custom.v:351:8: ... Location of original declaration
+  351 | module ADD_module(clk, reset, valid, data_inA, data_inB, data_out);
+      |        ^~~~~~~~~~
+%Warning-SELRANGE: /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/simodense.sv:213:46: Extracting 30 bits from only 21 bit number
+                                                                                              : ... note: In instance 'processorci_top'
+  213 |     sim_instr_data = sim_program[Processor.PC[31:2]];
+      |                                              ^
+                   ... For warning description see https://verilator.org/warn/SELRANGE?v=5.050
+                   ... Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
+%Warning-SELRANGE: /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/simodense.sv:213:46: Selection index out of range: 31:2 outside 20:0
+                                                                                              : ... note: In instance 'processorci_top'
+  213 |     sim_instr_data = sim_program[Processor.PC[31:2]];
+      |                                              ^
+- V e r i l a t i o n   R e p o r t: Verilator 5.050 2026-07-01 rev v5.050
+- Verilator: Built from 1.058 MB sources in 22 modules, into 1.095 MB in 10 C++ files needing 0.001 MB
+- Verilator: Walltime 0.067 s (elab=0.005, cvt=0.037, bld=0.000); cpu 0.065 s on 1 threads; allocated 27.836 MB
+make -C sim_build/simodense  -f Vtop.mk
+make[2]: Entering directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector/sim_build/simodense'
+g++  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -Os  -c -o verilator.o /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/share/lib/verilator/verilator.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated.o /usr/share/verilator/include/verilated.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_dpi.o /usr/share/verilator/include/verilated_dpi.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_vpi.o /usr/share/verilator/include/verilated_vpi.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_vcd_c.o /usr/share/verilator/include/verilated_vcd_c.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_threads.o /usr/share/verilator/include/verilated_threads.cpp
+python3 /usr/share/verilator/bin/verilator_includer -DVL_INCLUDE_OPT=include Vtop.cpp Vtop___024root__0.cpp Vtop__Dpi.cpp Vtop__Trace__0.cpp Vtop__ConstPool__0__Slow.cpp Vtop___024root__Slow.cpp Vtop___024root__0__Slow.cpp Vtop__Syms__Slow.cpp Vtop__Trace__0__Slow.cpp Vtop__TraceDecls__0__Slow.cpp > Vtop__ALL.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o Vtop__ALL.o Vtop__ALL.cpp
+g++    -rdynamic verilator.o verilated.o verilated_dpi.o verilated_vpi.o verilated_vcd_c.o verilated_threads.o Vtop__ALL.a   -Wl,-rpath,/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -L/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -lcocotbvpi_verilator  -pthread -lpthread -latomic -ldl   -o Vtop
+rm Vtop__ALL.verilator_deplist.tmp
+make[2]: Leaving directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector/sim_build/simodense'
+/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb_tools/makefiles/simulators/Makefile.verilator:69: Using MODULE is deprecated, please use COCOTB_TEST_MODULES instead.
+rm -f results.xml
+COCOTB_TEST_MODULES=cocotb_labeler COCOTB_TESTCASE= COCOTB_TEST_FILTER= COCOTB_TOPLEVEL=processorci_top TOPLEVEL_LANG=verilog \
+         sim_build/simodense/Vtop     
+     -.--ns INFO     gpi                                ..mbed/gpi_embed.cpp:93   in _embed_init_python              Using Python 3.13.0rc1 interpreter at /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/bin/python
+     -.--ns INFO     gpi                                ../gpi/GpiCommon.cpp:79   in gpi_print_registered_impl       VPI registered
+     0.00ns INFO     cocotb                             Running on Verilator version 5.050 2026-07-01
+     0.00ns INFO     cocotb                             Seeding Python random module with 1785389754
+     0.00ns INFO     cocotb                             Initialized cocotb v2.0.1 from /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb
+     0.00ns INFO     cocotb.regression                  pytest not found, install it to enable better AssertionError messages
+     0.00ns INFO     cocotb                             Running tests
+     0.00ns INFO     cocotb.regression                  running cocotb_labeler.processor_test (1/1)
+                                                            Test function for the processor.
+
+            ####################################################
+            #Looking for the register file - regfile_finder.py #
+            ####################################################
+          
+     0.00ns INFO     cocotb.processorci_top             Static register-file checkpoint: processorci_top.Processor.reg_file kind=array_of_words depth=32 word_width=32 score=103
+  1010.00ns INFO     cocotb.processorci_top             - Static Register File Array Candidates Found:
+  1010.00ns INFO     cocotb.processorci_top               1: processorci_top.Processor.reg_file kind=array_of_words depth=32 word_width=32 score=103 visibility=visible
+  1010.00ns INFO     cocotb.processorci_top                  reasons: unpacked/indexable array, 32 entries, XLEN-sized words (32), name hint(s): reg_file
+  1010.00ns INFO     cocotb.processorci_top                  visibility: path resolvable: processorci_top.Processor.reg_file, index 31: value readable, index 30: value readable, index 29: value readable, index 28: value readable
+  1010.00ns INFO     cocotb.processorci_top             
+  1010.00ns INFO     cocotb.processorci_top             Visibility summary: {'visible': 1, 'invisible': 0, 'partial': 0, 'total': 1}
+  1010.00ns INFO     cocotb.processorci_top             Dynamic regfile write program reached loop at cycle 10
+  1010.00ns INFO     cocotb.processorci_top             Skipping register file interface detection via Ollama.
+  1010.00ns INFO     cocotb.processorci_top             Processor name: /home/gabcro/Code/Processor_CI/cores_utils/simodense
+  1010.00ns INFO     cocotb.processorci_top             Register file candidates: ['processorci_top.Processor.reg_file']
+  1010.00ns INFO     cocotb.processorci_top             Using register file: processorci_top.Processor.reg_file
+  1010.00ns INFO     cocotb.processorci_top             Resolved register file: ArrayObject(processorci_top.Processor.reg_file)
+  1020.00ns INFO     cocotb.processorci_top             [mem_driver cycle 1] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1030.00ns INFO     cocotb.processorci_top             [mem_driver cycle 2] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1040.00ns INFO     cocotb.processorci_top             [mem_driver cycle 3] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1050.00ns INFO     cocotb.processorci_top             [mem_driver cycle 4] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1060.00ns INFO     cocotb.processorci_top             [mem_driver cycle 5] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1070.00ns INFO     cocotb.processorci_top             [mem_driver cycle 6] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1080.00ns INFO     cocotb.processorci_top             [mem_driver cycle 7] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1090.00ns INFO     cocotb.processorci_top             [mem_driver cycle 8] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1100.00ns INFO     cocotb.processorci_top             [mem_driver cycle 9] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1110.00ns INFO     cocotb.processorci_top             [mem_driver cycle 10] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1120.00ns INFO     cocotb.processorci_top             [mem_driver cycle 11] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1130.00ns INFO     cocotb.processorci_top             [mem_driver cycle 12] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1140.00ns INFO     cocotb.processorci_top             [mem_driver cycle 13] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1150.00ns INFO     cocotb.processorci_top             [mem_driver cycle 14] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1160.00ns INFO     cocotb.processorci_top             [mem_driver cycle 15] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1170.00ns INFO     cocotb.processorci_top             [mem_driver cycle 16] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1180.00ns INFO     cocotb.processorci_top             [mem_driver cycle 17] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1190.00ns INFO     cocotb.processorci_top             [mem_driver cycle 18] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1200.00ns INFO     cocotb.processorci_top             [mem_driver cycle 19] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1210.00ns INFO     cocotb.processorci_top             [mem_driver cycle 20] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1520.00ns INFO     cocotb.processorci_top             Measuring execution model from architectural commit cadence...
+  1520.00ns INFO     cocotb.processorci_top             [measure] Current regfile finder did not provide a complete real write interface; using register-file observation instead of legacy cached interface
+  1520.00ns INFO     cocotb.processorci_top             [measure] Observing signature commits through register-file value changes
+  1690.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x5, x0, 0x135 at cycle 16: x5 = 0x00000135
+  1700.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x6, x0, 0x246 at cycle 17: x6 = 0x00000246
+  1710.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x7, x0, 0x357 at cycle 18: x7 = 0x00000357
+  1720.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x8, x0, 0x468 at cycle 19: x8 = 0x00000468
+  1730.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x9, x0, 0x579 at cycle 20: x9 = 0x00000579
+  1740.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x10, x0, 0x68a at cycle 21: x10 = 0x0000068a
+  1740.00ns INFO     cocotb.processorci_top             [measure] Fetch intervals: [1, 1, 1, 1, 1]
+  1740.00ns INFO     cocotb.processorci_top             [measure] Commit intervals: [1, 1, 1, 1, 1]
+  1740.00ns INFO     cocotb.processorci_top             [measure] Fetch-to-commit latencies: [1, 1, 1, 1, 1, 1]
+  1740.00ns INFO     cocotb.processorci_top             [measure] Classification: {'single_cycle': False, 'multicycle': False, 'pipeline': {'depth_estimate': 2, 'depth_estimate_source': 'regfile_observation'}, 'confidence': 0.78}
+  1740.00ns INFO     cocotb.processorci_top             Datapath results saved to /home/gabcro/Code/Processor_CI/cores_utils/simodense/simodense_labels.json
+  1740.00ns INFO     cocotb.processorci_top             [forwarding] Running isolated forwarding probes...
+  1740.00ns INFO     cocotb.processorci_top             [measure] Current regfile finder did not provide a complete real write interface; using register-file observation instead of legacy cached interface
+  1740.00ns INFO     cocotb.processorci_top             [pipeline_finder] Starting bounded signal discovery
+  1740.00ns INFO     cocotb.processorci_top             [pipeline_finder] Discovery complete: scopes=76 objects=558 truncated=True
+ 10570.00ns INFO     cocotb.processorci_top             [forwarding] Handshake calibration complete: supported=False recovery=False trials=1
+ 10570.00ns INFO     cocotb.processorci_top             [forwarding] Architectural calibration variants complete
+ 10570.00ns INFO     cocotb.processorci_top             [forwarding] Behavioral signal census complete: before={'pc': 96, 'instruction': 96, 'valid': 57, 'stall': 57, 'flush': 57, 'source_id': 26, 'destination_id': 26, 'operand': 128, 'store_data': 128, 'wb_data': 128, 'wb_enable': 57, 'packed_parent': 19} after={'pc': 10, 'instruction': 3, 'valid': 13, 'stall': 17, 'flush': 12, 'source_id': 12, 'destination_id': 12, 'operand': 22, 'store_data': 22, 'wb_data': 22, 'wb_enable': 12, 'packed_parent': 16}
+ 14770.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for alu_to_alu
+ 19150.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for alu_to_store_data
+ 23530.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for alu_to_store_address
+ 44470.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for load_to_alu
+ 65530.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for load_to_store_data
+ 86590.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for load_to_store_address
+162610.00ns INFO     cocotb.processorci_top             [forwarding] Focused adjacent rescan complete for ['alu_to_alu', 'alu_to_store_address', 'alu_to_store_data', 'load_to_alu', 'load_to_store_address', 'load_to_store_data']
+167170.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for alu_to_alu
+171910.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for alu_to_store_data
+176650.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for alu_to_store_address
+197830.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for load_to_alu
+219130.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for load_to_store_data
+240430.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for load_to_store_address
+317350.00ns INFO     cocotb.processorci_top             [forwarding] Independent gap 1 complete; active paths=['alu_to_alu', 'alu_to_store_address', 'alu_to_store_data', 'load_to_alu', 'load_to_store_address', 'load_to_store_data']
+395170.00ns INFO     cocotb.processorci_top             [forwarding] Independent gap 2 complete; active paths=['alu_to_alu', 'alu_to_store_address', 'alu_to_store_data']
+409750.00ns INFO     cocotb.processorci_top             [forwarding] Independent gap 3 complete; active paths=['alu_to_alu', 'alu_to_store_address', 'alu_to_store_data']
+413200.00ns INFO     cocotb.processorci_top             [forwarding] probe results: {'execution': None, 'focused_rescan': None, 'alu_to_alu': 'inconclusive', 'alu_to_store_data': 'inconclusive', 'alu_to_store_address': 'inconclusive', 'load_to_alu': 'inconclusive', 'load_to_store_data': 'inconclusive', 'load_to_store_address': 'inconclusive'}
+413200.00ns INFO     cocotb.processorci_top             [branch_prediction] Running branch-prediction probes...
+413200.00ns INFO     cocotb.processorci_top             [measure] Current regfile finder did not provide a complete real write interface; using register-file observation instead of legacy cached interface
+514820.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=local_history invalid reason=probe_timeout complete=False fetches=2176 coverage=0.000
+575590.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=local_alternating invalid reason=probe_timeout complete=False fetches=1512 coverage=0.927
+657590.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=global_history invalid reason=probe_timeout complete=False fetches=2040 coverage=0.000
+767530.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=path_history invalid reason=probe_timeout complete=False fetches=2720 coverage=0.000
+876550.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=combined_history invalid reason=probe_timeout complete=False fetches=2703 coverage=0.000
+1020310.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=long_history invalid reason=probe_timeout complete=False fetches=3570 coverage=0.000
+1071990.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=indirect_alternating_target invalid reason=probe_timeout complete=False fetches=714 coverage=0.875
+1072960.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=ras_standard_link invalid reason=architectural_completion_failed complete=False fetches=17 coverage=0.062
+1073930.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=ras_nonstandard_link_control invalid reason=architectural_completion_failed complete=False fetches=17 coverage=0.062
+1115500.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=timing_learnable invalid reason=probe_timeout complete=False fetches=1020 coverage=0.938
+1157070.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=timing_learnable invalid reason=probe_timeout complete=False fetches=1020 coverage=0.938
+1198640.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=timing_learnable invalid reason=probe_timeout complete=False fetches=1020 coverage=0.938
+1240210.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=timing_shuffled_control invalid reason=probe_timeout complete=False fetches=1020 coverage=0.938
+1281780.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=timing_shuffled_control invalid reason=probe_timeout complete=False fetches=1020 coverage=0.938
+1323350.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=timing_shuffled_control invalid reason=probe_timeout complete=False fetches=1020 coverage=0.938
+1336120.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=reset_retention_observe invalid reason=probe_timeout complete=False fetches=306 coverage=1.000
+1348890.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=reset_retention_train invalid reason=probe_timeout complete=False fetches=306 coverage=1.000
+1361660.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=reset_retention_observe invalid reason=probe_timeout complete=False fetches=306 coverage=1.000
+1391830.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=two_pc_alias_spacing_64 invalid reason=probe_timeout complete=False fetches=735 coverage=0.000
+1432400.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=two_pc_alias_spacing_128 invalid reason=probe_timeout complete=False fetches=994 coverage=0.000
+1493770.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=two_pc_alias_spacing_256 invalid reason=probe_timeout complete=False fetches=1512 coverage=0.000
+1596740.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=two_pc_alias_spacing_512 invalid reason=probe_timeout complete=False fetches=2533 coverage=0.000
+1596740.00ns INFO     cocotb.processorci_top             [branch_prediction] status=inconclusive components=[]
+1596740.00ns INFO     cocotb.processorci_top             Results saved to /home/gabcro/Code/Processor_CI/cores_utils/simodense/simodense_labels.json
+1596740.00ns INFO     cocotb.regression                  cocotb_labeler.processor_test passed
+1596740.00ns INFO     cocotb.regression                  ***************************************************************************************
+                                                         ** TEST                           STATUS  SIM TIME (ns)  REAL TIME (s)  RATIO (ns/s) **
+                                                         ***************************************************************************************
+                                                         ** cocotb_labeler.processor_test   PASS     1596740.00          30.90      51675.33  **
+                                                         ***************************************************************************************
+                                                         ** TESTS=1 PASS=1 FAIL=0 SKIP=0             1596740.00          30.90      51673.86  **
+                                                         ***************************************************************************************
+- :0: Verilog $finish
+make[1]: Leaving directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector'
+Identified language: Verilog
+Results saved to /home/gabcro/Code/Processor_CI/cores_utils/simodense/simodense_labels.json
+Verilog
+Directory being passed to cocotb_makefile_creator: /home/gabcro/Code/Processor_CI/cores/simodense
+Creating Makefile for simodense...

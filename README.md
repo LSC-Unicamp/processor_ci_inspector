@@ -115,6 +115,22 @@ Validate golden cases with:
 python scripts/validate_golden_cases.py
 ```
 
+### Summarize completed inspections
+
+To turn a directory of per-core label artifacts into a reviewable Markdown
+table, run:
+
+```bash
+python scripts/summarize_core_results.py \
+  --input-dir ../cores_utils \
+  --output core_summary.md
+```
+
+The report lists each core's license, HDL, XLEN, datapath classification,
+pipeline-depth estimate (when pipelined), and modal fetch-to-commit instruction
+latency. It keeps missing or inconclusive measurements visible as `Not measured`
+rather than inferring values.
+
 Keep generated files out of commits when possible, especially `__pycache__/`,
 virtual environments, simulation output, and temporary inspection artifacts.
 See [docs/README.md](docs/README.md) for maintenance notes.

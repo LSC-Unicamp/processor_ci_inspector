@@ -1,0 +1,2211 @@
+Processing labeler on /home/gabcro/Code/Processor_CI/cores/scr1...
+rm -f results.xml
+"make" -f /home/gabcro/Code/Processor_CI/cores_utils/scr1/scr1.mk results.xml
+make[1]: Entering directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector'
+mkdir -p sim_build/scr1
+/usr/bin/verilator -cc --exe -Mdir sim_build/scr1 --top-module processorci_top --language 1800-2017 -DSIMULATION -Wno-fatal -Wno-lint --public-flat-rw --trace --trace-structs --trace-underscore --timescale 1ns/1ps --vpi --public-flat-rw --prefix Vtop -o Vtop -LDFLAGS "-Wl,-rpath,/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -L/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -lcocotbvpi_verilator" +incdir+/home/gabcro/Code/Processor_CI/cores/scr1 +incdir+/home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline +incdir+/home/gabcro/Code/Processor_CI/cores/scr1/src/includes +incdir+/home/gabcro/Code/Processor_CI/cores/scr1/src/core/primitives +incdir+/home/gabcro/Code/Processor_CI/cores/scr1/src/core  /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/scr1_tapc_shift_reg.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_idu.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/scr1_tapc_synchronizer.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_ipic.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/scr1_dmi.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/scr1_tapc.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/primitives/scr1_reset_cells.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/scr1_dm.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/primitives/scr1_cg.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/scr1_clk_ctrl.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_ialu.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/scr1_scu.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_lsu.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_mprf.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_ifu.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv /home/gabcro/Code/Processor_CI/cores/scr1/src/core/scr1_core_top.sv /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/internal/ahblite_to_wishbone.sv /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/internal/axi4lite_to_wishbone.sv /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/internal/axi4_to_wishbone.sv /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/scr1.sv /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/share/lib/verilator/verilator.cpp
+%Warning-COMBDLY: /home/gabcro/Code/Processor_CI/cores/scr1/src/core/primitives/scr1_cg.sv:24:18: Non-blocking assignment '<=' in combinational logic process
+                                                                                                : ... This will be executed as a blocking assignment '='!
+   24 |         latch_en <= test_mode | clk_en;
+      |                  ^~
+                  ... For warning description see https://verilator.org/warn/COMBDLY?v=5.050
+                  ... Use "/* verilator lint_off COMBDLY */" and lint_on around source to disable this message.
+                  *** See https://verilator.org/warn/COMBDLY?v=5.050 before disabling this,
+                  else you may end up with different sim results.
+%Warning-MULTIDRIVEN: /home/gabcro/Code/Processor_CI/cores/scr1/src/core/scr1_tapc_synchronizer.sv:60:17: Signal has multiple driving blocks with different clocking: 'processorci_top.Processor.i_tapc_synchronizer.dmi_ch_capture_sync'
+                      /home/gabcro/Code/Processor_CI/cores/scr1/src/core/scr1_tapc_synchronizer.sv:116:9: ... Location of first driving block
+  116 |         dmi_ch_capture_sync[0] <= tapc2tapcsync_ch_capture_i;
+      |         ^~~~~~~~~~~~~~~~~~~
+                      /home/gabcro/Code/Processor_CI/cores/scr1/src/core/scr1_tapc_synchronizer.sv:126:9: ... Location of other driving block
+  126 |         dmi_ch_capture_sync[2:1] <= {dmi_ch_capture_sync[1], dmi_ch_capture_sync[0]};
+      |         ^~~~~~~~~~~~~~~~~~~
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=5.050
+                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
+%Warning-MULTIDRIVEN: /home/gabcro/Code/Processor_CI/cores/scr1/src/core/scr1_tapc_synchronizer.sv:61:17: Signal has multiple driving blocks with different clocking: 'processorci_top.Processor.i_tapc_synchronizer.dmi_ch_shift_sync'
+                      /home/gabcro/Code/Processor_CI/cores/scr1/src/core/scr1_tapc_synchronizer.sv:117:9: ... Location of first driving block
+  117 |         dmi_ch_shift_sync[0]   <= tapc2tapcsync_ch_shift_i;
+      |         ^~~~~~~~~~~~~~~~~
+                      /home/gabcro/Code/Processor_CI/cores/scr1/src/core/scr1_tapc_synchronizer.sv:127:9: ... Location of other driving block
+  127 |         dmi_ch_shift_sync[2:1]   <= {dmi_ch_shift_sync[1], dmi_ch_shift_sync[0]};
+      |         ^~~~~~~~~~~~~~~~~
+%Warning-UNOPTFLAT: /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:143:49: Signal unoptimizable: Circular combinational logic: 'processorci_top.Processor.i_pipe_top.i_pipe_exu.tdu2exu_ibrkpt_exc_req_i'
+  143 |     input  logic                                tdu2exu_ibrkpt_exc_req_i,    
+      |                                                 ^~~~~~~~~~~~~~~~~~~~~~~~
+                    ... For warning description see https://verilator.org/warn/UNOPTFLAT?v=5.050
+                    ... Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:143:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.tdu2exu_ibrkpt_exc_req_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:909:1:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:87:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.exu2csr_w_req_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:87:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:167:45:      Example path: processorci_top.Processor.i_pipe_top.exu2csr_w_req
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:73:57:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:73:57:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_csr.exu2csr_w_req_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:483:1:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:154:53:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_csr.csr_mie_upd
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:87:57:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:87:57:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_csr.csr2exu_mstatus_mie_up_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:182:45:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:182:45:      Example path: processorci_top.Processor.i_pipe_top.csr2exu_mstatus_mie_up
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:102:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:102:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.csr2exu_mstatus_mie_up_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:274:37:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:274:37:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.exu_rdy
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:119:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:119:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.exu2pipe_instret_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:141:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:141:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.exu2tdu_imon_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:208:45:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:208:45:      Example path: processorci_top.Processor.i_pipe_top.exu2tdu_i_mon
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:219:45:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:219:45:      Example path: processorci_top.Processor.i_pipe_top.exu2tdu_i_mon_qlfy
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:53:61:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:53:61:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_tdu.exu2tdu_imon_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:152:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:152:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_tdu.csr_icount_hit
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:125:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:54:61:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_tdu.tdu2exu_ibrkpt_match_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:54:61:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:210:45:      Example path: processorci_top.Processor.i_pipe_top.tdu2exu_i_match
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:142:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:142:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.tdu2exu_ibrkpt_match_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:1005:1:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:148:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.exu2tdu_ibrkpt_ret_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:148:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:215:45:      Example path: processorci_top.Processor.i_pipe_top.exu2tdu_bp_retire
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:675:33:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:221:45:      Example path: processorci_top.Processor.i_pipe_top.exu2tdu_bp_retire_qlfy
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:56:61:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:56:61:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_tdu.exu2tdu_bp_retire_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:533:1:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:68:61:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_tdu.tdu2hdu_dmode_req_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:68:61:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:240:45:      Example path: processorci_top.Processor.i_pipe_top.tdu2hdu_dmode_req
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:80:57:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:80:57:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_hdu.tdu2hdu_dmode_req_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:190:53:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:190:53:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_hdu.dmode_cause_tmreq
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:96:57:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:96:57:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_hdu.hdu2exu_no_commit_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:242:45:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:242:45:      Example path: processorci_top.Processor.i_pipe_top.exu_no_commit
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:106:57:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:106:57:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_csr.hdu2csr_no_commit_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:255:53:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:255:53:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_csr.e_mret
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:87:57:      Example path: ASSIGNW
+%Warning-UNOPTFLAT: /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:255:53: Signal unoptimizable: Circular combinational logic: 'processorci_top.Processor.i_pipe_top.i_pipe_csr.e_mret'
+  255 | logic                                               e_mret;              
+      |                                                     ^~~~~~
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:255:53:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_csr.e_mret
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:87:57:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:87:57:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_csr.csr2exu_mstatus_mie_up_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:182:45:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:182:45:      Example path: processorci_top.Processor.i_pipe_top.csr2exu_mstatus_mie_up
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:102:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:102:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.csr2exu_mstatus_mie_up_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:274:37:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:274:37:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.exu_rdy
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:119:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:119:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.exu2pipe_instret_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:141:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:141:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.exu2tdu_imon_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:208:45:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:208:45:      Example path: processorci_top.Processor.i_pipe_top.exu2tdu_i_mon
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:219:45:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:219:45:      Example path: processorci_top.Processor.i_pipe_top.exu2tdu_i_mon_qlfy
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:53:61:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:53:61:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_tdu.exu2tdu_imon_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:152:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:152:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_tdu.csr_icount_hit
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:125:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:54:61:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_tdu.tdu2exu_ibrkpt_match_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:54:61:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:210:45:      Example path: processorci_top.Processor.i_pipe_top.tdu2exu_i_match
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:142:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:142:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.tdu2exu_ibrkpt_match_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:1005:1:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:148:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.exu2tdu_ibrkpt_ret_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:148:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:215:45:      Example path: processorci_top.Processor.i_pipe_top.exu2tdu_bp_retire
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:675:33:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:221:45:      Example path: processorci_top.Processor.i_pipe_top.exu2tdu_bp_retire_qlfy
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:56:61:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:56:61:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_tdu.exu2tdu_bp_retire_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:533:1:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:68:61:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_tdu.tdu2hdu_dmode_req_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:68:61:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:240:45:      Example path: processorci_top.Processor.i_pipe_top.tdu2hdu_dmode_req
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:80:57:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:80:57:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_hdu.tdu2hdu_dmode_req_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:190:53:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:190:53:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_hdu.dmode_cause_tmreq
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:96:57:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:96:57:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_hdu.hdu2exu_no_commit_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:242:45:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:242:45:      Example path: processorci_top.Processor.i_pipe_top.exu_no_commit
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:106:57:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:106:57:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_csr.hdu2csr_no_commit_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:255:53:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:255:53:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_csr.e_mret
+%Warning-UNOPTFLAT: /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_lsu.sv:48:49: Signal unoptimizable: Circular combinational logic: 'processorci_top.Processor.i_pipe_top.i_pipe_exu.i_lsu.tdu2lsu_ibrkpt_exc_req_i'
+   48 |     input   logic                               tdu2lsu_ibrkpt_exc_req_i,    
+      |                                                 ^~~~~~~~~~~~~~~~~~~~~~~~
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_lsu.sv:48:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.i_lsu.tdu2lsu_ibrkpt_exc_req_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_lsu.sv:106:29:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_lsu.sv:106:29:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.i_lsu.lsu_exc_hwbrk
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_lsu.sv:101:29:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_lsu.sv:101:29:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.i_lsu.lsu_exc_req
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_lsu.sv:42:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_lsu.sv:42:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.i_lsu.lsu2exu_exc_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:269:37:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:269:37:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.lsu_exc_req
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:274:37:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:274:37:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.exu_rdy
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:119:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:119:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.exu2pipe_instret_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:141:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:141:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.exu2tdu_imon_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:208:45:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:208:45:      Example path: processorci_top.Processor.i_pipe_top.exu2tdu_i_mon
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:219:45:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:219:45:      Example path: processorci_top.Processor.i_pipe_top.exu2tdu_i_mon_qlfy
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:53:61:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:53:61:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_tdu.exu2tdu_imon_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:152:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:152:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_tdu.csr_icount_hit
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:125:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:54:61:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_tdu.tdu2exu_ibrkpt_match_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:54:61:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:210:45:      Example path: processorci_top.Processor.i_pipe_top.tdu2exu_i_match
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:142:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:142:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.tdu2exu_ibrkpt_match_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:1005:1:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:148:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.exu2tdu_ibrkpt_ret_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:148:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:215:45:      Example path: processorci_top.Processor.i_pipe_top.exu2tdu_bp_retire
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:675:33:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:221:45:      Example path: processorci_top.Processor.i_pipe_top.exu2tdu_bp_retire_qlfy
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:56:61:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:56:61:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_tdu.exu2tdu_bp_retire_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:533:1:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:68:61:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_tdu.tdu2hdu_dmode_req_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_tdu.sv:68:61:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:240:45:      Example path: processorci_top.Processor.i_pipe_top.tdu2hdu_dmode_req
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:80:57:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:80:57:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_hdu.tdu2hdu_dmode_req_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:190:53:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:190:53:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_hdu.dmode_cause_tmreq
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:96:57:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_hdu.sv:96:57:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_hdu.hdu2exu_no_commit_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:242:45:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:242:45:      Example path: processorci_top.Processor.i_pipe_top.exu_no_commit
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:106:57:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:106:57:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_csr.hdu2csr_no_commit_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:255:53:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:255:53:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_csr.e_mret
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:87:57:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_csr.sv:87:57:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_csr.csr2exu_mstatus_mie_up_o
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:182:45:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_top.sv:182:45:      Example path: processorci_top.Processor.i_pipe_top.csr2exu_mstatus_mie_up
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:102:49:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:102:49:      Example path: processorci_top.Processor.i_pipe_top.i_pipe_exu.csr2exu_mstatus_mie_up_i
+                    /home/gabcro/Code/Processor_CI/cores/scr1/src/core/pipeline/scr1_pipe_exu.sv:274:37:      Example path: ASSIGNW
+- V e r i l a t i o n   R e p o r t: Verilator 5.050 2026-07-01 rev v5.050
+- Verilator: Built from 11.818 MB sources in 33 modules, into 3.958 MB in 13 C++ files needing 0.001 MB
+- Verilator: Walltime 0.270 s (elab=0.022, cvt=0.169, bld=0.000); cpu 0.265 s on 1 threads; allocated 46.309 MB
+make -C sim_build/scr1  -f Vtop.mk
+make[2]: Entering directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector/sim_build/scr1'
+g++  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -Os  -c -o verilator.o /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/share/lib/verilator/verilator.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated.o /usr/share/verilator/include/verilated.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_dpi.o /usr/share/verilator/include/verilated_dpi.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_vpi.o /usr/share/verilator/include/verilated_vpi.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_vcd_c.o /usr/share/verilator/include/verilated_vcd_c.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_threads.o /usr/share/verilator/include/verilated_threads.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -x c++-header Vtop__pch.h -o Vtop__pch.h.fast.gch
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -include Vtop__pch.h.fast -c Vtop.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -include Vtop__pch.h.fast -c Vtop___024root__0.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -include Vtop__pch.h.fast -c Vtop___024root__1.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -include Vtop__pch.h.fast -c Vtop___024root__2.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -include Vtop__pch.h.fast -c Vtop__Dpi.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -include Vtop__pch.h.fast -c Vtop__Trace__0.cpp
+g++   -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -x c++-header Vtop__pch.h -o Vtop__pch.h.slow.gch
+g++   -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -include Vtop__pch.h.slow -c Vtop__ConstPool__0__Slow.cpp
+g++   -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -include Vtop__pch.h.slow -c Vtop___024root__Slow.cpp
+g++   -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -include Vtop__pch.h.slow -c Vtop___024root__0__Slow.cpp
+g++   -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -include Vtop__pch.h.slow -c Vtop___024unit__Slow.cpp
+g++   -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -include Vtop__pch.h.slow -c Vtop__Syms__Slow.cpp
+g++   -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -include Vtop__pch.h.slow -c Vtop__Trace__0__Slow.cpp
+g++   -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -include Vtop__pch.h.slow -c Vtop__TraceDecls__0__Slow.cpp
+g++    -rdynamic verilator.o verilated.o verilated_dpi.o verilated_vpi.o verilated_vcd_c.o verilated_threads.o Vtop__ALL.a   -Wl,-rpath,/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -L/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -lcocotbvpi_verilator  -pthread -lpthread -latomic -ldl   -o Vtop
+rm Vtop__ALL.verilator_deplist.tmp
+make[2]: Leaving directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector/sim_build/scr1'
+/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb_tools/makefiles/simulators/Makefile.verilator:69: Using MODULE is deprecated, please use COCOTB_TEST_MODULES instead.
+rm -f results.xml
+COCOTB_TEST_MODULES=cocotb_labeler COCOTB_TESTCASE= COCOTB_TEST_FILTER= COCOTB_TOPLEVEL=processorci_top TOPLEVEL_LANG=verilog \
+         sim_build/scr1/Vtop     
+     -.--ns INFO     gpi                                ..mbed/gpi_embed.cpp:93   in _embed_init_python              Using Python 3.13.0rc1 interpreter at /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/bin/python
+     -.--ns INFO     gpi                                ../gpi/GpiCommon.cpp:79   in gpi_print_registered_impl       VPI registered
+     0.00ns INFO     cocotb                             Running on Verilator version 5.050 2026-07-01
+     0.00ns INFO     cocotb                             Seeding Python random module with 1785389588
+     0.00ns INFO     cocotb                             Initialized cocotb v2.0.1 from /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb
+     0.00ns INFO     cocotb.regression                  pytest not found, install it to enable better AssertionError messages
+     0.00ns INFO     cocotb                             Running tests
+     0.00ns INFO     cocotb.regression                  running cocotb_labeler.processor_test (1/1)
+                                                            Test function for the processor.
+
+            ####################################################
+            #Looking for the register file - regfile_finder.py #
+            ####################################################
+          
+     0.00ns WARNING  gpi                                Unhandled Sub-Element Format - idx
+     0.00ns WARNING  gpi                                Unhandled Sub-Element Format - vd
+     0.00ns WARNING  gpi                                Unhandled Sub-Element Format - idx
+     0.00ns WARNING  gpi                                Unhandled Sub-Element Format - vd
+     0.00ns WARNING  gpi                                Unhandled Sub-Element Format - idx
+     0.00ns WARNING  gpi                                Unhandled Sub-Element Format - vd
+     0.00ns WARNING  gpi                                Unhandled Sub-Element Format - idx
+     0.00ns WARNING  gpi                                Unhandled Sub-Element Format - vd
+     0.00ns INFO     cocotb.processorci_top             Static register-file checkpoint: processorci_top.Processor.i_pipe_top.i_pipe_mprf.mprf_int kind=packed_flat_vector depth=31 word_width=32 score=85
+   950.00ns INFO     cocotb.processorci_top             - Static Register File Array Candidates Found:
+   950.00ns INFO     cocotb.processorci_top               1: processorci_top.Processor.i_pipe_top.i_pipe_mprf.mprf_int kind=packed_flat_vector depth=31 word_width=32 score=85 visibility=visible
+   950.00ns INFO     cocotb.processorci_top                  reasons: packed vector with register-file-sized total width, 31 entries, likely x1..x31 without x0, XLEN-sized words (32), name hint(s): rf
+   950.00ns INFO     cocotb.processorci_top                  visibility: path resolvable: processorci_top.Processor.i_pipe_top.i_pipe_mprf.mprf_int, value readable
+   950.00ns INFO     cocotb.processorci_top             
+   950.00ns INFO     cocotb.processorci_top             Visibility summary: {'visible': 1, 'invisible': 0, 'partial': 0, 'total': 1}
+   950.00ns INFO     cocotb.processorci_top             Dynamic regfile write program reached loop at cycle 19
+   950.00ns INFO     cocotb.processorci_top             Skipping register file interface detection via Ollama.
+   950.00ns INFO     cocotb.processorci_top             Processor name: /home/gabcro/Code/Processor_CI/cores_utils/scr1
+   950.00ns INFO     cocotb.processorci_top             Register file candidates: ['processorci_top.Processor.i_pipe_top.i_pipe_mprf.mprf_int']
+   950.00ns INFO     cocotb.processorci_top             Using register file: processorci_top.Processor.i_pipe_top.i_pipe_mprf.mprf_int
+   950.00ns INFO     cocotb.processorci_top             Resolved register file: <cocotb_labeler._ArchitecturalRegfileView object at 0x7f6ba05c0830>
+   960.00ns INFO     cocotb.processorci_top             [mem_driver cycle 1] cyc=0 stb=0 addr=0xfffffe00 data=0x13500293
+   970.00ns INFO     cocotb.processorci_top             [mem_driver cycle 2] cyc=0 stb=0 addr=0xfffffe00 data=0x13500293
+   980.00ns INFO     cocotb.processorci_top             [mem_driver cycle 3] cyc=0 stb=0 addr=0xfffffe00 data=0x13500293
+   990.00ns INFO     cocotb.processorci_top             [mem_driver cycle 4] cyc=0 stb=0 addr=0xfffffe00 data=0x13500293
+  1000.00ns INFO     cocotb.processorci_top             Measuring execution model from architectural commit cadence...
+  1000.00ns INFO     cocotb.processorci_top             [measure] Current regfile finder did not provide a complete real write interface; using register-file observation instead of legacy cached interface
+  1000.00ns INFO     cocotb.processorci_top             [measure] Observing signature commits through register-file value changes
+  1000.00ns INFO     cocotb.processorci_top             [mem_driver cycle 5] cyc=0 stb=0 addr=0xfffffe00 data=0x13500293
+  1010.00ns INFO     cocotb.processorci_top             [mem_driver cycle 6] cyc=0 stb=0 addr=0xfffffe00 data=0x13500293
+  1020.00ns INFO     cocotb.processorci_top             [mem_driver cycle 7] cyc=0 stb=0 addr=0xfffffe00 data=0x13500293
+  1030.00ns INFO     cocotb.processorci_top             [mem_driver cycle 8] cyc=0 stb=0 addr=0xfffffe00 data=0x13500293
+  1040.00ns INFO     cocotb.processorci_top             [mem_driver cycle 9] cyc=0 stb=0 addr=0xfffffe00 data=0x13500293
+  1050.00ns INFO     cocotb.processorci_top             [mem_driver cycle 10] cyc=0 stb=0 addr=0xfffffe00 data=0x13500293
+  1060.00ns INFO     cocotb.processorci_top             [mem_driver cycle 11] cyc=1 stb=1 addr=0x00000000 data=0x00000013
+  1070.00ns INFO     cocotb.processorci_top             [mem_driver cycle 12] cyc=1 stb=1 addr=0x00000004 data=0x00000013
+  1080.00ns INFO     cocotb.processorci_top             [mem_driver cycle 13] cyc=0 stb=0 addr=0x00000008 data=0x00000013
+  1090.00ns INFO     cocotb.processorci_top             [mem_driver cycle 14] cyc=0 stb=0 addr=0x00000008 data=0x00000013
+  1100.00ns INFO     cocotb.processorci_top             [mem_driver cycle 15] cyc=0 stb=0 addr=0x00000008 data=0x00000013
+  1110.00ns INFO     cocotb.processorci_top             [mem_driver cycle 16] cyc=1 stb=1 addr=0x00000008 data=0x00000013
+  1120.00ns INFO     cocotb.processorci_top             [mem_driver cycle 17] cyc=1 stb=1 addr=0x0000000c data=0x00000013
+  1130.00ns INFO     cocotb.processorci_top             [mem_driver cycle 18] cyc=1 stb=1 addr=0x00000010 data=0x00000013
+  1140.00ns INFO     cocotb.processorci_top             [mem_driver cycle 19] cyc=1 stb=1 addr=0x00000014 data=0x00000013
+  1150.00ns INFO     cocotb.processorci_top             [mem_driver cycle 20] cyc=1 stb=1 addr=0x00000018 data=0x00000013
+  1260.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x5, x0, 0x135 at cycle 25: x5 = 0x00000135
+  1270.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x6, x0, 0x246 at cycle 26: x6 = 0x00000246
+  1280.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x7, x0, 0x357 at cycle 27: x7 = 0x00000357
+  1290.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x8, x0, 0x468 at cycle 28: x8 = 0x00000468
+  1300.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x9, x0, 0x579 at cycle 29: x9 = 0x00000579
+  1310.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x10, x0, 0x68a at cycle 30: x10 = 0x0000068a
+  1310.00ns INFO     cocotb.processorci_top             [measure] Fetch intervals: [1, 1, 1, 1, 1]
+  1310.00ns INFO     cocotb.processorci_top             [measure] Commit intervals: [1, 1, 1, 1, 1]
+  1310.00ns INFO     cocotb.processorci_top             [measure] Fetch-to-commit latencies: [1, 1, 1, 1, 1, 1]
+  1310.00ns INFO     cocotb.processorci_top             [measure] Classification: {'single_cycle': False, 'multicycle': False, 'pipeline': {'depth_estimate': 2, 'depth_estimate_source': 'regfile_observation'}, 'confidence': 0.78}
+  1310.00ns INFO     cocotb.processorci_top             Datapath results saved to /home/gabcro/Code/Processor_CI/cores_utils/scr1/scr1_labels.json
+  1310.00ns INFO     cocotb.processorci_top             [forwarding] Running isolated forwarding probes...
+  1310.00ns INFO     cocotb.processorci_top             [measure] Current regfile finder did not provide a complete real write interface; using register-file observation instead of legacy cached interface
+  1310.00ns INFO     cocotb.processorci_top             [pipeline_finder] Starting bounded signal discovery
+  1310.00ns WARNING  gpi                                Unhandled Sub-Element Format - idx
+  1310.00ns WARNING  gpi                                Unhandled Sub-Element Format - vd
+  1310.00ns WARNING  gpi                                Unhandled Sub-Element Format - idx
+  1310.00ns WARNING  gpi                                Unhandled Sub-Element Format - vd
+  1310.00ns INFO     cocotb.processorci_top             [pipeline_finder] Discovery complete: scopes=43 objects=1601 truncated=True
+ 13510.00ns INFO     cocotb.processorci_top             [forwarding] Handshake calibration complete: supported=False recovery=False trials=1
+ 13510.00ns INFO     cocotb.processorci_top             [forwarding] Architectural calibration variants complete
+ 13510.00ns INFO     cocotb.processorci_top             [forwarding] Behavioral signal census complete: before={'pc': 96, 'instruction': 96, 'valid': 64, 'stall': 64, 'flush': 64, 'source_id': 96, 'destination_id': 96, 'operand': 128, 'store_data': 128, 'wb_data': 128, 'wb_enable': 64, 'packed_parent': 44} after={'pc': 22, 'instruction': 16, 'valid': 32, 'stall': 32, 'flush': 32, 'source_id': 21, 'destination_id': 19, 'operand': 29, 'store_data': 29, 'wb_data': 38, 'wb_enable': 32, 'packed_parent': 25}
+ 15610.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for alu_to_alu
+ 17770.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for alu_to_store_data
+[SCR1 WRAPPER] IMEM REQ @ 110000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 160000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 440000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 490000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 770000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 820000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 1070000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 1120000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 1430000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 1480000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 1790000 addr=0x00000100 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 4480000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 4530000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 4920000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 7530000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 7580000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 7990000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 10580000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 10630000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 11200000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 13630000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 13680000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 13980000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 14030000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 14330000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 14380000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 14680000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 14730000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 15030000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 15080000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 15380000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 15430000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 15730000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 15780000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 15960000 addr=0x00000080 data=0x00000120
+[SCR1 WRAPPER] IMEM REQ @ 16090000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 16140000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 16320000 addr=0x00000080 data=0x00000220
+[SCR1 WRAPPER] IMEM REQ @ 16450000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 16500000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 16680000 addr=0x00000090 data=0x00000127
+[SCR1 WRAPPER] IMEM REQ @ 16810000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 16860000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 17040000 addr=0x00000090 data=0x00000227
+[SCR1 WRAPPER] IMEM REQ @ 17170000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 17220000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 17400000 addr=0x000000a0 data=0x0000012e
+[SCR1 WRAPPER] IMEM REQ @ 17530000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 17580000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 17760000 addr=0x000000a0 data=0x0000022e
+[SCR1 WRAPPER] IMEM REQ @ 17890000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 17940000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 18120000 addr=0x00000180 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 18250000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 18300000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 18480000 addr=0x00000180 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 18610000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 18660000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 18840000 addr=0x000001a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 18970000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 19020000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 192000 19930.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for alu_to_store_address
+ 38230.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for load_to_alu
+ 56530.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for load_to_store_data
+ 74830.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for load_to_store_address
+00 addr=0x000001a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 19330000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 19380000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 19560000 addr=0x000001c0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 19690000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 19740000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 19920000 addr=0x000001c0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 20050000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 20100000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 20270000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 23100000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 23150000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 23320000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 26150000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 26200000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 26370000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 29200000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 29250000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 29420000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 32250000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 32300000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 32470000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 35300000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 35350000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 35520000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 38350000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 38400000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 38570000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 41400000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 41450000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 41620000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 44450000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 44500000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 44670000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 47500000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 47550000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 47720000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 50550000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 50600000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 50770000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 53600000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 53650000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 53820000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 56650000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 56700000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 56870000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 59700000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 59750000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 59920000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 62750000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 62800000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 62970000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 65800000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 65850000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 66020000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 68850000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 68900000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 69070000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 71900000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 71950000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 72120000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 74950000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 75000000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 75300000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 75350000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 75650000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 75700000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 76000000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 76050000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 76350000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 76400000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 76700000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 76750000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 77050000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 77100000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 77280000 addr=0x00000180 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 77410000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 77460000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 77640000 addr=0x00000180 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 77770000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 77820000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 78000000 addr=0x000001a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 78130000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 78180000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 78360000 addr=0x000001a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 78490000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 78540000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 78720000 addr=0x000001c0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 78850000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 78900000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 79080000 addr=0x000001c0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 79210000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 79260000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 79440000 addr=0x00000080 data=0x00000120
+[SCR1 WRAPPER] IMEM REQ @ 79570000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 79620000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 79800000 addr=0x00000080 data=0x00000220
+[SCR1 WRAPPER] IMEM REQ @ 79930000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 79980000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 80160000 addr=0x00000090 data=0x00000127
+[SCR1 WRAPPER] IMEM REQ @ 80290000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 80340000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 80520000 addr=0x00000090 data=0x00000227
+[SCR1 WRAPPER] IMEM REQ @ 80650000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 80700000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 80880000 addr=0x000000a0 data=0x0000012e
+[SCR1 WRAPPER] IMEM REQ @ 81010000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 81060000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 81240000 addr=0x000000a0 data=0x0000022e
+[SCR1 WRAPPER] IMEM REQ @ 81370000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 81420000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 81590000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 84420000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 84470000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 84640000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 87470000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 87520000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 87690000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 90520000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 90570000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 90740000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 93570000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 93620000 addr=0x00000008136150.00ns INFO     cocotb.processorci_top             [forwarding] Focused adjacent rescan complete for ['alu_to_alu', 'alu_to_store_address', 'alu_to_store_data', 'load_to_alu', 'load_to_store_address', 'load_to_store_data']
+138370.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for alu_to_alu
+ data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 93790000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 96620000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 96670000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 96840000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 99670000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 99720000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 99890000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 102720000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 102770000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 102940000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 105770000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 105820000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 105990000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 108820000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 108870000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 109040000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 111870000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 111920000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 112090000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 114920000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 114970000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 115140000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 117970000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 118020000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 118190000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 121020000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 121070000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 121240000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 124070000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 124120000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 124290000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 127120000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 127170000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 127340000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 130170000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 130220000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 130390000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 133220000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 133270000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 133440000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 136270000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 136320000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 136640000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 136690000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 137010000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 137060000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 137380000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 137430000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 137750000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 137800000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 138120000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 138170000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 138490000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 138540000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 138740000 addr=0x00000080 data=0x00000120
+[SCR1 WRAPPER] IMEM REQ @ 138870000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 138920000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 139120000 addr=0x00000080 data=0x00000220
+[SCR1 WRAPPER] IMEM REQ @ 139250000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 139300000 addr=0x00000008 data=0x00000000
+[SCR1 140650.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for alu_to_store_data
+142930.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for alu_to_store_address
+161230.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for load_to_alu
+WRAPPER] DMEM REQ @ 139500000 addr=0x00000090 data=0x00000127
+[SCR1 WRAPPER] IMEM REQ @ 139630000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 139680000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 139880000 addr=0x00000090 data=0x00000227
+[SCR1 WRAPPER] IMEM REQ @ 140010000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 140060000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 140260000 addr=0x000000a0 data=0x0000012e
+[SCR1 WRAPPER] IMEM REQ @ 140390000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 140440000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 140640000 addr=0x000000a0 data=0x0000022e
+[SCR1 WRAPPER] IMEM REQ @ 140770000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 140820000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 141020000 addr=0x00000180 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 141150000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 141200000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 141400000 addr=0x00000180 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 141530000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 141580000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 141780000 addr=0x000001a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 141910000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 141960000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 142160000 addr=0x000001a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 142290000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 142340000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 142540000 addr=0x000001c0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 142670000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 142720000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 142920000 addr=0x000001c0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 143050000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 143100000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 143270000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 146100000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 146150000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 146320000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 149150000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 149200000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 149370000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 152200000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 152250000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 152420000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 155250000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 155300000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 155470000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 158300000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 158350000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 158520000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 161350000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 161400000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 161570000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 161600000 addr=0x00000080 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 164400000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 164450000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 164620000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 164650000 addr=0x00000080 data=0x00000220
+[SCR1 WRAPPER] IMEM REQ @ 167450000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 167500000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 167670000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 167700000 addr=0x00000090 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 170500000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 170550000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM RE179530.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for load_to_store_data
+197830.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for load_to_store_address
+Q @ 170720000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 170750000 addr=0x00000090 data=0x00000227
+[SCR1 WRAPPER] IMEM REQ @ 173550000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 173600000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 173770000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 173800000 addr=0x000000a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 176600000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 176650000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 176820000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 176850000 addr=0x000000a0 data=0x0000022e
+[SCR1 WRAPPER] IMEM REQ @ 179650000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 179700000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 179870000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 179900000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 182700000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 182750000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 182920000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 182950000 addr=0x00000180 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 185750000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 185800000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 185970000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 186000000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 188800000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 188850000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 189020000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 189050000 addr=0x000001a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 191850000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 191900000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 192070000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 192100000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 194900000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 194950000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 195120000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 195150000 addr=0x000001c0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 197950000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 198000000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 198310000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 198360000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 198670000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 198720000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 199030000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 199080000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 199390000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 199440000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 199750000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 199800000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 200110000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 200160000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 200350000 addr=0x00000180 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 200480000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 200530000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 200720000 addr=0x00000180 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 200850000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 200900000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 201090000 addr=0x000001a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 201220000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 201270000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 201460000 addr=0x000001a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 201590000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 201640000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 201830000 addr=0x000001c0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 201960000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 202010000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 202200000 addr=0x000001c0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 202330000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 202380000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 202570000 addr=0x00000080 data=0x00000120
+[SCR1 WRAPPER] IMEM REQ @ 202700000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 202750000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 202940000 addr=0x00000080 data=0x00000220
+[SCR1 WRAPPER] IMEM REQ @ 203070000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 203120000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 203310000 addr=0x00000090 data=0x00000127
+[SCR1 WRAPPER] IMEM REQ @ 203440000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 203490000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 203680000 addr=0x00000090 data=0x00000227
+[SCR1 WRAPPER] IMEM REQ @ 203810000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 203860000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 204050000 addr=0x000000a0 data=0x0000012e
+[SCR1 WRAPPER] IMEM REQ @ 204180000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 204230000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 204420000 addr=0x000000a0 data=0x0000022e
+[SCR1 WRAPPER] IMEM REQ @ 204550000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 204600000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 204770000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 207600000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 207650000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 207820000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 210650000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 210700000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 210870000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 213700000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 213750000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 213920000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 216750000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 216800000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 216970000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 219800000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 219850000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 220020000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 222850000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 222900000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 223070000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 223090000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 225900000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 225950000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 226120000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 226140000 addr=0x00000180 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 228950000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 229000000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 229170000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 229190000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 232000000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 232050000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 232220000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 232240000 addr=0x000001a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 235050000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 235100000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 235270000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 235290000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 238100000 addr=0x00000000 da259330.00ns INFO     cocotb.processorci_top             [forwarding] Independent gap 1 complete; active paths=['alu_to_alu', 'alu_to_store_address', 'alu_to_store_data', 'load_to_alu', 'load_to_store_address', 'load_to_store_data']
+ta=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 238150000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 238320000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 238340000 addr=0x000001c0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 241150000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 241200000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 241370000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 241390000 addr=0x00000080 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 244200000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 244250000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 244420000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 244440000 addr=0x00000080 data=0x00000220
+[SCR1 WRAPPER] IMEM REQ @ 247250000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 247300000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 247470000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 247490000 addr=0x00000090 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 250300000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 250350000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 250520000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 250540000 addr=0x00000090 data=0x00000227
+[SCR1 WRAPPER] IMEM REQ @ 253350000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 253400000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 253570000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 253590000 addr=0x000000a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 256400000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 256450000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 256620000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 256640000 addr=0x000000a0 data=0x0000022e
+[SCR1 WRAPPER] IMEM REQ @ 259450000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 259500000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 259820000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 259870000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 260190000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 260240000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 260560000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 260610000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 260930000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 260980000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 261300000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 261350000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 261670000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 261720000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 261920000 addr=0x00000180 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 262050000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 262100000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 262300000 addr=0x00000180 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 262430000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 262480000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 262680000 addr=0x000001a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 262810000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 262860000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 263060000 addr=0x000001a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 263190000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 263240000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 263440000 addr=0x000001c0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 263570000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 263620000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 263820000 addr=0x000001c0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 263950000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 264000000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 264200000 addr=0x00000080 data=0x00000120
+[SCR1 WRAPPER] IMEM REQ @ 264330000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 264380000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 264580000 addr=0x00000080 data=0x00000220
+[SCR1 WRAPPER] IMEM REQ @ 264710000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 264760000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 264960000 addr=0x00000090 data=0x00000127
+[SCR1 WRAPPER] IMEM REQ @ 265090000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 265140000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 265340000 addr=0x00000090 data=0x00000227
+[SCR1 WRAPPER] IMEM REQ @ 265470000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 265520000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 265720000 addr=0x000000a0 data=0x0000012e
+[SCR1 WRAPPER] IMEM REQ @ 265850000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 265900000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 266100000 addr=0x000000a0 data=0x0000022e
+[SCR1 WRAPPER] IMEM REQ @ 266230000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 266280000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 266450000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 269280000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 269330000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 269500000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 272330000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 272380000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 272550000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 275380000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 275430000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 275600000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 278430000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 278480000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 278650000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 281480000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 281530000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 281700000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 284530000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 284580000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 284750000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 284780000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 287580000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 287630000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 287800000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 287830000 addr=0x00000180 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 290630000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 290680000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 290850000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 290880000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 293680000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 293730000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 293900000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 293930000 addr=0x000001a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 296730000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 296780000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 296950000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 296980000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 299780000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 299830000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 300000000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 300030000 addr=0x000001c0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 302830000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 302880000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 303050000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DME321010.00ns INFO     cocotb.processorci_top             [forwarding] Independent gap 2 complete; active paths=['alu_to_alu', 'alu_to_store_address', 'alu_to_store_data']
+M REQ @ 303080000 addr=0x00000080 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 305880000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 305930000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 306100000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 306130000 addr=0x00000080 data=0x00000220
+[SCR1 WRAPPER] IMEM REQ @ 308930000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 308980000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 309150000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 309180000 addr=0x00000090 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 311980000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 312030000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 312200000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 312230000 addr=0x00000090 data=0x00000227
+[SCR1 WRAPPER] IMEM REQ @ 315030000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 315080000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 315250000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 315280000 addr=0x000000a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 318080000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 318130000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 318300000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 318330000 addr=0x000000a0 data=0x0000022e
+[SCR1 WRAPPER] IMEM REQ @ 321130000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 321180000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 321510000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 321560000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 321890000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 321940000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 322270000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 322320000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 322650000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 322700000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 323030000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 323080000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 323410000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 323460000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 323670000 addr=0x00000180 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 323800000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 323850000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 324060000 addr=0x00000180 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 324190000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 324240000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 324450000 addr=0x000001a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 324580000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 324630000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 324840000 addr=0x000001a0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 324970000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 325020000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 325230000 addr=0x000001c0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 325360000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 325410000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 325620000 addr=0x000001c0 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 325750000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 325800000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 326010000 addr=0x00000080 data=0x00000120
+[SCR1 WRAPPER] IMEM REQ @ 326140000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 326190000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 326400000 addr=0x00000080 data=0x00000220
+[SCR1 WRAPPER] IMEM REQ @ 326530000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 326580000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 326790000 addr=0x00000090 data=0x00000127
+[SCR1 WRAPPER] IMEM REQ @ 32692000327970.00ns INFO     cocotb.processorci_top             [forwarding] Independent gap 3 complete; active paths=['alu_to_alu', 'alu_to_store_address', 'alu_to_store_data']
+331020.00ns INFO     cocotb.processorci_top             [forwarding] probe results: {'execution': None, 'focused_rescan': None, 'alu_to_alu': 'inconclusive', 'alu_to_store_data': 'inconclusive', 'alu_to_store_address': 'inconclusive', 'load_to_alu': 'inconclusive', 'load_to_store_data': 'inconclusive', 'load_to_store_address': 'inconclusive'}
+331020.00ns INFO     cocotb.processorci_top             [branch_prediction] Running branch-prediction probes...
+331020.00ns INFO     cocotb.processorci_top             [measure] Current regfile finder did not provide a complete real write interface; using register-file observation instead of legacy cached interface
+0 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 326970000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 327180000 addr=0x00000090 data=0x00000227
+[SCR1 WRAPPER] IMEM REQ @ 327310000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 327360000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 327570000 addr=0x000000a0 data=0x0000012e
+[SCR1 WRAPPER] IMEM REQ @ 327700000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 327750000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 327960000 addr=0x000000a0 data=0x0000022e
+[SCR1 WRAPPER] IMEM REQ @ 328090000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 328140000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 328290000 addr=0x00000000 data=0x0000005a
+[SCR1 WRAPPER] IMEM REQ @ 331140000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 331190000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 331340000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 331510000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 331560000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 331710000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 331880000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 331930000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 332240000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 332290000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 332600000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 332650000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 332960000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 333010000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 333330000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 333380000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 333700000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 333750000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 334070000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 334120000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 334470000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 334520000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 334870000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 334920000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 335270000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 335320000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 335640000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 335690000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 336010000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 336060000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 336380000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 336430000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 336590000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 336710000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 336830000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 336950000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 337070000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 337190000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 337420000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 337470000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 337630000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 337750000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 337870000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 337990000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 338110000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 338230000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 338350000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 338580000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 338630000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 338820000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 339000000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 339180000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 339360000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 339540000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 339720000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 339900000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 340080000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 340260000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 340440000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 340620000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 340800000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 340980000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 341160000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 341340000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 341520000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 341700000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 341880000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 342060000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 342240000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 342420000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 342600000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 342780000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 342960000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 343140000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 343320000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 343500000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 343680000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 343860000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 344040000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 344220000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 344400000 addr=0x0000007c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 344580000 addr=0x00000080 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 344760000 addr=0x00000084 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 344940000 addr=0x00000088 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 345120000 addr=0x0000008c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 345300000 addr=0x00000090 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 345480000 addr=0x00000094 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 345660000 addr=0x00000098 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 345840000 addr=0x0000009c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 346020000 addr=0x000000a0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 346200000 addr=0x000000a4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 346380000 addr=0x000000a8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 346560000 addr=0x000000ac data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 346740000 addr=0x000000b0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 346920000 addr=0x000000b4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 347100000 addr=0x000000b8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 347280000 addr=0x000000bc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 347460000 addr=0x000000c0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 347640000 addr=0x000000c4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 347820000 addr=0x000000c8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 348000000 addr=0x000000cc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 348180000 addr=0x000000d0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 348360000 addr=0x000000d4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 348540000 addr=0x000000d8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 348720000 addr=0x000000dc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 348900000 addr=0x000000e0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 349080000 addr=0x000000e4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 349260000 addr=0x000000e8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 349440000 addr=0x000000ec data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 349620000 addr=0x000000f0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 349800000 addr=0x000000f4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 349980000 addr=0x000000f8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 350160000 addr=0x000000fc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 350340000 addr=0x00000100 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 350520000 addr=0x00000104 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 350700000 addr=0x00000108 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 350880000 addr=0x0000010c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 351060000 addr=0x00000110 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 351240000 addr=0x00000114 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 351420000 addr=0x00000118 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 351600000 addr=0x0000011c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 351780000 addr=0x00000120 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 351960000 addr=0x00000124 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 352140000 addr=0x00000128 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 352320000 addr=0x0000012c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 352500000 addr=0x00000130 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 352680000 addr=0x00000134 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 352860000 addr=0x00000138 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 353040000 addr=0x0000013c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 353220000 addr=0x00000140 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 353400000 addr=0x00000144 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 353580000 addr=0x00000148 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 353760000 addr=0x0000014c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 353940000 addr=0x00000150 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 354120000 addr=0x00000154 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 354300000 addr=0x00000158 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 354480000 addr=0x0000015c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 354660000 addr=0x00000160 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 354840000 addr=0x00000164 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 355020000 addr=0x00000168 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 355200000 addr=0x0000016c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 355380000 addr=0x00000170 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 355560000 addr=0x00000174 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 355740000 addr=0x00000178 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 355920000 addr=0x0000017c data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 356210000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 356260000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 356440000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 356560000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 356680000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 356800000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 356920000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 357040000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 357160000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 357280000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 357400000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 357520000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 357640000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 357760000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 357880000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 358000000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 358120000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 358240000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 358360000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 358480000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 358600000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 358720000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 358840000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 358960000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 359080000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 359200000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 359320000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 359440000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 359560000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 359680000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 359800000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 359920000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 360040000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 360160000 addr=0x0000007c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 360280000 addr=0x00000080 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 360400000 addr=0x00000084 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 360520000 addr=0x00000088 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 360640000 addr=0x0000008c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 360760000 addr=0x00000090 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 360880000 addr=0x00000094 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 361000000 addr=0x00000098 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 361120000 addr=0x0000009c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 361240000 addr=0x000000a0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 361360000 addr=0x000000a4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 361480000 addr=0x000000a8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 361600000 addr=0x000000ac data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 361720000 addr=0x000000b0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 361840000 addr=0x000000b4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 361960000 addr=0x000000b8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 362080000 addr=0x000000bc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 362200000 addr=0x000000c0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 362320000 addr=0x000000c4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 362440000 addr=0x000000c8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 362560000 addr=0x000000cc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 362680000 addr=0x000000d0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 362800000 addr=0x000000d4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 362920000 addr=0x000000d8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 363040000 addr=0x000000dc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 363160000 addr=0x000000e0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 363280000 addr=0x000000e4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 363400000 addr=0x000000e8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 363520000 addr=0x000000ec data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 363640000 addr=0x000000f0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 363760000 addr=0x000000f4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 363880000 addr=0x000000f8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 364000000 addr=0x000000fc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 364120000 addr=0x00000100 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 364240000 addr=0x00000104 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 364360000 addr=0x00000108 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 364480000 addr=0x0000010c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 364600000 addr=0x00000110 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 364720000 addr=0x00000114 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 364840000 addr=0x00000118 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 364960000 addr=0x0000011c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 365080000 addr=0x00000120 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 365200000 addr=0x00000124 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 365320000 addr=0x00000128 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 365440000 addr=0x0000012c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 365560000 addr=0x00000130 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 365680000 addr=0x00000134 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 365800000 addr=0x00000138 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 365920000 addr=0x0000013c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 366040000 addr=0x00000140 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 366160000 addr=0x00000144 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 366280000 addr=0x00000148 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 366400000 addr=0x0000014c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 366520000 addr=0x00000150 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 366640000 addr=0x00000154 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 366760000 addr=0x00000158 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 366880000 addr=0x0000015c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 367000000 addr=0x00000160 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 367120000 addr=0x00000164 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 367240000 addr=0x00000168 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 367360000 addr=0x0000016c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 367480000 addr=0x00000170 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 367600000 addr=0x00000174 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 367720000 addr=0x00000178 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 367840000 addr=0x0000017c data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 368070000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 368120000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 368300000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 368460000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 368620000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 368780000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 368940000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 369100000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 369260000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 369420000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 369580000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 369740000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 369900000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 370060000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 370220000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 370380000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 370540000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 370700000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 370860000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 371020000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 371180000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 371340000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 371500000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 371660000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 371820000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 371980000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 372140000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 372300000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 372460000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 372620000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 372780000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 372940000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 373100000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 373260000 addr=0x0000007c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 373420000 addr=0x00000080 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 373580000 addr=0x00000084 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 373740000 addr=0x00000088 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 373900000 addr=0x0000008c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 374060000 addr=0x00000090 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 374220000 addr=0x00000094 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 374380000 addr=0x00000098 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 374540000 addr=0x0000009c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 374700000 addr=0x000000a0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 374860000 addr=0x000000a4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 375020000 addr=0x000000a8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 375180000 addr=0x000000ac data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 375340000 addr=0x000000b0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 375500000 addr=0x000000b4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 375660000 addr=0x000000b8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 375820000 addr=0x000000bc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 375980000 addr=0x000000c0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 376140000 addr=0x000000c4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 376300000 addr=0x000000c8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 376460000 addr=0x000000cc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 376620000 addr=0x000000d0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 376780000 addr=0x000000d4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 376940000 addr=0x000000d8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 377100000 addr=0x000000dc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 377260000 addr=0x000000e0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 377420000 addr=0x000000e4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 377580000 addr=0x000000e8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 377740000 addr=0x000000ec data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 377900000 addr=0x000000f0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 378060000 addr=0x000000f4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 378220000 addr=0x000000f8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 378380000 addr=0x000000fc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 378540000 addr=0x00000100 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 378700000 addr=0x00000104 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 378860000 addr=0x00000108 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 379020000 addr=0x0000010c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 379180000 addr=0x00000110 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 379340000 addr=0x00000114 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 379500000 addr=0x00000118 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 379660000 addr=0x0000011c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 379820000 addr=0x00000120 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 379980000 addr=0x00000124 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 380140000 addr=0x00000128 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 380300000 addr=0x0000012c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 380460000 addr=0x00000130 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 380620000 addr=0x00000134 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 380780000 addr=0x00000138 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 380940000 addr=0x0000013c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 381100000 addr=0x00000140 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 381260000 addr=0x00000144 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 381420000 addr=0x00000148 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 381580000 addr=0x0000014c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 381740000 addr=0x00000150 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 381900000 addr=0x00000154 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 382060000 addr=0x00000158 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 382220000 addr=0x0000015c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 382380000 addr=0x00000160 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 382540000 addr=0x00000164 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 382700000 addr=0x00000168 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 382860000 addr=0x0000016c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 383020000 addr=0x00000170 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 383180000 addr=0x00000174 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 383340000 addr=0x00000178 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 383500000 addr=0x0000017c data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 383770000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 383820000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 384000000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 384420000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 384840000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 385260000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 385680000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 386100000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 386520000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 386940000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 387360000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 387780000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 388200000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 388620000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 389040000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 389460000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 389880000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 390300000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 390720000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 391140000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 391560000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 391980000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 392400000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 392820000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 393240000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 393660000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 394080000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 394500000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 394920000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 395340000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 395760000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 396180000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 396600000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 397020000 addr=0x0000007c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 397440000 addr=0x00000080 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 397860000 addr=0x00000084 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 398280000 addr=0x00000088 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 398700000 addr=0x0000008c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 399120000 addr=0x00000090 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 399540000 addr=0x00000094 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 399960000 addr=0x00000098 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 400380000 addr=0x0000009c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 400800000 addr=0x000000a0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 401220000 addr=0x000000a4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 401640000 addr=0x000000a8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 402060000 addr=0x000000ac data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 402480000 addr=0x000000b0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 402900000 addr=0x000000b4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 403320000 addr=0x000000b8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 403740000 addr=0x000000bc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 404160000 addr=0x000000c0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 404580000 addr=0x000000c4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 405000000 addr=0x000000c8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 405420000 addr=0x000000cc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 405840000 addr=0x000000d0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 406260000 addr=0x000000d4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 406680000 addr=0x000000d8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 407100000 addr=0x000000dc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 407520000 addr=0x000000e0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 407940000 addr=0x000000e4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 408360000 addr=0x000000e8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 408780000 addr=0x000000ec data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 409200000 addr=0x000000f0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 409620000 addr=0x000000f4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 410040000 addr=0x000000f8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 410460000 addr=0x000000fc data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 410990000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 411040000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 411230000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 411450000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 411670000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 411890000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 412110000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 412330000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 412550000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 412770000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 412990000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 413210000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 413430000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 413650000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 413870000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 414090000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 414310000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 414530000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 414750000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 414970000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 415190000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 415410000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 415630000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 415850000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 416070000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 416290000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 416510000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 416730000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 416950000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 417170000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 417390000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 417610000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 417830000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 418050000 addr=0x0000007c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 418270000 addr=0x00000080 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 418490000 addr=0x00000084 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 418710000 addr=0x00000088 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 418930000 addr=0x0000008c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 419150000 addr=0x00000090 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 419370000 addr=0x00000094 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 419590000 addr=0x00000098 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 419810000 addr=0x0000009c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 420030000 addr=0x000000a0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 420250000 addr=0x000000a4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 420470000 addr=0x000000a8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 420690000 addr=0x000000ac data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 420910000 addr=0x000000b0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 421130000 addr=0x000000b4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 421350000 addr=0x000000b8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 421570000 addr=0x000000bc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 421790000 addr=0x000000c0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 422010000 addr=0x000000c4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 422230000 addr=0x000000c8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 422450000 addr=0x000000cc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 422670000 addr=0x000000d0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 422890000 addr=0x000000d4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 423110000 addr=0x000000d8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 423330000 addr=0x000000dc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 423550000 addr=0x000000e0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 423770000 addr=0x000000e4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 423990000 addr=0x000000e8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 424210000 addr=0x000000ec data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 424430000 addr=0x000000f0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 424650000 addr=0x000000f4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 424870000 addr=0x000000f8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 425090000 addr=0x000000fc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 425310000 addr=0x00000100 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 425530000 addr=0x00000104 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 425750000 addr=0x00000108 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 425970000 addr=0x0000010c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 426190000 addr=0x00000110 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 426410000 addr=0x00000114 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 426630000 addr=0x00000118 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 426850000 addr=0x0000011c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 427070000 addr=0x00000120 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 427290000 addr=0x00000124 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 427510000 addr=0x00000128 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 427730000 addr=0x0000012c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 427950000 addr=0x00000130 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 428170000 addr=0x00000134 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 428390000 addr=0x00000138 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 428610000 addr=0x0000013c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 428830000 addr=0x00000140 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 429050000 addr=0x00000144 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 429270000 addr=0x00000148 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 429490000 addr=0x0000014c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 429710000 addr=0x00000150 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 429930000 addr=0x00000154 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 430150000 addr=0x00000158 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 430370000 addr=0x0000015c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 430590000 addr=0x00000160 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 430810000 addr=0x00000164 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 431030000 addr=0x00000168 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 431250000 addr=0x0000016c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 431470000 addr=0x00000170 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 431690000 addr=0x00000174 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 431910000 addr=0x00000178 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 432130000 addr=0x0000017c data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 432460000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 432510000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 432690000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 433170000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 433650000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 434130000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 434610000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 435090000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 435570000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 436050000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 436530000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 437010000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 437490000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 437970000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 438450000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 438930000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 439410000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 439890000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 440370000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 440850000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 441330000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 441810000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 442290000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 442770000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 443250000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 443730000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 444210000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 444690000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 445170000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 445650000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 446130000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 446610000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 447090000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 447570000 addr=0x0000007c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 448050000 addr=0x00000080 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 448530000 addr=0x00000084 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 449010000 addr=0x00000088 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 449490000 addr=0x0000008c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 449970000 addr=0x00000090 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 450450000 addr=0x00000094 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 450930000 addr=0x00000098 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 451410000 addr=0x0000009c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 451890000 addr=0x000000a0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 452370000 addr=0x000000a4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 452850000 addr=0x000000a8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 453330000 addr=0x000000ac data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 453810000 addr=0x000000b0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 454290000 addr=0x000000b4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 454770000 addr=0x000000b8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 455250000 addr=0x000000bc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 455730000 addr=0x000000c0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 456210000 addr=0x000000c4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 456690000 addr=0x000000c8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 457170000 addr=0x000000cc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 457650000 addr=0x000000d0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 458130000 addr=0x000000d4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 458610000 addr=0x000000d8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 459090000 addr=0x000000dc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 459570000 addr=0x000000e0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 460050000 addr=0x000000e4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 460530000 addr=0x000000e8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 461010000 addr=0x000000ec data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 461490000 addr=0x000000f0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 461970000 addr=0x000000f4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 462450000 addr=0x000000f8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 462930000 addr=0x000000fc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 463410000 addr=0x00000100 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 463890000 addr=0x00000104 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 464370000 addr=0x00000108 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 464850000 addr=0x0000010c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 465330000 addr=0x00000110 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 465810000 addr=0x00000114 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 466290000 addr=0x00000118 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 466770000 addr=0x0000011c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 467250000 addr=0x00000120 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 467730000 addr=0x00000124 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 468210000 addr=0x00000128 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 468690000 addr=0x0000012c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 469170000 addr=0x00000130 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 469650000 addr=0x00000134 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 470130000 addr=0x00000138 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 470610000 addr=0x0000013c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 471090000 addr=0x00000140 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 471570000 addr=0x00000144 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 472050000 addr=0x00000148 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 472530000 addr=0x0000014c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 473010000 addr=0x00000150 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 473490000 addr=0x00000154 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 473970000 addr=0x00000158 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 474450000 addr=0x0000015c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 474930000 addr=0x00000160 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 475410000 addr=0x00000164 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 475890000 addr=0x00000168 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 476370000 addr=0x0000016c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 476850000 addr=0x00000170 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 477330000 addr=0x00000174 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 477810000 addr=0x00000178 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 478290000 addr=0x0000017c data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 478880000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 478930000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 506560000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 506610000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 508470000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 508520000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 510400000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 510450000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 515560000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 515610000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 515790000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 515950000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 516110000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 516270000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 516430000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 516590000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 516750000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 516910000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 517070000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 517230000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 517390000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 517550000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 517710000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 517870000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 518030000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 518190000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 518460000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 518510000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 518690000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 518850000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 519010000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 519170000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 519330000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 519490000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 519650000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 519810000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 519970000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 520130000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 520290000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 520450000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 520610000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 520770000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 520930000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 521090000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 521360000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 521410000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 521590000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 521710000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 521830000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 521950000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 522070000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 522190000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 522310000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 522430000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 522550000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 522670000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 522790000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 522910000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 523030000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 523150000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 523270000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 523390000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 523510000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 523630000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 523750000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 523870000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 523990000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 524110000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 524230000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 524350000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 524470000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 524590000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 524710000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 524830000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 524950000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 525070000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 525190000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 525310000 addr=0x0000007c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 525430000 addr=0x00000080 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 525550000 addr=0x00000084 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 525670000 addr=0x00000088 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 525790000 addr=0x0000008c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 525910000 addr=0x00000090 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 526030000 addr=0x00000094 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 526150000 addr=0x00000098 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 526270000 addr=0x0000009c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 526390000 addr=0x000000a0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 526510000 addr=0x000000a4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 526630000 addr=0x000000a8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 526750000 addr=0x000000ac data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 526870000 addr=0x000000b0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 526990000 addr=0x000000b4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 527110000 addr=0x000000b8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 527230000 addr=0x000000bc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 527350000 addr=0x000000c0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 527470000 addr=0x000000c4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 527590000 addr=0x000000c8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 527710000 addr=0x000000cc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 527830000 addr=0x000000d0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 527950000 addr=0x000000d4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 528070000 addr=0x000000d8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 528190000 addr=0x000000dc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 528310000 addr=0x000000e0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 528430000 addr=0x000000e4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 528550000 addr=0x000000e8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 528670000 addr=0x000000ec data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 528790000 addr=0x000000f0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 528910000 addr=0x000000f4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 529030000 addr=0x000000f8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 529150000 addr=0x000000fc data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 529380000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 529430000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 529610000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 529730000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 529850000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 529970000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 530090000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 530210000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 530330000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 530450000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 530570000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 530690000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 530810000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 530930000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 531050000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 531170000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 531290000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 531410000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 531530000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 531650000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 531770000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 531890000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 532010000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 532130000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 532250000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 532370000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 532490000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 532610000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 532730000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 532850000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 532970000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 533090000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 533210000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 533330000 addr=0x0000007c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 533450000 addr=0x00000080 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 533570000 addr=0x00000084 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 533690000 addr=0x00000088 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 533810000 addr=0x0000008c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 533930000 addr=0x00000090 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 534050000 addr=0x00000094 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 534170000 addr=0x00000098 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 534290000 addr=0x0000009c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 534410000 addr=0x000000a0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 534530000 addr=0x000000a4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 534650000 addr=0x000000a8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 534770000 addr=0x000000ac data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 534890000 addr=0x000000b0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 535010000 addr=0x000000b4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 535130000 addr=0x000000b8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 535250000 addr=0x000000bc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 535370000 addr=0x000000c0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 535490000 addr=0x000000c4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 535610000 addr=0x000000c8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 535730000 addr=0x000000cc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 535850000 addr=0x000000d0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 535970000 addr=0x000000d4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 536090000 addr=0x000000d8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 536210000 addr=0x000000dc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 536330000 addr=0x000000e0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 536450000 addr=0x000000e4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 536570000 addr=0x000000e8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 536690000 addr=0x000000ec data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 536810000 addr=0x000000f0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 536930000 addr=0x000000f4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 537050000 addr=0x000000f8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 537170000 addr=0x000000fc data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 537400000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 537450000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 537630000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 537750000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 537870000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 537990000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 538110000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 538230000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 538350000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 538470000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 538590000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 538710000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 538830000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 538950000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 539070000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 539190000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 539310000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 539430000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 539550000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 539670000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 539790000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 539910000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 540030000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 540150000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 540270000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 540390000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 540510000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 540630000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 540750000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 540870000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 540990000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 541110000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 541230000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 541350000 addr=0x0000007c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 541470000 addr=0x00000080 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 541590000 addr=0x00000084 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 541710000 addr=0x00000088 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 541830000 addr=0x0000008c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 541950000 addr=0x00000090 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 542070000 addr=0x00000094 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 542190000 addr=0x00000098 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 542310000 addr=0x0000009c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 542430000 addr=0x000000a0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 542550000 addr=0x000000a4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 542670000 addr=0x000000a8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 542790000 addr=0x000000ac data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 542910000 addr=0x000000b0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 543030000 addr=0x000000b4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 543150000 addr=0x000000b8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 543270000 addr=0x000000bc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 543390000 addr=0x000000c0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 543510000 addr=0x000000c4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 543630000 addr=0x000000c8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 543750000 addr=0x000000cc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 543870000 addr=0x000000d0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 543990000 addr=0x000000d4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 544110000 addr=0x000000d8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 544230000 addr=0x000000dc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 544350000 addr=0x000000e0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 544470000 addr=0x000000e4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 544590000 addr=0x000000e8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 544710000 addr=0x000000ec data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 544830000 addr=0x000000f0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 544950000 addr=0x000000f4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 545070000 addr=0x000000f8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 545190000 addr=0x000000fc data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 545420000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 545470000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 545650000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 545770000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 545890000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 546010000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 546130000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 546250000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 546370000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 546490000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 546610000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 546730000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 546850000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 546970000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 547090000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 547210000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 547330000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 547450000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 547570000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 547690000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 547810000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 547930000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 548050000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 548170000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 548290000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 548410000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 548530000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 548650000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 548770000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 548890000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 549010000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 549130000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 549250000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 549370000 addr=0x0000007c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 549490000 addr=0x00000080 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 549610000 addr=0x00000084 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 549730000 addr=0x00000088 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 549850000 addr=0x0000008c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 549970000 addr=0x00000090 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 550090000 addr=0x00000094 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 550210000 addr=0x00000098 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 550330000 addr=0x0000009c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 550450000 addr=0x000000a0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 550570000 addr=0x000000a4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 550690000 addr=0x000000a8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 550810000 addr=0x000000ac data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 550930000 addr=0x000000b0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 551050000 addr=0x000000b4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 551170000 addr=0x000000b8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 551290000 addr=0x000000bc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 551410000 addr=0x000000c0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 551530000 addr=0x000000c4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 551650000 addr=0x000000c8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 551770000 addr=0x000000cc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 551890000 addr=0x000000d0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 552010000 addr=0x000000d4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 552130000 addr=0x000000d8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 552250000 addr=0x000000dc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 552370000 addr=0x000000e0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 552490000 addr=0x000000e4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 552610000 addr=0x000000e8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 552730000 addr=0x000000ec data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 552850000 addr=0x000000f0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 552970000 addr=0x000000f4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 553090000 addr=0x000000f8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 553210000 addr=0x000000fc data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 553440000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 553490000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 553670000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 553790000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 553910000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 554030000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 554150000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 554270000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 554390000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 554510000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 554630000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 554750000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 554870000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 554990000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 555110000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 555230000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 555350000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 555470000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 555590000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 555710000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 555830000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 555950000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 556070000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 556190000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 556310000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 556430000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 556550000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 556670000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 556790000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 556910000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 557030000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 557150000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 557270000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 557390000 addr=0x0000007c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 557510000 addr=0x00000080 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 557630000 addr=0x00000084 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 557750000 addr=0x00000088 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 557870000 addr=0x0000008c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 557990000 addr=0x00000090 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 558110000 addr=0x00000094 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 558230000 addr=0x00000098 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 558350000 addr=0x0000009c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 558470000 addr=0x000000a0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 558590000 addr=0x000000a4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 558710000 addr=0x000000a8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 558830000 addr=0x000000ac data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 558950000 addr=0x000000b0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 559070000 addr=0x000000b4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 559190000 addr=0x000000b8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 559310000 addr=0x000000bc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 559430000 addr=0x000000c0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 559550000 addr=0x000000c4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 559670000 addr=0x000000c8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 559790000 addr=0x000000cc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 559910000 addr=0x000000d0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 560030000 addr=0x000000d4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 560150000 addr=0x000000d8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 560270000 addr=0x000000dc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 560390000 addr=0x000000e0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 560510000 addr=0x000000e4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 560630000 addr=0x000000e8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 560750000 addr=0x000000ec data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 560870000 addr=0x000000f0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 560990000 addr=0x000000f4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 561110000 addr=0x000000f8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 561230000 addr=0x000000fc data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 561460000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 561510000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 561690000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 561810000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 561930000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 562050000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 562170000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 562290000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 562410000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 562530000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 562650000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 562770000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 562890000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 563010000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 563130000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 563250000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 563370000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 563490000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 563610000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 563730000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 563850000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 563970000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 564090000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 564210000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 564330000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 564450000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 564570000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 564690000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 564810000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 564930000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 565050000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 565170000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 565290000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 565410000 addr=0x0000007c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 565530000 addr=0x00000080 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 565650000 addr=0x00000084 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 565770000 addr=0x00000088 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 565890000 addr=0x0000008c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 566010000 addr=0x00000090 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 566130000 addr=0x00000094 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 566250000 addr=0x00000098 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 566370000 addr=0x0000009c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 566490000 addr=0x000000a0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 566610000 addr=0x000000a4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 566730000 addr=0x000000a8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 566850000 addr=0x000000ac data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 566970000 addr=0x000000b0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 567090000 addr=0x000000b4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 567210000 addr=0x000000b8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 567330000 addr=0x000000bc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 567450000 addr=0x000000c0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 567570000 addr=0x000000c4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 567690000 addr=0x000000c8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 567810000 addr=0x000000cc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 567930000 addr=0x000000d0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 568050000 addr=0x000000d4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 568170000 addr=0x000000d8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 568290000 addr=0x000000dc data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 568410000 addr=0x000000e0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 568530000 addr=0x000000e4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 568650000 addr=0x000000e8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 568770000 addr=0x000000ec data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 568890000 addr=0x000000f0 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 569010000 addr=0x000000f4 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 569130000 addr=0x000000f8 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 569250000 addr=0x000000fc data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 569480000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 569530000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 569710000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 569830000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 569950000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 570070000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 570190000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 570310000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 570430000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 570550000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 570670000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 570790000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 570910000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 571030000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 571150000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 571270000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 571390000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 571510000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 571740000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 571790000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 571970000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 572090000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 572210000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 572330000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 572450000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 572570000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 572690000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 572810000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 572930000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 573050000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 573170000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 573290000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 573410000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 573530000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 573650000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 573770000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 574000000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 574050000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 574230000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 574350000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 574470000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 574590000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 574710000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 574830000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 574950000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 575070000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 575190000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 575310000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 575430000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 575550000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 575670000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 575790000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 575910000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 576030000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 576260000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 576310000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 576490000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 576650000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 576810000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 576970000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 577130000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 577290000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 577450000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 577610000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 577770000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 577930000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 578090000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 578250000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 578410000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 578570000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 578730000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 578890000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 579050000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 579210000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 579370000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 579530000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 579690000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 579850000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 580010000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 580170000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 580330000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 580490000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 580650000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 580810000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 580970000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 581130000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 581290000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 581450000 addr=0x0000007c data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 581720000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 581770000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 581950000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 582270000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 582590000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 582910000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 583230000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 583550000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 583870000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 584190000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 584510000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 584830000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 585150000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 585470000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 585790000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 586110000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 586430000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 586750000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 587070000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 587390000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 587710000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 588030000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 588350000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 588670000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 588990000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 589310000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 589630000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 589950000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 590270000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 590590000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 590910000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 591230000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 591550000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 591870000 addr=0x0000007c data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 592300000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 592350000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 592530000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 593170000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 593810000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 594450000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 595090000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 595730000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 596370000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 597010000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 597650000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 598290000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 598930000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 599570000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 600210000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 600850000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 601490000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 602130000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 602770000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 603410000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 604050000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 604690000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 605330000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 605970000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 606610000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 607250000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 607890000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 608530000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER]654300.00ns INFO     cocotb.processorci_top             [branch_prediction] status=inconclusive components=[]
+654300.00ns INFO     cocotb.processorci_top             Results saved to /home/gabcro/Code/Processor_CI/cores_utils/scr1/scr1_labels.json
+654300.00ns INFO     cocotb.regression                  cocotb_labeler.processor_test passed
+654300.00ns INFO     cocotb.regression                  ***************************************************************************************
+                                                        ** TEST                           STATUS  SIM TIME (ns)  REAL TIME (s)  RATIO (ns/s) **
+                                                        ***************************************************************************************
+                                                        ** cocotb_labeler.processor_test   PASS      654300.00         152.59       4288.02  **
+                                                        ***************************************************************************************
+                                                        ** TESTS=1 PASS=1 FAIL=0 SKIP=0              654300.00         152.59       4287.99  **
+                                                        ***************************************************************************************
+ DMEM REQ @ 609170000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 609810000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 610450000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 611090000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 611730000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 612370000 addr=0x0000007c data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 613120000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] IMEM REQ @ 613170000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 613350000 addr=0x00000000 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 614630000 addr=0x00000004 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 615910000 addr=0x00000008 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 617190000 addr=0x0000000c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 618470000 addr=0x00000010 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 619750000 addr=0x00000014 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 621030000 addr=0x00000018 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 622310000 addr=0x0000001c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 623590000 addr=0x00000020 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 624870000 addr=0x00000024 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 626150000 addr=0x00000028 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 627430000 addr=0x0000002c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 628710000 addr=0x00000030 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 629990000 addr=0x00000034 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 631270000 addr=0x00000038 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 632550000 addr=0x0000003c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 633830000 addr=0x00000040 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 635110000 addr=0x00000044 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 636390000 addr=0x00000048 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 637670000 addr=0x0000004c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 638950000 addr=0x00000050 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 640230000 addr=0x00000054 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 641510000 addr=0x00000058 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 642790000 addr=0x0000005c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 644070000 addr=0x00000060 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 645350000 addr=0x00000064 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 646630000 addr=0x00000068 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 647910000 addr=0x0000006c data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 649190000 addr=0x00000070 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 650470000 addr=0x00000074 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 651750000 addr=0x00000078 data=0x00000000
+[SCR1 WRAPPER] DMEM REQ @ 653030000 addr=0x0000007c data=0x00000000
+- :0: Verilog $finish
+make[1]: Leaving directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector'
+Identified language: SystemVerilog
+Results saved to /home/gabcro/Code/Processor_CI/cores_utils/scr1/scr1_labels.json
+SystemVerilog
+Directory being passed to cocotb_makefile_creator: /home/gabcro/Code/Processor_CI/cores/scr1
+Creating Makefile for scr1...

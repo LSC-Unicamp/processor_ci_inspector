@@ -1,0 +1,18 @@
+{
+    "regfile_candidates": [],
+    "selected_regfile": null,
+    "regfile_interface": {
+        "write_enable": null,
+        "write_addr": null,
+        "write_data": null
+    },
+    "selected_regfile_interface": {
+        "status": "rejected_interface",
+        "score": 0,
+        "confidence": "none",
+        "write_enable": null,
+        "write_addr": null,
+        "write_data": null,
+        "timing_offset": null
+    }
+}

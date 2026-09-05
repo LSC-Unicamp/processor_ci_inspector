@@ -1,0 +1,53 @@
+{
+  "implementation_revision": 11,
+  "scope": "canaries",
+  "hard_timeout_seconds": 900,
+  "idle_timeout_seconds": 180,
+  "excluded_non_timeout_failures": [
+    "biriscv",
+    "serv"
+  ],
+  "runs": {
+    "VexRiscv": {
+      "core": "VexRiscv",
+      "command": [
+        "/home/gabcro/.pyenv/versions/3.13.2/bin/python3",
+        "/home/gabcro/Code/Processor_CI/processor_ci_inspector/src/main.py",
+        "-d",
+        "/home/gabcro/Code/Processor_CI/cores",
+        "-c",
+        "/home/gabcro/Code/Processor_CI/RV-Bench/config/cores",
+        "-o",
+        "/home/gabcro/Code/Processor_CI/processor_ci_inspector/cores_utils_revision11_canary",
+        "-t",
+        "/home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden",
+        "-s",
+        "VexRiscv",
+        "--core-timeout",
+        "900",
+        "--core-idle-timeout",
+        "180"
+      ],
+      "hard_timeout_seconds": 900,
+      "idle_timeout_seconds": 180,
+      "started_at_unix": 1785393463.7275724,
+      "duration_seconds": 79.878,
+      "return_code": 0,
+      "terminal_state": "completed",
+      "last_progress_marker": {
+        "implementation_revision": 11,
+        "processor": "VexRiscv",
+        "phase": "artifact_write",
+        "sequence": 1077,
+        "updated_at_unix": 1785393534.4201734,
+        "terminal_state": "completed",
+        "elapsed_seconds": 57.686728,
+        "full_pipeline_finalization_count": 2
+      },
+      "timeout_kind": null,
+      "log": "/home/gabcro/Code/Processor_CI/processor_ci_inspector/cores_utils_revision11_canary/logs/VexRiscv.log"
+    }
+  },
+  "priority_gate_passed": false,
+  "all_selected_completed": true
+}

@@ -1,0 +1,22 @@
+{
+    "schema_version": 4,
+    "discovery_version": "dynamic-stage-signals-v4",
+    "implementation_revision": 11,
+    "state": "failed",
+    "error": "Command '['ghdl', 'synth', '--std=08', '--work=T03x', '--workdir=build', '-Pbuild', '--out=verilog', '-frelaxed', '-Wno-hide', '-fsynopsys', '--latches', 'klessydra_t0_3th_core']' returned non-zero exit status 1.",
+    "failure_details": {},
+    "stages": [],
+    "capabilities": {
+        "consumer_stage_observable": false,
+        "execute_stage_observable": false,
+        "memory_stage_observable": false,
+        "multi_lane": false,
+        "lane_identity": false,
+        "source_ids": false,
+        "operand_values": false,
+        "store_data_capture": false,
+        "writeback_event": false,
+        "phase_ordering": false,
+        "sampling_phases": false
+    }
+}

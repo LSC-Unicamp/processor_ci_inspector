@@ -1,0 +1,45 @@
+{
+    "regfile_candidates": [
+        "processorci_top.Processor.rf_ram.memory"
+    ],
+    "selected_regfile": {
+        "candidate_path": "processorci_top.Processor.rf_ram.memory",
+        "kind": "bit_sliced_array",
+        "status": "confirmed_candidate",
+        "score": 100,
+        "confidence": "high",
+        "mapping_order": "direct",
+        "mapped_registers": {
+            "x0": 0,
+            "x1": 18,
+            "x2": 36,
+            "x3": 54,
+            "x4": 72,
+            "x5": 90,
+            "x6": 108,
+            "x7": 126,
+            "x8": 591751049
+        }
+    },
+    "regfile_interface": {
+        "write_enable": "processorci_top.Processor.wen0",
+        "write_addr": "processorci_top.Processor.wreg0",
+        "write_data": "__storage_update_value__"
+    },
+    "selected_regfile_interface": {
+        "status": "likely_interface",
+        "score": 84,
+        "confidence": "medium",
+        "write_enable": "processorci_top.Processor.wen0",
+        "write_addr": "processorci_top.Processor.wreg0",
+        "write_data": "__storage_update_value__",
+        "timing_offset": 0,
+        "write_enable_timing_offset": 0,
+        "write_addr_timing_offset": 0,
+        "write_data_timing_offset": 0,
+        "write_addr_bit_offset": null,
+        "derived_roles": [
+            "write_data"
+        ]
+    }
+}

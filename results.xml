@@ -1,0 +1,6 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1785421294" />
+    <testcase name="processor_test" classname="cocotb_labeler" file="/home/gabcro/Code/Processor_CI/processor_ci_inspector/src/cocotb_labeler.py" lineno="77" time="58.78869986534119" sim_time_ns="1173610.001" ratio_time="19963.19026765721" />
+  </testsuite>
+</testsuites>

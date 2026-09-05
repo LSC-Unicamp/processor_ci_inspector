@@ -1,0 +1,42 @@
+{
+    "schema_version": 4,
+    "discovery_version": "dynamic-stage-signals-v4",
+    "implementation_revision": 11,
+    "state": "failed",
+    "error": "Command 'complete analysis for VexRiscv' timed out after 180 seconds",
+    "failure_details": {
+        "timeout_kind": "idle",
+        "timeout_seconds": 900,
+        "hard_timeout_seconds": 900,
+        "idle_timeout_seconds": 180,
+        "elapsed_seconds": 180.154,
+        "last_completed_phase": "compilation_start",
+        "last_completed_path": null,
+        "last_completed_gap": null,
+        "last_progress_marker": {
+            "implementation_revision": 11,
+            "processor": "VexRiscv",
+            "phase": "compilation_start",
+            "sequence": 1096,
+            "updated_at_unix": 1788557246.2542741
+        },
+        "termination_signal": "SIGKILL",
+        "cleanup_outcome": "killed_after_grace",
+        "descendants_reaped": true,
+        "worker_exit_code": -15
+    },
+    "stages": [],
+    "capabilities": {
+        "consumer_stage_observable": false,
+        "execute_stage_observable": false,
+        "memory_stage_observable": false,
+        "multi_lane": false,
+        "lane_identity": false,
+        "source_ids": false,
+        "operand_values": false,
+        "store_data_capture": false,
+        "writeback_event": false,
+        "phase_ordering": false,
+        "sampling_phases": false
+    }
+}

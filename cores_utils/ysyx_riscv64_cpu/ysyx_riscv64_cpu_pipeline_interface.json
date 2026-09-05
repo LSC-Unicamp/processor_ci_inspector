@@ -1,0 +1,22 @@
+{
+    "schema_version": 4,
+    "discovery_version": "dynamic-stage-signals-v4",
+    "implementation_revision": 11,
+    "state": "failed",
+    "error": "Command '['make', '-f', 'cores_utils/ysyx_riscv64_cpu/ysyx_riscv64_cpu.mk']' returned non-zero exit status 2.",
+    "failure_details": {},
+    "stages": [],
+    "capabilities": {
+        "consumer_stage_observable": false,
+        "execute_stage_observable": false,
+        "memory_stage_observable": false,
+        "multi_lane": false,
+        "lane_identity": false,
+        "source_ids": false,
+        "operand_values": false,
+        "store_data_capture": false,
+        "writeback_event": false,
+        "phase_ordering": false,
+        "sampling_phases": false
+    }
+}

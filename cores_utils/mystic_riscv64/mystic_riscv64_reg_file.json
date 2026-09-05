@@ -1,0 +1,43 @@
+{
+    "regfile_candidates": [
+        "processorci_top.Processor.mystic_regfile_inst.rf"
+    ],
+    "selected_regfile": {
+        "candidate_path": "processorci_top.Processor.mystic_regfile_inst.rf",
+        "kind": "array_of_words",
+        "status": "confirmed_candidate",
+        "score": 70,
+        "confidence": "medium",
+        "mapping_order": "physical_index_plus_1",
+        "mapped_registers": {
+            "x1": 18,
+            "x2": 36,
+            "x3": 54,
+            "x4": 72,
+            "x5": 90,
+            "x6": 108
+        }
+    },
+    "regfile_interface": {
+        "write_enable": "__storage_update_event__",
+        "write_addr": "processorci_top.Processor.mystic_regfile_inst.instr_rd_i",
+        "write_data": "__storage_update_value__"
+    },
+    "selected_regfile_interface": {
+        "status": "likely_interface",
+        "score": 84,
+        "confidence": "medium",
+        "write_enable": "__storage_update_event__",
+        "write_addr": "processorci_top.Processor.mystic_regfile_inst.instr_rd_i",
+        "write_data": "__storage_update_value__",
+        "timing_offset": 0,
+        "write_enable_timing_offset": 0,
+        "write_addr_timing_offset": 0,
+        "write_data_timing_offset": 0,
+        "write_addr_bit_offset": null,
+        "derived_roles": [
+            "write_enable",
+            "write_data"
+        ]
+    }
+}

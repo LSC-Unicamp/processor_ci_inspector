@@ -1,0 +1,37 @@
+{
+    "regfile_candidates": [
+        "processorci_top.Processor.vscale_core.regfile.data"
+    ],
+    "selected_regfile": {
+        "candidate_path": "processorci_top.Processor.vscale_core.regfile.data",
+        "kind": "array_of_words",
+        "status": "likely_candidate",
+        "score": 80,
+        "confidence": "medium",
+        "mapping_order": "direct",
+        "mapped_registers": {
+            "x1": 17,
+            "x2": 34,
+            "x3": 51,
+            "x4": 68,
+            "x5": 85,
+            "x6": 102,
+            "x7": 119,
+            "x8": 305419896
+        }
+    },
+    "regfile_interface": {
+        "write_enable": null,
+        "write_addr": null,
+        "write_data": null
+    },
+    "selected_regfile_interface": {
+        "status": "rejected_interface",
+        "score": 0,
+        "confidence": "none",
+        "write_enable": null,
+        "write_addr": null,
+        "write_data": null,
+        "timing_offset": null
+    }
+}

@@ -1,0 +1,1860 @@
+{
+    "single_cycle_RISCV_CPU_Design-32bit": {
+        "license_types": [
+            "Undetected"
+        ],
+        "bits": 32,
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "Verilog",
+        "multicycle": false,
+        "pipeline": {
+            "depth_estimate": 2,
+            "depth_estimate_source": "regfile_observation"
+        },
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected",
+        "cycle": {
+            "fetch_to_commit_latencies": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ],
+            "commit_intervals": [
+                1,
+                1,
+                1,
+                1,
+                1
+            ],
+            "fetch_intervals": [
+                1,
+                1,
+                1,
+                1,
+                1
+            ],
+            "classification": {
+                "single_cycle": false,
+                "multicycle": false,
+                "pipeline": {
+                    "depth_estimate": 2,
+                    "depth_estimate_source": "regfile_observation"
+                },
+                "confidence": 0.78
+            }
+        },
+        "forwarding": {
+            "schema_version": 2,
+            "probe_suite_version": "paired-forwarding-v8",
+            "implementation_revision": 11,
+            "execution": {
+                "state": "failed",
+                "run_id": "95a78449-99e8-41d1-93cc-ab505708d2c6",
+                "reason": "Command '['make', '-f', 'cores_utils/single_cycle_RISCV_CPU_Design-32bit/single_cycle_RISCV_CPU_Design-32bit.mk']' returned non-zero exit status 2.",
+                "error_type": "CalledProcessError"
+            },
+            "applicable": null
+        },
+        "branch_prediction": {
+            "applicable": true,
+            "execution_model_gate": "pipeline_confirmed",
+            "speculation_visibility": {
+                "available": false,
+                "method": "unavailable",
+                "calibrated_occurrences": 0,
+                "observed_occurrences": 2,
+                "resolution_latencies": [],
+                "context_supported": true,
+                "failure_reason": "dependency_memory_interface_unavailable",
+                "evidence": "no trustworthy pre-resolution boundary was observable"
+            },
+            "cold_direction_policy": {
+                "status": "detected",
+                "present": true,
+                "policy": "dynamic_or_other_cold_policy",
+                "cold_predictions": {
+                    "static_forward_taken": true,
+                    "static_forward_not_taken": false,
+                    "static_backward_taken": true,
+                    "static_backward_not_taken": false
+                },
+                "confidence": 0.55,
+                "evidence": "cold predictions do not match always-taken, sequential, or BTFNT"
+            },
+            "direction_hysteresis": {
+                "status": "not_observable",
+                "present": null,
+                "classification": "no_observable_dynamic_prediction",
+                "confidence": 0.35,
+                "one_exception_probe": {
+                    "exception_correct": null,
+                    "final_taken_correct": null
+                },
+                "two_exception_probe": {
+                    "first_exception_correct": null,
+                    "second_exception_correct": null,
+                    "final_taken_correct": null
+                },
+                "evidence": "the counter probes exposed no unambiguous speculative predictions"
+            },
+            "direction_predictor": {
+                "status": "not_observable",
+                "present": null,
+                "classification": "not_established",
+                "confidence": 0.35,
+                "evidence": "the counter probes exposed no unambiguous speculative predictions"
+            },
+            "local_history": {
+                "status": "inconclusive",
+                "present": null,
+                "classification": "not_established",
+                "patterns": {
+                    "ttnn": {
+                        "status": "inconclusive",
+                        "present": null,
+                        "capability": "ttnn_local_pattern_learning",
+                        "architecturally_complete": false,
+                        "warm_predictions": 0,
+                        "warm_prediction_coverage": 0.0,
+                        "warm_accuracy": null,
+                        "outcome_bias_baseline": 0.5,
+                        "required_accuracy": 0.75,
+                        "confidence": 0.35,
+                        "evidence": "one or more probe runs failed completion, fetch visibility, or occurrence coverage validation"
+                    },
+                    "alternating": {
+                        "status": "inconclusive",
+                        "present": null,
+                        "capability": "alternating_local_pattern_learning",
+                        "architecturally_complete": false,
+                        "warm_predictions": 0,
+                        "warm_prediction_coverage": 0.0,
+                        "warm_accuracy": null,
+                        "outcome_bias_baseline": 0.5068493150684932,
+                        "required_accuracy": 0.75,
+                        "confidence": 0.35,
+                        "evidence": "one or more probe runs failed completion, fetch visibility, or occurrence coverage validation"
+                    }
+                },
+                "confidence": 0.35,
+                "evidence": "tested local patterns were not learned beyond their bias baselines"
+            },
+            "global_history": {
+                "status": "inconclusive",
+                "present": null,
+                "capability": "cross_branch_global_correlation",
+                "architecturally_complete": false,
+                "warm_predictions": 0,
+                "warm_prediction_coverage": 0.0,
+                "warm_accuracy": null,
+                "outcome_bias_baseline": 0.5,
+                "required_accuracy": 0.75,
+                "confidence": 0.35,
+                "evidence": "one or more probe runs failed completion, fetch visibility, or occurrence coverage validation"
+            },
+            "path_history": {
+                "status": "inconclusive",
+                "present": null,
+                "capability": "path_sensitive_correlation",
+                "architecturally_complete": false,
+                "warm_predictions": 0,
+                "warm_prediction_coverage": 0.0,
+                "warm_accuracy": null,
+                "outcome_bias_baseline": 0.5,
+                "required_accuracy": 0.75,
+                "confidence": 0.35,
+                "evidence": "one or more probe runs failed completion, fetch visibility, or occurrence coverage validation"
+            },
+            "combined_history": {
+                "global_component": {
+                    "status": "inconclusive",
+                    "present": null,
+                    "capability": "interleaved_global_correlation",
+                    "architecturally_complete": false,
+                    "warm_predictions": 0,
+                    "warm_prediction_coverage": 0.0,
+                    "warm_accuracy": null,
+                    "outcome_bias_baseline": 0.5,
+                    "required_accuracy": 0.75,
+                    "confidence": 0.35,
+                    "evidence": "one or more probe runs failed completion, fetch visibility, or occurrence coverage validation"
+                },
+                "local_component": {
+                    "status": "inconclusive",
+                    "present": null,
+                    "capability": "interleaved_local_pattern",
+                    "architecturally_complete": false,
+                    "warm_predictions": 0,
+                    "warm_prediction_coverage": 0.0,
+                    "warm_accuracy": null,
+                    "outcome_bias_baseline": 0.5,
+                    "required_accuracy": 0.75,
+                    "confidence": 0.35,
+                    "evidence": "one or more probe runs failed completion, fetch visibility, or occurrence coverage validation"
+                },
+                "status": "inconclusive",
+                "present": null,
+                "confidence": 0.4,
+                "evidence": "the interleaved probe did not establish both capabilities"
+            },
+            "long_history": {
+                "status": "inconclusive",
+                "present": null,
+                "capability": "history_correlation_at_distance_16",
+                "architecturally_complete": false,
+                "warm_predictions": 0,
+                "warm_prediction_coverage": 0.0,
+                "warm_accuracy": null,
+                "outcome_bias_baseline": 0.5,
+                "required_accuracy": 0.75,
+                "confidence": 0.35,
+                "evidence": "one or more probe runs failed completion, fetch visibility, or occurrence coverage validation"
+            },
+            "loop_predictor": {
+                "status": "not_observable",
+                "present": null,
+                "classification": "fixed_trip_loop_learning",
+                "exit_predictions": 0,
+                "early_exit_accuracy": null,
+                "late_exit_accuracy": null,
+                "continuation_accuracy": null,
+                "confidence": 0.35,
+                "evidence": "loop-exit predictions were not visible on the fetch interface"
+            },
+            "direct_target_predictor": {
+                "status": "not_observable",
+                "present": null,
+                "classification": "direct_target_prediction",
+                "warm_accuracy": null,
+                "warm_predictions": 0,
+                "cold_path_latency": 1,
+                "warm_path_latency": 1.0,
+                "confidence": 0.35,
+                "evidence": "no speculative direct-jump target fetch was visible"
+            },
+            "indirect_target_predictor": {
+                "status": "inconclusive",
+                "present": null,
+                "classification": "unknown",
+                "constant_target_accuracy": null,
+                "alternating_target_accuracy": null,
+                "constant_target_predictions": 0,
+                "alternating_target_predictions": 0,
+                "confidence": 0.35,
+                "speculative_misses": 0,
+                "evidence": "one or more indirect-target trials failed validity checks"
+            },
+            "return_address_stack": {
+                "status": "not_observable",
+                "present": null,
+                "standard_link_accuracy": null,
+                "nonstandard_link_accuracy": null,
+                "standard_predictions": 0,
+                "control_predictions": 0,
+                "accuracy_advantage": null,
+                "confidence": 0.35,
+                "evidence": "return-target prediction was not visible for the standard x1 link register"
+            },
+            "paired_timing": {
+                "status": "inconclusive",
+                "present": null,
+                "classification": "stateful_direction_prediction_aliased_or_opaque",
+                "learnable_cycles": [],
+                "shuffled_control_cycles": [],
+                "confidence": 0.35,
+                "counter_evidence": {
+                    "available": false,
+                    "learnable_mispredicts": [],
+                    "shuffled_control_mispredicts": []
+                },
+                "evidence": "one or more paired timing trials failed validity checks"
+            },
+            "reset_retention": {
+                "status": "inconclusive",
+                "present": null,
+                "confidence": 0.35,
+                "classification": "not_measured",
+                "evidence": "one or more reset-retention trials failed validity checks"
+            },
+            "pc_aliasing": {
+                "status": "inconclusive",
+                "present": null,
+                "classification": "not_established",
+                "aliasing_observed": false,
+                "raw_stateful_interference": false,
+                "independent_evidence": {
+                    "paired_timing": false,
+                    "explicit_redirect": false
+                },
+                "effective_non_aliasing_spacing": null,
+                "accuracy_spread": null,
+                "spacings": {
+                    "64": {
+                        "sites": {
+                            "site_a": {
+                                "warm_accuracy": null,
+                                "warm_predictions": 0,
+                                "occurrences": 28,
+                                "cold_accuracy": 0.0,
+                                "cold_path_latency": 1.0,
+                                "warm_path_latency": 1.0
+                            },
+                            "site_b": {
+                                "warm_accuracy": null,
+                                "warm_predictions": 0,
+                                "occurrences": 0,
+                                "cold_accuracy": null,
+                                "cold_path_latency": null,
+                                "warm_path_latency": null
+                            }
+                        },
+                        "balanced_warm_accuracy": null,
+                        "balanced_cold_accuracy": null,
+                        "warm_improvement": null,
+                        "cycles_per_control_occurrence": 92.0,
+                        "valid": false
+                    },
+                    "128": {
+                        "sites": {
+                            "site_a": {
+                                "warm_accuracy": null,
+                                "warm_predictions": 0,
+                                "occurrences": 28,
+                                "cold_accuracy": 0.0,
+                                "cold_path_latency": 1.0,
+                                "warm_path_latency": 1.0
+                            },
+                            "site_b": {
+                                "warm_accuracy": null,
+                                "warm_predictions": 0,
+                                "occurrences": 0,
+                                "cold_accuracy": null,
+                                "cold_path_latency": null,
+                                "warm_path_latency": null
+                            }
+                        },
+                        "balanced_warm_accuracy": null,
+                        "balanced_cold_accuracy": null,
+                        "warm_improvement": null,
+                        "cycles_per_control_occurrence": 124.0,
+                        "valid": false
+                    },
+                    "256": {
+                        "sites": {
+                            "site_a": {
+                                "warm_accuracy": null,
+                                "warm_predictions": 0,
+                                "occurrences": 28,
+                                "cold_accuracy": 0.0,
+                                "cold_path_latency": 1.0,
+                                "warm_path_latency": 1.0
+                            },
+                            "site_b": {
+                                "warm_accuracy": null,
+                                "warm_predictions": 0,
+                                "occurrences": 0,
+                                "cold_accuracy": null,
+                                "cold_path_latency": null,
+                                "warm_path_latency": null
+                            }
+                        },
+                        "balanced_warm_accuracy": null,
+                        "balanced_cold_accuracy": null,
+                        "warm_improvement": null,
+                        "cycles_per_control_occurrence": 188.0,
+                        "valid": false
+                    },
+                    "512": {
+                        "sites": {
+                            "site_a": {
+                                "warm_accuracy": null,
+                                "warm_predictions": 0,
+                                "occurrences": 28,
+                                "cold_accuracy": 0.0,
+                                "cold_path_latency": 1.0,
+                                "warm_path_latency": 1.0
+                            },
+                            "site_b": {
+                                "warm_accuracy": null,
+                                "warm_predictions": 0,
+                                "occurrences": 0,
+                                "cold_accuracy": null,
+                                "cold_path_latency": null,
+                                "warm_path_latency": null
+                            }
+                        },
+                        "balanced_warm_accuracy": null,
+                        "balanced_cold_accuracy": null,
+                        "warm_improvement": null,
+                        "cycles_per_control_occurrence": 316.0,
+                        "valid": false
+                    }
+                },
+                "confidence": 0.35,
+                "evidence": "no valid two-PC alias trials"
+            },
+            "classification": {
+                "primary": "static_prediction_only",
+                "specific_labels": [],
+                "static_policy": "dynamic_or_other_cold_policy",
+                "observed_cold_policy": "dynamic_or_other_cold_policy",
+                "direction_subtype": null,
+                "history_subtypes": [],
+                "aliasing_observed": null
+            },
+            "diagnostics": {
+                "branch_resolution_taken": [
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 22,
+                        "cycle_budget": 302,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 21,
+                        "commits_observed": 1,
+                        "commits_expected": 1,
+                        "missing_offsets": [],
+                        "valid": false,
+                        "failure_reason": "dependency_memory_interface_unavailable",
+                        "fetch_events": 6,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 1.0,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "branch_resolution_not_taken": [
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 22,
+                        "cycle_budget": 302,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 21,
+                        "commits_observed": 1,
+                        "commits_expected": 1,
+                        "missing_offsets": [],
+                        "valid": false,
+                        "failure_reason": "dependency_memory_interface_unavailable",
+                        "fetch_events": 6,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 1.0,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "static_forward_taken": [
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 22,
+                        "cycle_budget": 300,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 21,
+                        "commits_observed": 2,
+                        "commits_expected": 2,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 6,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 1.0,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    },
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 22,
+                        "cycle_budget": 300,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 21,
+                        "commits_observed": 2,
+                        "commits_expected": 2,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 6,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 1.0,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    },
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 22,
+                        "cycle_budget": 300,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 21,
+                        "commits_observed": 2,
+                        "commits_expected": 2,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 6,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 1.0,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "static_forward_not_taken": [
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 23,
+                        "cycle_budget": 300,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 22,
+                        "commits_observed": 2,
+                        "commits_expected": 2,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 7,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 1.0,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    },
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 23,
+                        "cycle_budget": 300,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 22,
+                        "commits_observed": 2,
+                        "commits_expected": 2,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 7,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 1.0,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    },
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 23,
+                        "cycle_budget": 300,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 22,
+                        "commits_observed": 2,
+                        "commits_expected": 2,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 7,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 1.0,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "static_backward_taken": [
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 24,
+                        "cycle_budget": 300,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 23,
+                        "commits_observed": 2,
+                        "commits_expected": 2,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 8,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 1.0,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    },
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 24,
+                        "cycle_budget": 300,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 23,
+                        "commits_observed": 2,
+                        "commits_expected": 2,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 8,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 1.0,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    },
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 24,
+                        "cycle_budget": 300,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 23,
+                        "commits_observed": 2,
+                        "commits_expected": 2,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 8,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 1.0,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "static_backward_not_taken": [
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 23,
+                        "cycle_budget": 300,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 22,
+                        "commits_observed": 2,
+                        "commits_expected": 2,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 7,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 1.0,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    },
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 23,
+                        "cycle_budget": 300,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 22,
+                        "commits_observed": 2,
+                        "commits_expected": 2,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 7,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 1.0,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    },
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 23,
+                        "cycle_budget": 300,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 22,
+                        "commits_observed": 2,
+                        "commits_expected": 2,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 7,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 1.0,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "dynamic_one_bit": [
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 74,
+                        "cycle_budget": 532,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 73,
+                        "commits_observed": 1,
+                        "commits_expected": 1,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 58,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "dynamic_two_bit": [
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 83,
+                        "cycle_budget": 578,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 82,
+                        "commits_observed": 1,
+                        "commits_expected": 1,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 67,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "local_history": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 8704,
+                        "cycle_budget": 8704,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            136
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 2176,
+                        "occurrence_coverage": 0.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "local_alternating": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 6016,
+                        "cycle_budget": 6016,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            80
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 1511,
+                        "occurrence_coverage": 0.9270833333333334,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "global_history": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 8128,
+                        "cycle_budget": 8128,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            124
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 2040,
+                        "occurrence_coverage": 0.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "path_history": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 10880,
+                        "cycle_budget": 10880,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            292
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 2720,
+                        "occurrence_coverage": 0.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "combined_history": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 10816,
+                        "cycle_budget": 10816,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            180
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 2703,
+                        "occurrence_coverage": 0.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "long_history": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 14272,
+                        "cycle_budget": 14272,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            252
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 3570,
+                        "occurrence_coverage": 0.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "loop_predictor": [
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 1868,
+                        "cycle_budget": 30448,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 1867,
+                        "commits_observed": 1,
+                        "commits_expected": 1,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 1852,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "direct_btb": [
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 115,
+                        "cycle_budget": 1280,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 114,
+                        "commits_observed": 1,
+                        "commits_expected": 1,
+                        "missing_offsets": [],
+                        "valid": true,
+                        "failure_reason": null,
+                        "fetch_events": 99,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "indirect_constant_target": [
+                    {
+                        "complete": true,
+                        "completion_method": "write_observation",
+                        "cycles_used": 22,
+                        "cycle_budget": 1408,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 21,
+                        "commits_observed": 1,
+                        "commits_expected": 1,
+                        "missing_offsets": [],
+                        "valid": false,
+                        "failure_reason": "insufficient_occurrence_coverage",
+                        "fetch_events": 6,
+                        "occurrence_coverage": 0.03125,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "indirect_alternating_target": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 2848,
+                        "cycle_budget": 2848,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            68
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 714,
+                        "occurrence_coverage": 0.875,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "ras_standard_link": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 42,
+                        "cycle_budget": 1056,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 33,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            60
+                        ],
+                        "valid": false,
+                        "failure_reason": "architectural_completion_failed",
+                        "fetch_events": 17,
+                        "occurrence_coverage": 0.0625,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "ras_nonstandard_link_control": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 42,
+                        "cycle_budget": 1056,
+                        "timed_out": false,
+                        "terminal_loop_observed": true,
+                        "terminal_loop_cycle": 33,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            60
+                        ],
+                        "valid": false,
+                        "failure_reason": "architectural_completion_failed",
+                        "fetch_events": 17,
+                        "occurrence_coverage": 0.0625,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "timing_learnable": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 4096,
+                        "cycle_budget": 4096,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            80
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 1020,
+                        "occurrence_coverage": 0.9375,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    },
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 4096,
+                        "cycle_budget": 4096,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            80
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 1020,
+                        "occurrence_coverage": 0.9375,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    },
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 4096,
+                        "cycle_budget": 4096,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            80
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 1020,
+                        "occurrence_coverage": 0.9375,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "timing_shuffled_control": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 4096,
+                        "cycle_budget": 4096,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            80
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 1020,
+                        "occurrence_coverage": 0.9375,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    },
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 4096,
+                        "cycle_budget": 4096,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            80
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 1020,
+                        "occurrence_coverage": 0.9375,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    },
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 4096,
+                        "cycle_budget": 4096,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            80
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 1020,
+                        "occurrence_coverage": 0.9375,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "reset_retention_baseline": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 1216,
+                        "cycle_budget": 1216,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            80
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 306,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "reset_retention_training": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 1216,
+                        "cycle_budget": 1216,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            80
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 306,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "reset_retention_post": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 1216,
+                        "cycle_budget": 1216,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            80
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 306,
+                        "occurrence_coverage": 1.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "two_pc_alias_spacing_64": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 2944,
+                        "cycle_budget": 2944,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            128
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 734,
+                        "occurrence_coverage": 0.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "two_pc_alias_spacing_128": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 3968,
+                        "cycle_budget": 3968,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            192
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 993,
+                        "occurrence_coverage": 0.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "two_pc_alias_spacing_256": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 6016,
+                        "cycle_budget": 6016,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            320
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 1511,
+                        "occurrence_coverage": 0.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ],
+                "two_pc_alias_spacing_512": [
+                    {
+                        "complete": false,
+                        "completion_method": null,
+                        "cycles_used": 10112,
+                        "cycle_budget": 10112,
+                        "timed_out": true,
+                        "terminal_loop_observed": false,
+                        "terminal_loop_cycle": null,
+                        "commits_observed": 0,
+                        "commits_expected": 1,
+                        "missing_offsets": [
+                            576
+                        ],
+                        "valid": false,
+                        "failure_reason": "probe_timeout",
+                        "fetch_events": 2533,
+                        "occurrence_coverage": 0.0,
+                        "minimum_occurrence_coverage": 0.5,
+                        "data_memory_supported": false,
+                        "fetch_observation_source": "legacy_fetch_interface",
+                        "redirect_events": 0,
+                        "prediction_events": 0,
+                        "resolution_events": 0,
+                        "dependency_barrier_cycle": null,
+                        "resolution_interface_mismatch": false,
+                        "fetch_context_count": null,
+                        "fetch_context_tagged": false,
+                        "strong_prediction_events": 0,
+                        "architectural_counters": {
+                            "supported": false,
+                            "branch_delta": null,
+                            "mispredict_delta": null
+                        }
+                    }
+                ]
+            },
+            "invalid_probes": [
+                "branch_resolution_not_taken",
+                "branch_resolution_taken",
+                "combined_history",
+                "global_history",
+                "indirect_alternating_target",
+                "indirect_constant_target",
+                "local_alternating",
+                "local_history",
+                "long_history",
+                "path_history",
+                "ras_nonstandard_link_control",
+                "ras_standard_link",
+                "reset_retention_baseline",
+                "reset_retention_post",
+                "reset_retention_training",
+                "timing_learnable",
+                "timing_shuffled_control",
+                "two_pc_alias_spacing_128",
+                "two_pc_alias_spacing_256",
+                "two_pc_alias_spacing_512",
+                "two_pc_alias_spacing_64"
+            ],
+            "behavioral_prediction_observed": true,
+            "behavioral_components": [
+                "cold_direction_policy"
+            ],
+            "detected_components": [],
+            "present": null,
+            "status": "inconclusive",
+            "evidence": "only static sequential or non-trainable early-target behavior was observed; this does not prove predictor state exists",
+            "classification_scope": "behavioral fetch-trace evidence; exact RTL predictor names require static confirmation"
+        }
+    }
+}

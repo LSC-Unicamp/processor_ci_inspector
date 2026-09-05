@@ -1,0 +1,157 @@
+Processing labeler on /home/gabcro/Code/Processor_CI/cores/soft_riscv...
+WARNING: No LICENSE files found in the directory /home/gabcro/Code/Processor_CI/cores/soft_riscv.
+rm -f results.xml
+"make" -f /home/gabcro/Code/Processor_CI/cores_utils/soft_riscv/soft_riscv.mk results.xml
+make[1]: Entering directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector'
+mkdir -p sim_build/soft_riscv
+/usr/bin/verilator -cc --exe -Mdir sim_build/soft_riscv --top-module processorci_top --language 1800-2017 -DSIMULATION -Wno-fatal -Wno-lint --public-flat-rw --trace --trace-structs --trace-underscore --timescale 1ns/1ps --vpi --public-flat-rw --prefix Vtop -o Vtop -LDFLAGS "-Wl,-rpath,/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -L/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -lcocotbvpi_verilator" +incdir+/home/gabcro/Code/Processor_CI/cores/soft_riscv +incdir+/home/gabcro/Code/Processor_CI/cores/soft_riscv/rtl  /home/gabcro/Code/Processor_CI/cores/soft_riscv/rtl/typePack.v /home/gabcro/Code/Processor_CI/cores/soft_riscv/rtl/cpu_top.v /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/internal/ahblite_to_wishbone.sv /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/internal/axi4lite_to_wishbone.sv /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/internal/axi4_to_wishbone.sv /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/internal/memory.sv /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/soft_riscv.sv /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/share/lib/verilator/verilator.cpp
+%Warning-MULTIDRIVEN: /home/gabcro/Code/Processor_CI/cores/soft_riscv/rtl/cpu_top.v:23:3: Variable written to in always_ff also written by other process (IEEE 1800-2023 9.2.2.4): 'PC'
+                                                                                        : ... note: In instance 'processorci_top.Processor'
+                      /home/gabcro/Code/Processor_CI/cores/soft_riscv/rtl/cpu_top.v:23:3: 
+   23 |   PC <= PC +4;
+      |   ^~
+                      /home/gabcro/Code/Processor_CI/cores/soft_riscv/rtl/cpu_top.v:20:10: ... Location of other write
+   20 |  initial PC = 32'h80000000;
+      |          ^~
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=5.050
+                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
+%Warning-MULTIDRIVEN: /home/gabcro/Code/Processor_CI/cores/soft_riscv/rtl/cpu_top.v:9:23: Signal has multiple driving blocks with different clocking: 'processorci_top.Processor.PC'
+                      /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/soft_riscv.sv:228:15: ... Location of first driving block
+  228 |     Processor.PC <= 32'h8000_0000;
+      |               ^~
+                      /home/gabcro/Code/Processor_CI/cores/soft_riscv/rtl/cpu_top.v:23:3: ... Location of other driving block
+   23 |   PC <= PC +4;
+      |   ^~
+%Warning-MULTIDRIVEN: /home/gabcro/Code/Processor_CI/cores/soft_riscv/rtl/cpu_top.v:19:12: Signal has multiple driving blocks with different clocking: 'processorci_top.Processor.GPREGS'
+                      /home/gabcro/Code/Processor_CI/cores/soft_riscv/rtl/cpu_top.v:142:5: ... Location of first driving block
+  142 |     GPREGS[1] <= 0;
+      |     ^~~~~~
+                      /home/gabcro/Code/Processor_CI/cores/soft_riscv/rtl/cpu_top.v:153:7: ... Location of other driving block
+  153 |       GPREGS[INST.itype.rd] <=  { {24{read_data [7]}}, read_data [7:0] };
+      |       ^~~~~~
+- V e r i l a t i o n   R e p o r t: Verilator 5.050 2026-07-01 rev v5.050
+- Verilator: Built from 0.230 MB sources in 8 modules, into 0.186 MB in 11 C++ files needing 0.000 MB
+- Verilator: Walltime 0.015 s (elab=0.001, cvt=0.009, bld=0.000); cpu 0.015 s on 1 threads; allocated 20.191 MB
+make -C sim_build/soft_riscv  -f Vtop.mk
+make[2]: Entering directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector/sim_build/soft_riscv'
+g++  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -Os  -c -o verilator.o /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/share/lib/verilator/verilator.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated.o /usr/share/verilator/include/verilated.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_dpi.o /usr/share/verilator/include/verilated_dpi.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_vpi.o /usr/share/verilator/include/verilated_vpi.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_vcd_c.o /usr/share/verilator/include/verilated_vcd_c.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_threads.o /usr/share/verilator/include/verilated_threads.cpp
+python3 /usr/share/verilator/bin/verilator_includer -DVL_INCLUDE_OPT=include Vtop.cpp Vtop___024root__0.cpp Vtop__Dpi.cpp Vtop__Trace__0.cpp Vtop__ConstPool__0__Slow.cpp Vtop___024root__Slow.cpp Vtop___024root__0__Slow.cpp Vtop_typePack__Slow.cpp Vtop__Syms__Slow.cpp Vtop__Trace__0__Slow.cpp Vtop__TraceDecls__0__Slow.cpp > Vtop__ALL.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o Vtop__ALL.o Vtop__ALL.cpp
+g++    -rdynamic verilator.o verilated.o verilated_dpi.o verilated_vpi.o verilated_vcd_c.o verilated_threads.o Vtop__ALL.a   -Wl,-rpath,/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -L/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -lcocotbvpi_verilator  -pthread -lpthread -latomic -ldl   -o Vtop
+rm Vtop__ALL.verilator_deplist.tmp
+make[2]: Leaving directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector/sim_build/soft_riscv'
+/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb_tools/makefiles/simulators/Makefile.verilator:69: Using MODULE is deprecated, please use COCOTB_TEST_MODULES instead.
+rm -f results.xml
+COCOTB_TEST_MODULES=cocotb_labeler COCOTB_TESTCASE= COCOTB_TEST_FILTER= COCOTB_TOPLEVEL=processorci_top TOPLEVEL_LANG=verilog \
+         sim_build/soft_riscv/Vtop     
+     -.--ns INFO     gpi                                ..mbed/gpi_embed.cpp:93   in _embed_init_python              Using Python 3.13.0rc1 interpreter at /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/bin/python
+     -.--ns INFO     gpi                                ../gpi/GpiCommon.cpp:79   in gpi_print_registered_impl       VPI registered
+     0.00ns INFO     cocotb                             Running on Verilator version 5.050 2026-07-01
+     0.00ns INFO     cocotb                             Seeding Python random module with 1785389835
+     0.00ns INFO     cocotb                             Initialized cocotb v2.0.1 from /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb
+     0.00ns INFO     cocotb.regression                  pytest not found, install it to enable better AssertionError messages
+     0.00ns INFO     cocotb                             Running tests
+     0.00ns INFO     cocotb.regression                  running cocotb_labeler.processor_test (1/1)
+                                                            Test function for the processor.
+
+            ####################################################
+            #Looking for the register file - regfile_finder.py #
+            ####################################################
+          
+     0.00ns INFO     cocotb.processorci_top             Static register-file checkpoint: processorci_top.Processor.GPREGS kind=array_of_words depth=32 word_width=32 score=111
+   980.00ns INFO     cocotb.processorci_top             - Static Register File Array Candidates Found:
+   980.00ns INFO     cocotb.processorci_top               1: processorci_top.Processor.GPREGS kind=array_of_words depth=32 word_width=32 score=111 visibility=visible
+   980.00ns INFO     cocotb.processorci_top                  reasons: unpacked/indexable array, 32 entries, XLEN-sized words (32), name hint(s): regs, gpr
+   980.00ns INFO     cocotb.processorci_top                  visibility: path resolvable: processorci_top.Processor.GPREGS, index 31: value readable, index 30: value readable, index 29: value readable, index 28: value readable
+   980.00ns INFO     cocotb.processorci_top             
+   980.00ns INFO     cocotb.processorci_top             Visibility summary: {'visible': 1, 'invisible': 0, 'partial': 0, 'total': 1}
+   980.00ns INFO     cocotb.processorci_top             Dynamic regfile write program reached loop at cycle 9
+   980.00ns INFO     cocotb.processorci_top             Skipping register file interface detection via Ollama.
+   980.00ns INFO     cocotb.processorci_top             Processor name: /home/gabcro/Code/Processor_CI/cores_utils/soft_riscv
+   980.00ns INFO     cocotb.processorci_top             Register file candidates: ['processorci_top.Processor.GPREGS']
+   980.00ns INFO     cocotb.processorci_top             Using register file: processorci_top.Processor.GPREGS
+   980.00ns INFO     cocotb.processorci_top             Resolved register file: ArrayObject(processorci_top.Processor.GPREGS)
+   990.00ns INFO     cocotb.processorci_top             [mem_driver cycle 1] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1000.00ns INFO     cocotb.processorci_top             [mem_driver cycle 2] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1010.00ns INFO     cocotb.processorci_top             [mem_driver cycle 3] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1020.00ns INFO     cocotb.processorci_top             [mem_driver cycle 4] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1030.00ns INFO     cocotb.processorci_top             [mem_driver cycle 5] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1040.00ns INFO     cocotb.processorci_top             [mem_driver cycle 6] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1050.00ns INFO     cocotb.processorci_top             [mem_driver cycle 7] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1060.00ns INFO     cocotb.processorci_top             [mem_driver cycle 8] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1070.00ns INFO     cocotb.processorci_top             [mem_driver cycle 9] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1080.00ns INFO     cocotb.processorci_top             [mem_driver cycle 10] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1090.00ns INFO     cocotb.processorci_top             [mem_driver cycle 11] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1100.00ns INFO     cocotb.processorci_top             [mem_driver cycle 12] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1110.00ns INFO     cocotb.processorci_top             [mem_driver cycle 13] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1120.00ns INFO     cocotb.processorci_top             [mem_driver cycle 14] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1130.00ns INFO     cocotb.processorci_top             [mem_driver cycle 15] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1140.00ns INFO     cocotb.processorci_top             [mem_driver cycle 16] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1150.00ns INFO     cocotb.processorci_top             [mem_driver cycle 17] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1160.00ns INFO     cocotb.processorci_top             [mem_driver cycle 18] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1170.00ns INFO     cocotb.processorci_top             [mem_driver cycle 19] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1180.00ns INFO     cocotb.processorci_top             [mem_driver cycle 20] cyc=1 stb=1 addr=0x80000000 data=0x00000013
+  1490.00ns INFO     cocotb.processorci_top             Measuring execution model from architectural commit cadence...
+  1490.00ns INFO     cocotb.processorci_top             [measure] Current regfile finder did not provide a complete real write interface; using register-file observation instead of legacy cached interface
+  1490.00ns INFO     cocotb.processorci_top             [measure] Observing signature commits through register-file value changes
+  1650.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x5, x0, 0x135 at cycle 15: x5 = 0x00000135
+  1660.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x6, x0, 0x246 at cycle 16: x6 = 0x00000246
+  1670.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x7, x0, 0x357 at cycle 17: x7 = 0x00000357
+  1680.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x8, x0, 0x468 at cycle 18: x8 = 0x00000468
+  1690.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x9, x0, 0x579 at cycle 19: x9 = 0x00000579
+  1700.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x10, x0, 0x68a at cycle 20: x10 = 0x0000068a
+  1700.00ns INFO     cocotb.processorci_top             [measure] Fetch intervals: [1, 1, 1, 1, 1]
+  1700.00ns INFO     cocotb.processorci_top             [measure] Commit intervals: [1, 1, 1, 1, 1]
+  1700.00ns INFO     cocotb.processorci_top             [measure] Fetch-to-commit latencies: [1, 1, 1, 1, 1, 1]
+  1700.00ns INFO     cocotb.processorci_top             [measure] Classification: {'single_cycle': False, 'multicycle': False, 'pipeline': {'depth_estimate': 2, 'depth_estimate_source': 'regfile_observation'}, 'confidence': 0.78}
+  1700.00ns INFO     cocotb.processorci_top             Datapath results saved to /home/gabcro/Code/Processor_CI/cores_utils/soft_riscv/soft_riscv_labels.json
+  1700.00ns INFO     cocotb.processorci_top             [forwarding] Running isolated forwarding probes...
+  1700.00ns INFO     cocotb.processorci_top             [measure] Current regfile finder did not provide a complete real write interface; using register-file observation instead of legacy cached interface
+  1700.00ns INFO     cocotb.processorci_top             [pipeline_finder] Starting bounded signal discovery
+  1700.00ns INFO     cocotb.processorci_top             [pipeline_finder] Discovery complete: scopes=1 objects=14 truncated=False
+ 10500.00ns INFO     cocotb.processorci_top             [forwarding] Handshake calibration complete: supported=False recovery=False trials=1
+ 10500.00ns INFO     cocotb.processorci_top             [forwarding] Architectural calibration variants complete
+ 10500.00ns INFO     cocotb.processorci_top             [forwarding] Behavioral signal census complete: before={'pc': 10, 'instruction': 10, 'valid': 2, 'stall': 2, 'flush': 2, 'source_id': 1, 'destination_id': 1, 'operand': 10, 'store_data': 10, 'wb_data': 10, 'wb_enable': 2, 'packed_parent': 10} after={'pc': 3, 'instruction': 2, 'valid': 2, 'stall': 2, 'flush': 2, 'source_id': 1, 'destination_id': 1, 'operand': 4, 'store_data': 4, 'wb_data': 4, 'wb_enable': 2, 'packed_parent': 8}
+ 14640.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for alu_to_alu
+ 27330.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for alu_to_store_data
+ 48390.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for alu_to_store_address
+ 69330.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for load_to_alu
+ 90390.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for load_to_store_data
+111450.00ns INFO     cocotb.processorci_top             [forwarding] Initial adjacent discovery trials complete for load_to_store_address
+212400.00ns INFO     cocotb.processorci_top             [forwarding] Focused adjacent rescan complete for ['alu_to_alu', 'alu_to_store_address', 'alu_to_store_data', 'load_to_alu', 'load_to_store_address', 'load_to_store_data']
+216900.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for alu_to_alu
+229890.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for alu_to_store_data
+251190.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for alu_to_store_address
+272370.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for load_to_alu
+293670.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for load_to_store_data
+314970.00ns INFO     cocotb.processorci_top             [forwarding] Paired trials complete for load_to_store_address
+425100.00ns INFO     cocotb.processorci_top             [forwarding] Independent gap 1 complete; active paths=['alu_to_alu', 'alu_to_store_address', 'alu_to_store_data', 'load_to_alu', 'load_to_store_address', 'load_to_store_data']
+536010.00ns INFO     cocotb.processorci_top             [forwarding] Independent gap 2 complete; active paths=['alu_to_alu', 'alu_to_store_address']
+562140.00ns INFO     cocotb.processorci_top             [forwarding] Independent gap 3 complete; active paths=['alu_to_alu', 'alu_to_store_address']
+565590.00ns INFO     cocotb.processorci_top             [forwarding] probe results: {'execution': None, 'focused_rescan': None, 'alu_to_alu': 'inconclusive', 'alu_to_store_data': 'inconclusive', 'alu_to_store_address': 'inconclusive', 'load_to_alu': 'inconclusive', 'load_to_store_data': 'inconclusive', 'load_to_store_address': 'inconclusive'}
+565590.00ns INFO     cocotb.processorci_top             [branch_prediction] Running branch-prediction probes...
+565590.00ns INFO     cocotb.processorci_top             [measure] Current regfile finder did not provide a complete real write interface; using register-file observation instead of legacy cached interface
+566460.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=branch_resolution_taken invalid reason=dependency_memory_interface_unavailable complete=True fetches=6 coverage=1.000
+567330.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=branch_resolution_not_taken invalid reason=dependency_memory_interface_unavailable complete=True fetches=6 coverage=1.000
+829000.00ns INFO     cocotb.processorci_top             [branch_prediction] status=inconclusive components=[]
+829000.00ns INFO     cocotb.processorci_top             Results saved to /home/gabcro/Code/Processor_CI/cores_utils/soft_riscv/soft_riscv_labels.json
+829000.00ns INFO     cocotb.regression                  cocotb_labeler.processor_test passed
+829000.00ns INFO     cocotb.regression                  ***************************************************************************************
+                                                        ** TEST                           STATUS  SIM TIME (ns)  REAL TIME (s)  RATIO (ns/s) **
+                                                        ***************************************************************************************
+                                                        ** cocotb_labeler.processor_test   PASS      829000.00          14.07      58905.22  **
+                                                        ***************************************************************************************
+                                                        ** TESTS=1 PASS=1 FAIL=0 SKIP=0              829000.00          14.07      58901.35  **
+                                                        ***************************************************************************************
+- :0: Verilog $finish
+make[1]: Leaving directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector'
+Identified language: Verilog
+Results saved to /home/gabcro/Code/Processor_CI/cores_utils/soft_riscv/soft_riscv_labels.json
+Verilog
+Directory being passed to cocotb_makefile_creator: /home/gabcro/Code/Processor_CI/cores/soft_riscv
+Creating Makefile for soft_riscv...

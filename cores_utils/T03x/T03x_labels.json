@@ -1,0 +1,28 @@
+{
+    "T03x": {
+        "license_types": [
+            "Undetected"
+        ],
+        "bits": "Undetected",
+        "cache": "Undetected",
+        "cache_dimensions": "Undetected",
+        "language": "VHDL",
+        "multicycle": "Undetected",
+        "pipeline": "Undetected",
+        "superscalar": "Undetected",
+        "isa": "Undetected",
+        "bus_type": "Undetected",
+        "forwarding": {
+            "schema_version": 2,
+            "probe_suite_version": "paired-forwarding-v8",
+            "implementation_revision": 11,
+            "execution": {
+                "state": "failed",
+                "run_id": "79f171b1-89ed-4cfc-bde3-943b23ba8188",
+                "reason": "Command '['ghdl', 'synth', '--std=08', '--work=T03x', '--workdir=build', '-Pbuild', '--out=verilog', '-frelaxed', '-Wno-hide', '-fsynopsys', '--latches', 'klessydra_t0_3th_core']' returned non-zero exit status 1.",
+                "error_type": "CalledProcessError"
+            },
+            "applicable": null
+        }
+    }
+}

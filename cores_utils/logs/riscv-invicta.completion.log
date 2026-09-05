@@ -1,0 +1,237 @@
+Processing labeler on /home/gabcro/Code/Processor_CI/cores/riscv-invicta...
+rm -f results.xml
+"make" -f /home/gabcro/Code/Processor_CI/cores_utils/riscv-invicta/riscv-invicta.mk results.xml
+make[1]: Entering directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector'
+mkdir -p sim_build/riscv-invicta
+/usr/bin/verilator -cc --exe -Mdir sim_build/riscv-invicta --top-module processorci_top --language 1800-2017 -DSIMULATION -Wno-fatal -Wno-lint --public-flat-rw --trace --trace-structs --trace-underscore -Wno-BLKANDNBLK --timescale 1ns/1ps --vpi --public-flat-rw --prefix Vtop -o Vtop -LDFLAGS "-Wl,-rpath,/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -L/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -lcocotbvpi_verilator" +incdir+/home/gabcro/Code/Processor_CI/cores/riscv-invicta +incdir+/home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src  /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/top.v /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/mem_mux.v /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/internal/ahblite_to_wishbone.sv /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/internal/axi4lite_to_wishbone.sv /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/internal/axi4_to_wishbone.sv /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/riscv-invicta.sv /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/share/lib/verilator/verilator.cpp
+%Warning-MULTIDRIVEN: /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/riscv-invicta.sv:216:9: Variable written to in always_ff also written by other process (IEEE 1800-2023 9.2.2.4): 'sim_program_loaded'
+                                                                                                    : ... note: In instance 'processorci_top'
+                      /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/riscv-invicta.sv:216:9: 
+  216 |         sim_program_loaded <= 1'b1;
+      |         ^~~~~~~~~~~~~~~~~~
+                      /home/gabcro/Code/Processor_CI/RV-Bench/wrappers_golden/riscv-invicta.sv:205:5: ... Location of other write
+  205 |     sim_program_loaded = 1'b0;
+      |     ^~~~~~~~~~~~~~~~~~
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=5.050
+                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
+%Warning-MULTIDRIVEN: /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/memory_system.v:48:16: Bits [31:0] of signal 'processorci_top.Processor.ms.request_data' have multiple combinational drivers. This can cause performance degradation.
+                      /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/memory_system.v:129:22: ... Location of offending driver
+  129 |  assign request_data = mm_select ? translater_read_data : arbiter_read_data;
+      |                      ^
+                      /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/top.v:57:1: ... note: In file included from 'top.v'
+                      /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/arbiter.v:32:16: ... Location of offending driver
+   32 |  output [31:0] request_data,
+      |                ^~~~~~~~~~~~
+%Warning-MULTIDRIVEN: /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/memory_system.v:72:14: Bits [31:0] of signal 'processorci_top.Processor.ms.arbiter_write_data' have multiple combinational drivers. This can cause performance degradation.
+                      /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/memory_system.v:72:33: ... Location of offending driver
+   72 |  wire [31:0] arbiter_write_data = dmem_write_data;
+      |                                 ^
+                      /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/top.v:57:1: ... note: In file included from 'top.v'
+                      /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/arbiter.v:52:16: ... Location of offending driver
+   52 |  output [31:0] mem_wdata,
+      |                ^~~~~~~~~
+%Warning-MULTIDRIVEN: /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/memory_system.v:73:13: Bits [3:0] of signal 'processorci_top.Processor.ms.arbiter_write_mask' have multiple combinational drivers. This can cause performance degradation.
+                      /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/memory_system.v:73:32: ... Location of offending driver
+   73 |  wire [3:0] arbiter_write_mask = dmem_write_mask;
+      |                                ^
+                      /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/top.v:57:1: ... note: In file included from 'top.v'
+                      /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/arbiter.v:48:15: ... Location of offending driver
+   48 |  output [3:0] mem_mask,  
+      |               ^~~~~~~~
+%Warning-UNOPTFLAT: /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/tlb.v:38:15: Signal unoptimizable: Circular combinational logic: 'processorci_top.Processor.ms.t.tlb.translated_address'
+   38 |  input [31:0] translated_address,
+      |               ^~~~~~~~~~~~~~~~~~
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/translater.v:157:1: ... note: In file included from 'translater.v'
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/memory_system.v:100:1: ... note: In file included from 'memory_system.v'
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/top.v:57:1: ... note: In file included from 'top.v'
+                    ... For warning description see https://verilator.org/warn/UNOPTFLAT?v=5.050
+                    ... Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/tlb.v:38:15:      Example path: processorci_top.Processor.ms.t.tlb.translated_address
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/tlb.v:95:2:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/tlb.v:45:13:      Example path: processorci_top.Processor.ms.t.tlb.tlb
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/tlb.v:71:2:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/tlb.v:36:13:      Example path: processorci_top.Processor.ms.t.tlb.tlb_hit
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/tlb.v:36:13:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/translater.v:49:7:      Example path: processorci_top.Processor.ms.t.tlb_hit
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/translater.v:143:2:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/translater.v:33:20:      Example path: processorci_top.Processor.ms.t.physical_address
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/translater.v:33:20:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/memory_system.v:93:14:      Example path: processorci_top.Processor.ms.translated_addr
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/memory_system.v:161:31:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/memory_system.v:161:14:      Example path: processorci_top.Processor.ms.physical_address
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:34:15:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:34:15:      Example path: processorci_top.Processor.ms.simmem.addr
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:47:24:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:47:14:      Example path: processorci_top.Processor.ms.simmem.word_addr
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:71:2:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:45:13:      Example path: processorci_top.Processor.ms.simmem.memory
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:69:28:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:69:14:      Example path: processorci_top.Processor.ms.simmem.to_be_written
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:71:2:      Example path: ALWAYS
+%Warning-UNOPTFLAT: /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/tlb.v:44:12: Signal unoptimizable: Circular combinational logic: 'processorci_top.Processor.ms.t.tlb.entry'
+   44 |  reg [1:0] entry;  
+      |            ^~~~~
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/translater.v:157:1: ... note: In file included from 'translater.v'
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/memory_system.v:100:1: ... note: In file included from 'memory_system.v'
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/top.v:57:1: ... note: In file included from 'top.v'
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/tlb.v:44:12:      Example path: processorci_top.Processor.ms.t.tlb.entry
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/tlb.v:95:2:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/tlb.v:45:13:      Example path: processorci_top.Processor.ms.t.tlb.tlb
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/tlb.v:71:2:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/tlb.v:36:13:      Example path: processorci_top.Processor.ms.t.tlb.tlb_hit
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/tlb.v:36:13:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/translater.v:49:7:      Example path: processorci_top.Processor.ms.t.tlb_hit
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/translater.v:143:2:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/translater.v:33:20:      Example path: processorci_top.Processor.ms.t.physical_address
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/translater.v:33:20:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/memory_system.v:93:14:      Example path: processorci_top.Processor.ms.translated_addr
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/memory_system.v:161:31:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/memory_system.v:161:14:      Example path: processorci_top.Processor.ms.physical_address
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:34:15:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:34:15:      Example path: processorci_top.Processor.ms.simmem.addr
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:47:24:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:47:14:      Example path: processorci_top.Processor.ms.simmem.word_addr
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:71:2:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:45:13:      Example path: processorci_top.Processor.ms.simmem.memory
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:69:28:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:69:14:      Example path: processorci_top.Processor.ms.simmem.to_be_written
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:71:2:      Example path: ALWAYS
+%Warning-UNOPTFLAT: /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:45:13: Signal unoptimizable: Circular combinational logic: 'processorci_top.Processor.ms.simmem.memory'
+   45 |  reg [31:0] memory [MEMORY_SIZE - 1:0];
+      |             ^~~~~~
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:45:13:      Example path: processorci_top.Processor.ms.simmem.memory
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:69:28:      Example path: ASSIGNW
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:69:14:      Example path: processorci_top.Processor.ms.simmem.to_be_written
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:71:2:      Example path: ALWAYS
+                    /home/gabcro/Code/Processor_CI/cores/riscv-invicta/hardware/src/simulated_memory.v:45:13:      Example path: processorci_top.Processor.ms.simmem.memory
+- V e r i l a t i o n   R e p o r t: Verilator 5.050 2026-07-01 rev v5.050
+- Verilator: Built from 0.361 MB sources in 21 modules, into 0.729 MB in 10 C++ files needing 0.001 MB
+- Verilator: Walltime 0.049 s (elab=0.003, cvt=0.027, bld=0.000); cpu 0.045 s on 1 threads; allocated 24.277 MB
+make -C sim_build/riscv-invicta  -f Vtop.mk
+make[2]: Entering directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector/sim_build/riscv-invicta'
+g++  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -Os  -c -o verilator.o /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/share/lib/verilator/verilator.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated.o /usr/share/verilator/include/verilated.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_dpi.o /usr/share/verilator/include/verilated_dpi.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_vpi.o /usr/share/verilator/include/verilated_vpi.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_vcd_c.o /usr/share/verilator/include/verilated_vcd_c.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_threads.o /usr/share/verilator/include/verilated_threads.cpp
+python3 /usr/share/verilator/bin/verilator_includer -DVL_INCLUDE_OPT=include Vtop.cpp Vtop___024root__0.cpp Vtop__Dpi.cpp Vtop__Trace__0.cpp Vtop__ConstPool__0__Slow.cpp Vtop___024root__Slow.cpp Vtop___024root__0__Slow.cpp Vtop__Syms__Slow.cpp Vtop__Trace__0__Slow.cpp Vtop__TraceDecls__0__Slow.cpp > Vtop__ALL.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -DVM_VPI=1 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-int-in-bool-context -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o Vtop__ALL.o Vtop__ALL.cpp
+g++    -rdynamic verilator.o verilated.o verilated_dpi.o verilated_vpi.o verilated_vcd_c.o verilated_threads.o Vtop__ALL.a   -Wl,-rpath,/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -L/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb/libs -lcocotbvpi_verilator  -pthread -lpthread -latomic -ldl   -o Vtop
+rm Vtop__ALL.verilator_deplist.tmp
+make[2]: Leaving directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector/sim_build/riscv-invicta'
+/home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb_tools/makefiles/simulators/Makefile.verilator:69: Using MODULE is deprecated, please use COCOTB_TEST_MODULES instead.
+rm -f results.xml
+COCOTB_TEST_MODULES=cocotb_labeler COCOTB_TESTCASE= COCOTB_TEST_FILTER= COCOTB_TOPLEVEL=processorci_top TOPLEVEL_LANG=verilog \
+         sim_build/riscv-invicta/Vtop     
+     -.--ns INFO     gpi                                ..mbed/gpi_embed.cpp:93   in _embed_init_python              Using Python 3.13.0rc1 interpreter at /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/bin/python
+     -.--ns INFO     gpi                                ../gpi/GpiCommon.cpp:79   in gpi_print_registered_impl       VPI registered
+     0.00ns INFO     cocotb                             Running on Verilator version 5.050 2026-07-01
+     0.00ns INFO     cocotb                             Seeding Python random module with 1785389258
+     0.00ns INFO     cocotb                             Initialized cocotb v2.0.1 from /home/gabcro/Code/Processor_CI/processor_ci_inspector/env/lib/python3.13/site-packages/cocotb
+     0.00ns INFO     cocotb.regression                  pytest not found, install it to enable better AssertionError messages
+     0.00ns INFO     cocotb                             Running tests
+     0.00ns INFO     cocotb.regression                  running cocotb_labeler.processor_test (1/1)
+                                                            Test function for the processor.
+
+            ####################################################
+            #Looking for the register file - regfile_finder.py #
+            ####################################################
+          
+     0.00ns INFO     cocotb.processorci_top             Static register-file checkpoint: processorci_top.Processor.dpath.rf.registers kind=array_of_words depth=32 word_width=32 score=111
+%Warning: mem.hex:0: $readmem file not found
+  1610.00ns INFO     cocotb.processorci_top             - Static Register File Array Candidates Found:
+  1610.00ns INFO     cocotb.processorci_top               1: processorci_top.Processor.dpath.rf.registers kind=array_of_words depth=32 word_width=32 score=111 visibility=visible
+  1610.00ns INFO     cocotb.processorci_top                  reasons: unpacked/indexable array, 32 entries, XLEN-sized words (32), name hint(s): registers, rf
+  1610.00ns INFO     cocotb.processorci_top                  visibility: path resolvable: processorci_top.Processor.dpath.rf.registers, index 31: value readable, index 30: value readable, index 29: value readable, index 28: value readable
+  1610.00ns INFO     cocotb.processorci_top             
+  1610.00ns INFO     cocotb.processorci_top             Visibility summary: {'visible': 1, 'invisible': 0, 'partial': 0, 'total': 1}
+  1610.00ns INFO     cocotb.processorci_top             Dynamic regfile write program reached loop at cycle 32
+  1610.00ns INFO     cocotb.processorci_top             Skipping register file interface detection via Ollama.
+  1610.00ns INFO     cocotb.processorci_top             Processor name: /home/gabcro/Code/Processor_CI/cores_utils/riscv-invicta
+  1610.00ns INFO     cocotb.processorci_top             Register file candidates: ['processorci_top.Processor.dpath.rf.registers']
+  1610.00ns INFO     cocotb.processorci_top             Using register file: processorci_top.Processor.dpath.rf.registers
+  1610.00ns INFO     cocotb.processorci_top             Resolved register file: ArrayObject(processorci_top.Processor.dpath.rf.registers)
+  1620.00ns INFO     cocotb.processorci_top             [mem_driver cycle 1] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1630.00ns INFO     cocotb.processorci_top             [mem_driver cycle 2] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1640.00ns INFO     cocotb.processorci_top             [mem_driver cycle 3] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1650.00ns INFO     cocotb.processorci_top             [mem_driver cycle 4] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1660.00ns INFO     cocotb.processorci_top             [mem_driver cycle 5] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1670.00ns INFO     cocotb.processorci_top             [mem_driver cycle 6] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1680.00ns INFO     cocotb.processorci_top             [mem_driver cycle 7] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1690.00ns INFO     cocotb.processorci_top             [mem_driver cycle 8] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1700.00ns INFO     cocotb.processorci_top             [mem_driver cycle 9] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1710.00ns INFO     cocotb.processorci_top             [mem_driver cycle 10] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1720.00ns INFO     cocotb.processorci_top             [mem_driver cycle 11] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1730.00ns INFO     cocotb.processorci_top             [mem_driver cycle 12] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1740.00ns INFO     cocotb.processorci_top             [mem_driver cycle 13] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1750.00ns INFO     cocotb.processorci_top             [mem_driver cycle 14] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1760.00ns INFO     cocotb.processorci_top             [mem_driver cycle 15] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1770.00ns INFO     cocotb.processorci_top             [mem_driver cycle 16] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1780.00ns INFO     cocotb.processorci_top             [mem_driver cycle 17] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1790.00ns INFO     cocotb.processorci_top             [mem_driver cycle 18] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1800.00ns INFO     cocotb.processorci_top             [mem_driver cycle 19] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  1810.00ns INFO     cocotb.processorci_top             [mem_driver cycle 20] cyc=0 stb=0 addr=0x00000000 data=0x00000013
+  2120.00ns INFO     cocotb.processorci_top             Measuring execution model from architectural commit cadence...
+  2120.00ns INFO     cocotb.processorci_top             [measure] Current regfile finder did not provide a complete real write interface; using register-file observation instead of legacy cached interface
+  2120.00ns INFO     cocotb.processorci_top             [measure] Observing signature commits through register-file value changes
+  2630.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x5, x0, 0x135 at cycle 50: x5 = 0x00000135
+  2660.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x6, x0, 0x246 at cycle 53: x6 = 0x00000246
+  2690.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x7, x0, 0x357 at cycle 56: x7 = 0x00000357
+  2720.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x8, x0, 0x468 at cycle 59: x8 = 0x00000468
+  2750.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x9, x0, 0x579 at cycle 62: x9 = 0x00000579
+  2780.00ns INFO     cocotb.processorci_top             [measure] Observed commit addi x10, x0, 0x68a at cycle 65: x10 = 0x0000068a
+  2780.00ns INFO     cocotb.processorci_top             [measure] Fetch intervals: [3, 3, 3, 3, 3]
+  2780.00ns INFO     cocotb.processorci_top             [measure] Commit intervals: [3, 3, 3, 3, 3]
+  2780.00ns INFO     cocotb.processorci_top             [measure] Fetch-to-commit latencies: [3, 3, 3, 3, 3, 3]
+  2780.00ns INFO     cocotb.processorci_top             [measure] Classification: {'single_cycle': False, 'multicycle': True, 'pipeline': False, 'confidence': 0.78}
+  2780.00ns INFO     cocotb.processorci_top             Datapath results saved to /home/gabcro/Code/Processor_CI/cores_utils/riscv-invicta/riscv-invicta_labels.json
+  2780.00ns INFO     cocotb.processorci_top             [forwarding] Not applicable to this execution model
+  2780.00ns INFO     cocotb.processorci_top             [branch_prediction] Running branch-prediction probes...
+  2780.00ns INFO     cocotb.processorci_top             [measure] Current regfile finder did not provide a complete real write interface; using register-file observation instead of legacy cached interface
+ 14140.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=static_backward_taken invalid reason=architectural_completion_failed complete=False fetches=27 coverage=1.000
+ 15430.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=static_backward_taken invalid reason=architectural_completion_failed complete=False fetches=27 coverage=1.000
+ 16720.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=static_backward_taken invalid reason=architectural_completion_failed complete=False fetches=27 coverage=1.000
+ 26520.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=dynamic_one_bit invalid reason=probe_timeout complete=False fetches=479 coverage=1.000
+ 32900.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=dynamic_two_bit invalid reason=probe_timeout complete=False fetches=524 coverage=1.000
+ 35290.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=local_history invalid reason=architectural_completion_failed complete=False fetches=109 coverage=0.031
+ 37120.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=local_alternating invalid reason=architectural_completion_failed complete=False fetches=67 coverage=0.031
+ 39390.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=global_history invalid reason=architectural_completion_failed complete=False fetches=100 coverage=0.031
+ 43340.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=path_history invalid reason=architectural_completion_failed complete=False fetches=226 coverage=0.047
+ 46170.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=combined_history invalid reason=architectural_completion_failed complete=False fetches=142 coverage=0.031
+ 49720.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=long_history invalid reason=architectural_completion_failed complete=False fetches=196 coverage=0.031
+119290.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=direct_btb invalid reason=probe_timeout complete=False fetches=1201 coverage=1.000
+120720.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=indirect_constant_target invalid reason=architectural_completion_failed complete=False fetches=33 coverage=0.188
+122430.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=indirect_alternating_target invalid reason=architectural_completion_failed complete=False fetches=58 coverage=0.062
+124060.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=ras_standard_link invalid reason=architectural_completion_failed complete=False fetches=52 coverage=0.188
+125690.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=ras_nonstandard_link_control invalid reason=architectural_completion_failed complete=False fetches=52 coverage=0.188
+127520.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=timing_learnable invalid reason=architectural_completion_failed complete=False fetches=67 coverage=0.047
+129350.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=timing_learnable invalid reason=architectural_completion_failed complete=False fetches=67 coverage=0.047
+131180.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=timing_learnable invalid reason=architectural_completion_failed complete=False fetches=67 coverage=0.047
+133010.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=timing_shuffled_control invalid reason=architectural_completion_failed complete=False fetches=67 coverage=0.047
+134840.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=timing_shuffled_control invalid reason=architectural_completion_failed complete=False fetches=67 coverage=0.047
+136670.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=timing_shuffled_control invalid reason=architectural_completion_failed complete=False fetches=67 coverage=0.047
+138500.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=reset_retention_observe invalid reason=architectural_completion_failed complete=False fetches=67 coverage=0.188
+140330.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=reset_retention_train invalid reason=architectural_completion_failed complete=False fetches=67 coverage=0.188
+142160.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=reset_retention_observe invalid reason=architectural_completion_failed complete=False fetches=67 coverage=0.188
+144470.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=two_pc_alias_spacing_64 invalid reason=architectural_completion_failed complete=False fetches=103 coverage=0.094
+147420.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=two_pc_alias_spacing_128 invalid reason=architectural_completion_failed complete=False fetches=151 coverage=0.094
+151650.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=two_pc_alias_spacing_256 invalid reason=architectural_completion_failed complete=False fetches=247 coverage=0.094
+158440.00ns WARNING  cocotb.processorci_top             [branch_prediction] probe=two_pc_alias_spacing_512 invalid reason=architectural_completion_failed complete=False fetches=439 coverage=0.094
+158440.00ns INFO     cocotb.processorci_top             [branch_prediction] status=inconclusive components=[]
+158440.00ns INFO     cocotb.processorci_top             Results saved to /home/gabcro/Code/Processor_CI/cores_utils/riscv-invicta/riscv-invicta_labels.json
+158440.00ns INFO     cocotb.regression                  cocotb_labeler.processor_test passed
+158440.00ns INFO     cocotb.regression                  ***************************************************************************************
+                                                        ** TEST                           STATUS  SIM TIME (ns)  REAL TIME (s)  RATIO (ns/s) **
+                                                        ***************************************************************************************
+                                                        ** cocotb_labeler.processor_test   PASS      158440.00           3.85      41161.24  **
+                                                        ***************************************************************************************
+                                                        ** TESTS=1 PASS=1 FAIL=0 SKIP=0              158440.00           3.85      41146.49  **
+                                                        ***************************************************************************************
+- :0: Verilog $finish
+make[1]: Leaving directory '/home/gabcro/Code/Processor_CI/processor_ci_inspector'
+Identified language: Verilog
+Results saved to /home/gabcro/Code/Processor_CI/cores_utils/riscv-invicta/riscv-invicta_labels.json
+Verilog
+Directory being passed to cocotb_makefile_creator: /home/gabcro/Code/Processor_CI/cores/riscv-invicta
+Creating Makefile for riscv-invicta...

@@ -1,0 +1,21 @@
+# Cores without a revision-10 terminal artifact after the interrupted batch.
+# One core name per line; blank lines and comments are ignored by the runner.
+riscv-invicta
+riscv-multi-core-lotr
+riscv-pipeline-cpu
+riscv-proc
+riscv_cpu
+riskow
+rv3n
+rvx
+scr1
+serv
+simodense
+single_cycle_RISCV_CPU_Design-32bit
+soft_riscv
+soric_project
+starsea_riscv
+super-riscv
+tinyriscv
+yarvi
+zero-riscy

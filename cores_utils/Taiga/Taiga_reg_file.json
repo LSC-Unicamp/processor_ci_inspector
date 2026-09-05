@@ -1,0 +1,42 @@
+{
+    "regfile_candidates": [
+        "processorci_top.processor_ci_gpr_regs_regfile_view"
+    ],
+    "selected_regfile": {
+        "candidate_path": "processorci_top.processor_ci_gpr_regs_regfile_view",
+        "kind": "packed_flat_vector",
+        "status": "confirmed_candidate",
+        "score": 100,
+        "confidence": "high",
+        "mapping_order": "packed_lsb_reg0",
+        "mapped_registers": {
+            "x0": 0,
+            "x1": 17,
+            "x2": 34,
+            "x3": 51,
+            "x4": 68,
+            "x5": 85,
+            "x6": 102,
+            "x7": 119,
+            "x8": 305419896
+        }
+    },
+    "regfile_interface": {
+        "write_enable": "processorci_top.processor_ci_regfile_write_enable",
+        "write_addr": "processorci_top.processor_ci_regfile_write_addr",
+        "write_data": "processorci_top.processor_ci_regfile_write_data"
+    },
+    "selected_regfile_interface": {
+        "status": "confirmed_interface",
+        "score": 93,
+        "confidence": "high",
+        "write_enable": "processorci_top.processor_ci_regfile_write_enable",
+        "write_addr": "processorci_top.processor_ci_regfile_write_addr",
+        "write_data": "processorci_top.processor_ci_regfile_write_data",
+        "timing_offset": 0,
+        "write_enable_timing_offset": 0,
+        "write_addr_timing_offset": 0,
+        "write_data_timing_offset": 0,
+        "write_addr_bit_offset": null
+    }
+}
