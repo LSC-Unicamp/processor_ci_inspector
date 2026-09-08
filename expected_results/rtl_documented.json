@@ -1,0 +1,448 @@
+{
+  "schema_version": 1,
+  "scope": {
+    "summary": "processor_ci_inspector/core_summary.md",
+    "cores_directories": ["cores", "RV-Bench/cores"],
+    "included_core_count": 109,
+    "excluded_reason": "not checked out locally"
+  },
+  "cores": {
+    "AUK-V-Aethia": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/AUK-V-Aethia/rtl/core/aukv.v", "processor_ci_lab/config/AUK-V-Aethia.json"],
+      "review": "corrected"
+    },
+    "Baby-Risco-5": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "multi-cycle", "pipeline_stages": null},
+      "evidence": ["cores/Baby-Risco-5/README.md"], "review": "confirmed"
+    },
+    "Evensgn_RISC-V-CPU": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/Evensgn_RISC-V-CPU/README.md"], "review": "corrected"
+    },
+    "Fahad-Habib_RISC-V-Single-Cycle-Processor": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "single-cycle", "pipeline_stages": null},
+      "evidence": ["cores/Fahad-Habib_RISC-V-Single-Cycle-Processor/README.md"], "review": "corrected"
+    },
+    "Grande-Risco-5": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/Grande-Risco-5/README.md"], "review": "corrected"
+    },
+    "Hazard3": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 3},
+      "evidence": ["cores/Hazard3/Readme.md"], "review": "corrected"
+    },
+    "Pequeno-Risco-5": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "single-cycle", "pipeline_stages": null},
+      "evidence": ["cores/Pequeno-Risco-5/README.md"], "review": "corrected"
+    },
+    "RISC-V": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/RISC-V/README.md"], "review": "corrected"
+    },
+    "RISC-V-Pipelined-Processor": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/RISC-V-Pipelined-Processor/README.md"], "review": "corrected"
+    },
+    "RISCV-RV32IM-AXI4-Lite-SoC": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/RISCV-RV32IM-AXI4-Lite-SoC/README.md"], "review": "corrected"
+    },
+    "RPU": {
+      "expected": {"xlen": 32, "hdl": "VHDL", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/RPU/vhdl/core.vhd", "processor_ci_lab/config/RPU.json"], "review": "corrected"
+    },
+    "RS5": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 4},
+      "evidence": ["cores/RS5/README.md"], "review": "corrected"
+    },
+    "RV12": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 6},
+      "evidence": ["cores/RV12/README.md", "cores/RV12/DATASHEET.md"], "review": "corrected"
+    },
+    "RV32IC-CPU": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/RV32IC-CPU/RTL/RISCV.v"], "review": "corrected"
+    },
+    "Risco-5": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "multi-cycle", "pipeline_stages": null},
+      "evidence": ["cores/Risco-5/README.md"], "review": "confirmed"
+    },
+    "Rudi-RV32I": {
+      "expected": {"xlen": 32, "hdl": "VHDL", "execution_model": "not-established", "pipeline_stages": null},
+      "evidence": ["cores/Rudi-RV32I"], "review": "needs-configuration"
+    },
+    "SparrowRV": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 2},
+      "evidence": ["cores/SparrowRV/README.md"], "review": "corrected"
+    },
+    "SprintRV": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/SprintRV/README.md"], "review": "corrected"
+    },
+    "Stardusten_riscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "not-established", "pipeline_stages": null},
+      "evidence": ["cores/Stardusten_riscv"], "review": "needs-configuration"
+    },
+    "SuperScalar-RISCV-CPU": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "superscalar-out-of-order", "pipeline_stages": "configurable", "superscalar": true},
+      "evidence": ["cores/SuperScalar-RISCV-CPU/README.md"], "review": "corrected"
+    },
+    "T02x": {
+      "expected": {"xlen": 32, "hdl": "VHDL", "execution_model": "interleaved-multithreaded-pipeline", "pipeline_stages": null},
+      "evidence": ["cores/T02x/README.md"], "review": "corrected"
+    },
+    "T03x": {
+      "expected": {"xlen": 32, "hdl": "VHDL", "execution_model": "interleaved-multithreaded-pipeline", "pipeline_stages": null},
+      "evidence": ["cores/T03x/README.md"], "review": "corrected"
+    },
+    "Taiga": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": "configurable"},
+      "evidence": ["cores/Taiga/README.md", "processor_ci_lab/config/Taiga.json"], "review": "needs-configuration"
+    },
+    "VexRiscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": "configurable (2 to 5+)"},
+      "evidence": ["cores/VexRiscv/README.md", "processor_ci_lab/config/VexRiscv.json"], "review": "corrected"
+    },
+    "VexiiRiscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": "configurable"},
+      "evidence": ["cores/VexiiRiscv/README.md"], "review": "needs-configuration"
+    },
+    "Zhulong-RISCV-CPU": {
+      "expected": {"xlen": 64, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/Zhulong-RISCV-CPU/README.md"], "review": "corrected"
+    },
+    "airisc_core_complex": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/airisc_core_complex/doc/AIRI5C_UserGuide_en.rst"], "review": "corrected"
+    },
+    "arRISCado": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": null},
+      "evidence": ["cores/arRISCado/README.md"], "review": "confirmed"
+    },
+    "biriscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "superscalar-in-order", "pipeline_stages": "configurable (6/7/8/9)", "superscalar": true},
+      "evidence": ["cores/biriscv/README.md", "processor_ci_lab/config/biriscv.json"], "review": "corrected"
+    },
+    "black-parrot": {
+      "expected": {"xlen": "configuration-dependent", "hdl": "SystemVerilog", "execution_model": "superscalar-out-of-order", "pipeline_stages": "configuration-dependent", "superscalar": true},
+      "evidence": ["cores/black-parrot"], "review": "needs-configuration"
+    },
+    "championnan_RISCV": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "not-established", "pipeline_stages": null},
+      "evidence": ["cores/championnan_RISCV"], "review": "needs-configuration"
+    },
+    "clarvi": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 6},
+      "evidence": ["cores/clarvi/README.md"], "review": "confirmed"
+    },
+    "core_uriscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "multi-cycle", "pipeline_stages": null},
+      "evidence": ["cores/core_uriscv/README.md"], "review": "confirmed"
+    },
+    "cv32e40p": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 4},
+      "evidence": ["cores/cv32e40p/README.md"], "review": "corrected"
+    },
+    "cv32e40s": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 4},
+      "evidence": ["cores/cv32e40s/README.md"], "review": "corrected"
+    },
+    "cv32e40x": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 4},
+      "evidence": ["cores/cv32e40x/README.md", "cores/cv32e40x/docs/user_manual/source/pipeline.rst"], "review": "confirmed"
+    },
+    "cv32e41p": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 4},
+      "evidence": ["cores/cv32e41p/README.md", "cores/cv32e41p/docs/source/pipeline.rst"], "review": "corrected"
+    },
+    "cva5": {
+      "expected": {"xlen": "configuration-dependent", "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": "configuration-dependent"},
+      "evidence": ["cores/cva5/README.md", "processor_ci_lab/config/cva5.json"], "review": "needs-configuration"
+    },
+    "cva6": {
+      "expected": {"xlen": "configuration-dependent (32/64)", "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 6},
+      "evidence": ["cores/cva6/docs/index.rst"], "review": "corrected"
+    },
+    "cve2": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 2},
+      "evidence": ["cores/cve2/README.md"], "review": "confirmed"
+    },
+    "darkriscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": "configuration-dependent (2/3)"},
+      "evidence": ["cores/darkriscv/rtl/darkriscv.v", "processor_ci_lab/config/darkriscv.json"], "review": "corrected"
+    },
+    "dv-cpu-rv": {
+      "expected": {"xlen": 64, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/dv-cpu-rv/README.md"], "review": "corrected"
+    },
+    "e200_opensource": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 2},
+      "evidence": ["cores/e200_opensource/README.md"], "review": "corrected"
+    },
+    "e203_hbirdv2": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 2},
+      "evidence": ["cores/e203_hbirdv2/doc/source/core/core.rst"], "review": "corrected"
+    },
+    "e603_hbird": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "not-established", "pipeline_stages": null},
+      "evidence": ["cores/e603_hbird"], "review": "needs-configuration"
+    },
+    "f32c": {
+      "expected": {"xlen": 32, "hdl": "VHDL", "execution_model": "not-established", "pipeline_stages": null},
+      "evidence": ["cores/f32c"], "review": "needs-configuration"
+    },
+    "fedar-e1-rv32i": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/fedar-e1-rv32i/README.md"], "review": "corrected"
+    },
+    "fedar-f1-rv64im": {
+      "expected": {"xlen": 64, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/fedar-f1-rv64im/README.md"], "review": "confirmed"
+    },
+    "harv": {
+      "expected": {"xlen": 32, "hdl": "VHDL", "execution_model": "multi-cycle", "pipeline_stages": null},
+      "evidence": ["processor_ci_lab/config/harv.json", "cores/harv"], "review": "confirmed"
+    },
+    "ibex": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": "configuration-dependent (2/3)"},
+      "evidence": ["cores/ibex/README.md", "processor_ci_lab/config/ibex.json"], "review": "corrected"
+    },
+    "kronos": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 3},
+      "evidence": ["cores/kronos/README.md"], "review": "corrected"
+    },
+    "leaf": {
+      "expected": {"xlen": 32, "hdl": "VHDL", "execution_model": "pipelined", "pipeline_stages": 2},
+      "evidence": ["cores/leaf/README.md"], "review": "corrected"
+    },
+    "mmRISC-1": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": "configuration-dependent (integer 3-5; FP 3-6)"},
+      "evidence": ["cores/mmRISC-1/README.md"], "review": "corrected"
+    },
+    "mr1": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["processor_ci_lab/config/mr1.json", "cores/mr1"], "review": "confirmed"
+    },
+    "mriscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "multi-cycle", "pipeline_stages": null},
+      "evidence": ["processor_ci_lab/config/mriscv.json", "cores/mriscv"], "review": "confirmed"
+    },
+    "nerv": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "single-cycle", "pipeline_stages": null},
+      "evidence": ["cores/nerv/README.md"], "review": "confirmed"
+    },
+    "nox": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 4},
+      "evidence": ["cores/nox/README.md"], "review": "corrected"
+    },
+    "phoeniX": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 4},
+      "evidence": ["cores/phoeniX/README.md"], "review": "corrected"
+    },
+    "picorv32": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "multi-cycle", "pipeline_stages": null},
+      "evidence": ["cores/picorv32/README.md", "processor_ci_lab/config/picorv32.json"], "review": "confirmed"
+    },
+    "potato": {
+      "expected": {"xlen": 32, "hdl": "VHDL", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/potato/README.md"], "review": "corrected"
+    },
+    "riscado-v": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "multi-cycle", "pipeline_stages": null},
+      "evidence": ["processor_ci_lab/config/riscado-v.json", "cores/riscado-v"], "review": "confirmed"
+    },
+    "riscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": null},
+      "evidence": ["cores/riscv/README.md", "processor_ci_lab/config/riscv.json"], "review": "confirmed"
+    },
+    "riscv-atom": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 2},
+      "evidence": ["cores/riscv-atom/README.md"], "review": "corrected"
+    },
+    "riscv_fpga": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "not-established", "pipeline_stages": null},
+      "evidence": ["cores/riscv_fpga"], "review": "needs-configuration"
+    },
+    "riscv_pipeline": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": null},
+      "evidence": ["cores/riscv_pipeline"], "review": "confirmed"
+    },
+    "riskow": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "multi-cycle", "pipeline_stages": null},
+      "evidence": ["processor_ci_lab/config/riskow.json", "cores/riskow"], "review": "confirmed"
+    },
+    "rv3n": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": "configurable (3+N)"},
+      "evidence": ["cores/rv3n/README.md", "processor_ci_lab/config/rv3n.json"], "review": "corrected"
+    },
+    "rvx": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "single-cycle", "pipeline_stages": null},
+      "evidence": ["processor_ci_lab/config/rvx.json", "cores/rvx"], "review": "confirmed"
+    },
+    "scarv-cpu": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/scarv-cpu/README.md", "cores/scarv-cpu/docs/pipeline.md"], "review": "corrected"
+    },
+    "scr1": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": "configuration-dependent (2-4)"},
+      "evidence": ["cores/scr1/README.md", "processor_ci_lab/config/scr1.json"], "review": "corrected"
+    },
+    "serv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "multi-cycle", "pipeline_stages": null},
+      "evidence": ["cores/serv/README.md", "cores/serv/doc/modules.rst"], "review": "confirmed"
+    },
+    "simodense": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "not-established", "pipeline_stages": null},
+      "evidence": ["cores/simodense/README.md", "cores/simodense/RTL_and_simulation/cpu.v"], "review": "needs-configuration"
+    },
+    "simple_riscv_cpu": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "multi-cycle", "pipeline_stages": null},
+      "evidence": ["cores/simple_riscv_cpu/simple_cpu/simple_cpu.v"], "review": "confirmed"
+    },
+    "starsea_riscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 3},
+      "evidence": ["cores/starsea_riscv/README.md"], "review": "corrected"
+    },
+    "tinyriscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 3},
+      "evidence": ["cores/tinyriscv/README.md"], "review": "corrected"
+    },
+    "undefined01_riscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "single-cycle", "pipeline_stages": null},
+      "evidence": ["cores/undefined01_riscv"], "review": "confirmed"
+    },
+    "vanilla-riscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "not-established", "pipeline_stages": null},
+      "evidence": ["cores/vanilla-riscv"], "review": "needs-configuration"
+    },
+    "wb_riscvscale": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 3},
+      "evidence": ["cores/wb_riscvscale/vscale_ctrl.v"], "review": "corrected"
+    },
+    "ysyx_riscv64_cpu": {
+      "expected": {"xlen": 64, "hdl": "SystemVerilog", "execution_model": "not-established", "pipeline_stages": null},
+      "evidence": ["cores/ysyx_riscv64_cpu"], "review": "needs-configuration"
+    },
+    "AdamRiscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["RV-Bench/cores/AdamRiscv/module/CORE/RTL_V1_2/adam_riscv.v"], "review": "corrected"
+    },
+    "Fede997_RISCV-PROCESSOR": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "not-established", "pipeline_stages": null},
+      "evidence": ["RV-Bench/cores/Fede997_RISCV-PROCESSOR/cpuRISCV-core.v", "RV-Bench/config/cores/Fede997_RISCV-PROCESSOR.json"], "review": "needs-configuration"
+    },
+    "PulseRain_RISCV_MCU": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "not-established", "pipeline_stages": null},
+      "evidence": ["RV-Bench/cores/PulseRain_RISCV_MCU/submodules/FRV2100/source/PulseRain_Reindeer_core.sv", "RV-Bench/config/cores/PulseRain_RISCV_MCU.json"], "review": "needs-configuration"
+    },
+    "RISC-V_Angelo": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["RV-Bench/cores/RISC-V_Angelo/README.md"], "review": "corrected"
+    },
+    "RISCV-CPU": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["RV-Bench/cores/RISCV-CPU/README.md", "RV-Bench/cores/RISCV-CPU/BasicPipeline/openmips_min_sopc.v"], "review": "corrected"
+    },
+    "RISCVPipelinedProcessor": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["RV-Bench/cores/RISCVPipelinedProcessor/hdl/cpu/cpu.sv"], "review": "corrected"
+    },
+    "RISCV_Pipeline_Core": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["RV-Bench/cores/RISCV_Pipeline_Core/src/Pipeline_Top.v"], "review": "corrected"
+    },
+    "RISCV_Single_Cycle": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "single-cycle", "pipeline_stages": null},
+      "evidence": ["RV-Bench/cores/RISCV_Single_Cycle/cpu/cpu.v"], "review": "confirmed"
+    },
+    "RISCV_Single_Cycle_Core": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "single-cycle", "pipeline_stages": null},
+      "evidence": ["RV-Bench/cores/RISCV_Single_Cycle_Core/README.md", "RV-Bench/cores/RISCV_Single_Cycle_Core/src/Single_Cycle_Top.v"], "review": "corrected"
+    },
+    "RISCV_Verilog": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "configuration-dependent (single-cycle/pipelined)", "pipeline_stages": "configuration-dependent"},
+      "evidence": ["RV-Bench/cores/RISCV_Verilog/README.md", "RV-Bench/config/cores/RISCV_Verilog.json"], "review": "corrected"
+    },
+    "RV32i-Verilog": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "not-established", "pipeline_stages": null},
+      "evidence": ["RV-Bench/cores/RV32i-Verilog/README.md", "RV-Bench/cores/RV32i-Verilog/src/core/core.v"], "review": "needs-configuration"
+    },
+    "Tiny-RISCV-CPU": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "configuration-dependent (single-cycle/multi-cycle/pipelined)", "pipeline_stages": "configuration-dependent"},
+      "evidence": ["RV-Bench/cores/Tiny-RISCV-CPU/README.md", "RV-Bench/config/cores/Tiny-RISCV-CPU.json"], "review": "needs-configuration"
+    },
+    "ZC-RISCV-CORE": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 3},
+      "evidence": ["RV-Bench/cores/ZC-RISCV-CORE/README.md"], "review": "corrected"
+    },
+    "ataradov_riscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "not-established", "pipeline_stages": null},
+      "evidence": ["RV-Bench/cores/ataradov_riscv/README.md", "RV-Bench/config/cores/ataradov_riscv.json"], "review": "needs-configuration"
+    },
+    "azalea8_riscv_cpu": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "configuration-dependent (single-cycle/five-stage-pipelined)", "pipeline_stages": "configuration-dependent"},
+      "evidence": ["RV-Bench/cores/azalea8_riscv_cpu/README.md", "RV-Bench/config/cores/azalea8_riscv_cpu.json"], "review": "needs-configuration"
+    },
+    "friscv": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 3},
+      "evidence": ["RV-Bench/cores/friscv/README.md"], "review": "corrected"
+    },
+    "kleine-riscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["RV-Bench/cores/kleine-riscv/README.md"], "review": "corrected"
+    },
+    "mystic_riscv64": {
+      "expected": {"xlen": 64, "hdl": "Verilog", "execution_model": "multi-cycle", "pipeline_stages": null},
+      "evidence": ["RV-Bench/cores/mystic_riscv64/src/mystic_main_decoder.v", "RV-Bench/config/cores/mystic_riscv64.json"], "review": "confirmed"
+    },
+    "riscv-core": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "multi-cycle", "pipeline_stages": null},
+      "evidence": ["RV-Bench/cores/riscv-core/src/rv32.v"], "review": "confirmed"
+    },
+    "riscv-invicta": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 1},
+      "evidence": ["RV-Bench/cores/riscv-invicta/README"], "review": "corrected"
+    },
+    "riscv-multi-core-lotr": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "interleaved-multithreaded-pipeline", "pipeline_stages": 4},
+      "evidence": ["RV-Bench/cores/riscv-multi-core-lotr/source/gpc_4t/rtl/core_4t.sv"], "review": "corrected"
+    },
+    "riscv-pipeline-cpu": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["RV-Bench/cores/riscv-pipeline-cpu/openriscv/openriscv.srcs/sources_1/imports/code/openriscv.v"], "review": "corrected"
+    },
+    "riscv-proc": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["RV-Bench/cores/riscv-proc/README.md", "RV-Bench/cores/riscv-proc/source/top.sv"], "review": "corrected"
+    },
+    "riscv_cpu": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["RV-Bench/cores/riscv_cpu/rtl/cpu.v"], "review": "corrected"
+    },
+    "single_cycle_RISCV_CPU_Design-32bit": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "single-cycle", "pipeline_stages": null},
+      "evidence": ["RV-Bench/cores/single_cycle_RISCV_CPU_Design-32bit/Verilog_Source/RISCcpu.v"], "review": "corrected"
+    },
+    "soft_riscv": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "not-established", "pipeline_stages": null},
+      "evidence": ["RV-Bench/cores/soft_riscv/rtl/cpu_top.v", "RV-Bench/config/cores/soft_riscv.json"], "review": "needs-configuration"
+    },
+    "soric_project": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "not-established", "pipeline_stages": null},
+      "evidence": ["RV-Bench/cores/soric_project/verilog/rtl/soric/soric_core.v", "RV-Bench/config/cores/soric_project.json"], "review": "needs-configuration"
+    },
+    "super-riscv": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "superscalar-in-order", "pipeline_stages": 7, "superscalar": true},
+      "evidence": ["RV-Bench/cores/super-riscv/README.md"], "review": "corrected"
+    },
+    "yarvi": {
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 8},
+      "evidence": ["RV-Bench/cores/yarvi/README.md"], "review": "corrected"
+    },
+    "zero-riscy": {
+      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 2},
+      "evidence": ["cores/zero-riscy/README.md"], "review": "corrected"
+    }
+  }
+}
