@@ -24,11 +24,17 @@ try:
         find_regfile_write_signals,
         load_regfile_interface,
     )
+    from .regfile_interface_expression import (
+        EXPRESSION_VERSION, ExpressionHandle, expression_paths,
+    )
 except ImportError:
     from regfile_finder import (
         _start_clock_once,
         find_regfile_write_signals,
         load_regfile_interface,
+    )
+    from regfile_interface_expression import (
+        EXPRESSION_VERSION, ExpressionHandle, expression_paths,
     )
 
 try:
@@ -417,6 +423,22 @@ def _complete_real_interface(interface_signals):
         and not any(_is_derived_interface_path(interface_signals.get(role)) for role in required)
     )
 
+
+def _complete_evaluable_interface(interface_signals):
+    if not isinstance(interface_signals, dict):
+        return False
+    expressions = interface_signals.get("_role_expressions") or {}
+    for role in ("write_enable", "write_addr", "write_data"):
+        if role in expressions:
+            try:
+                if not expression_paths(expressions[role]):
+                    return False
+            except (TypeError, ValueError):
+                return False
+        elif not interface_signals.get(role) or _is_derived_interface_path(interface_signals[role]):
+            return False
+    return True
+
 def _current_regfile_interface_state(core_name):
     output_dir = os.environ.get("OUTPUT_DIR")
     if not output_dir or not core_name:
@@ -438,9 +460,13 @@ def _current_regfile_interface_state(core_name):
         "write_addr": selected.get("write_addr"),
         "write_data": selected.get("write_data"),
     }
-    if isinstance(interface_signals, dict) and selected.get("timing_offset") is not None:
+    if isinstance(interface_signals, dict) and any(
+        selected.get(key) is not None
+        for key in ("timing_offset", "write_enable_timing_offset", "write_addr_timing_offset", "write_data_timing_offset")
+    ):
         interface_signals = dict(interface_signals)
-        interface_signals["timing_offset"] = selected.get("timing_offset")
+        if selected.get("timing_offset") is not None:
+            interface_signals["timing_offset"] = selected["timing_offset"]
         for role in ("write_enable", "write_addr", "write_data"):
             offset_key = f"{role}_timing_offset"
             if selected.get(offset_key) is not None:
@@ -449,9 +475,16 @@ def _current_regfile_interface_state(core_name):
         interface_signals = dict(interface_signals)
         interface_signals["write_addr_bit_offset"] = selected.get("write_addr_bit_offset")
 
+    expressions = selected.get("role_expressions") or {}
+    if expressions:
+        if selected.get("expression_version") != EXPRESSION_VERSION:
+            return "not_real_or_incomplete", interface_signals
+        interface_signals = dict(interface_signals)
+        interface_signals["_role_expressions"] = expressions
+
     if selected.get("status") == "rejected_interface":
         return "rejected", interface_signals
-    if _complete_real_interface(interface_signals):
+    if _complete_real_interface(interface_signals) or _complete_evaluable_interface(interface_signals):
         return "usable", interface_signals
     return "not_real_or_incomplete", interface_signals
 
@@ -477,7 +510,21 @@ def _resolve_write_interface(dut, core_name, regfile):
 
     actual_core_instance = _find_core_instance(dut)
     handles = {}
+    role_expressions = interface_signals.get("_role_expressions") or {}
     for role, key in (("write_enable", "write_enable"), ("write_addr", "write_addr"), ("write_data", "write_data")):
+        if role in role_expressions:
+            try:
+                handles[role] = ExpressionHandle(
+                    role_expressions[role],
+                    lambda path: _get_handle_from_path(
+                        dut, _normalise_interface_path(path, actual_core_instance)
+                    ),
+                    _safe_signal_int,
+                    role,
+                )
+            except (TypeError, ValueError) as exc:
+                dut._log.warning("[measure] Invalid %s expression: %s", role, exc)
+            continue
         if key not in interface_signals:
             continue
         path = _normalise_interface_path(interface_signals[key], actual_core_instance)

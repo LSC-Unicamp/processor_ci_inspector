@@ -704,9 +704,9 @@ class InterfaceDiscoveryTests(unittest.TestCase):
 
         self.assertEqual(metadata["program"][metadata["loop_pc"]], finder._jal(0, 0))
         self.assertTrue(all(addr % 4 == 0 for addr in metadata["program"]))
-        self.assertEqual([w["reg"] for w in metadata["write_sequence"]], ["x5", "x6", "x5"])
-        self.assertEqual([w["opclass"] for w in metadata["write_sequence"]], ["i_alu_add", "i_alu_add", "i_alu_add"])
-        self.assertEqual(metadata["expected_registers"], {"x5": 0x35, "x6": 0x26})
+        self.assertEqual([w["reg"] for w in metadata["write_sequence"]], ["x5", "x6", "x5", "x9"])
+        self.assertEqual([w["opclass"] for w in metadata["write_sequence"]], ["i_alu_add", "i_alu_add", "i_alu_add", "lui"])
+        self.assertEqual(metadata["expected_registers"], {"x5": 0x35, "x6": 0x26, "x9": 0x12345000})
         self.assertEqual(metadata["overwrite_register"], "x5")
 
     def test_detects_expected_storage_update_events(self):

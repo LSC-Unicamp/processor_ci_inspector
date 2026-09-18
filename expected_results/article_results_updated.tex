@@ -1,0 +1,218 @@
+\section{Resultados}\label{sec:Resultados}
+
+A metodologia foi avaliada em 23 processadores RISC-V \textit{open-source}
+para os quais os resultados da versão atual do Processor CI Inspector foram
+confirmados por revisão independente do RTL, da configuração selecionada e,
+quando disponível, da documentação do projeto. O Kronos foi mantido como um
+estudo de caso adicional de divergência, pois sua classificação como
+\textit{pipeline} está correta, embora a profundidade temporal estimada não
+coincida com os três estágios declarados pelo projeto.
+
+A ferramenta foi empregada para detectar automaticamente os seguintes
+parâmetros:
+
+\begin{description}
+  \item[Tipo de licença:] identificação das licenças encontradas nos arquivos
+  do projeto;
+  \item[Tamanho da palavra:] determinação da largura arquitetural a partir do
+  banco de registradores;
+  \item[Modelo de execução:] classificação do \textit{datapath} como
+  monociclo, multiciclo ou \textit{pipeline};
+  \item[Profundidade estimada:] estimativa temporal calculada a partir da
+  latência modal entre a busca e a conclusão arquitetural da instrução;
+  \item[Latência de instrução:] número modal de ciclos entre a busca da
+  instrução e a observação de seu \textit{commit};
+  \item[Linguagem de descrição de hardware:] identificação da linguagem HDL
+  predominante na implementação selecionada.
+\end{description}
+
+Entre os 23 resultados confirmados, 17 processadores foram implementados em
+Verilog, quatro em SystemVerilog e dois em VHDL. Quanto ao modelo de execução,
+sete foram classificados como \textit{pipeline}, 13 como multiciclo e três
+como monociclo. Vinte e um implementam arquiteturas RV32 e dois implementam
+RV64. A Tabela \ref{tab:resultados} apresenta esses resultados e inclui o
+Kronos, identificado explicitamente como caso de divergência.
+
+\begin{table*}[t]
+\centering
+\begin{threeparttable}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|l|c|c|c|c|c|c|}
+  \hline
+  \textbf{Processador} & \textbf{Licença detectada} & \textbf{XLEN} &
+  \textbf{Tipo detectado} & \textbf{$D_{\mathrm{est}}$} &
+  \textbf{$L_{\mathrm{mode}}$} & \textbf{$D_{\mathrm{ref}}$} &
+  \textbf{HDL} \\
+  \hline
+  Baby-Risco-5 & CERN-OHL-P-2.0, MIT e domínio público & 32 & Multiciclo & -- & 6 & -- & Verilog \\
+  \hline
+  RPU & Apache 2.0 & 32 & Multiciclo & -- & 4 & -- & VHDL \\
+  \hline
+  Risco-5 & CERN-OHL-P-2.0, MIT e domínio público & 32 & Multiciclo & -- & 8 & -- & Verilog \\
+  \hline
+  arRISCado & GPLv3 & 32 & Pipeline & 4 & 3 & N/D\tnote{1} & Verilog \\
+  \hline
+  clarvi & Não detectada & 32 & Pipeline & 6 & 5 & 6 & SystemVerilog \\
+  \hline
+  Uriscv & Apache 2.0 & 32 & Multiciclo & -- & 3\tnote{2} & -- & Verilog \\
+  \hline
+  cv32e40x & Solderpad & 32 & Pipeline & 4 & 3 & 4 & SystemVerilog \\
+  \hline
+  cve2 & Apache 2.0 & 32 & Pipeline & 2 & 1 & 2 & SystemVerilog \\
+  \hline
+  Fedar F1 & MIT & 64 & Pipeline & 5 & 4 & 5 & Verilog \\
+  \hline
+  harv & MIT & 32 & Multiciclo & -- & 3 & -- & VHDL \\
+  \hline
+  Mriscv & Licença customizada e MIT & 32 & Multiciclo & -- & 4 & -- & Verilog \\
+  \hline
+  Nerv & Não detectada & 32 & Monociclo & -- & 2 & -- & SystemVerilog \\
+  \hline
+  Picorv32 & Licença customizada & 32 & Multiciclo & -- & 5 & -- & Verilog \\
+  \hline
+  riscado-v & BSD 3-Clause & 32 & Multiciclo & -- & 5 & -- & Verilog \\
+  \hline
+  riscv & BSD 3-Clause & 32 & Pipeline & 6 & 5 & N/D\tnote{1} & Verilog \\
+  \hline
+  riscv\_pipeline & MIT & 32 & Pipeline & 4 & 3 & N/D\tnote{1} & Verilog \\
+  \hline
+  Riskow & Apache 2.0 & 32 & Multiciclo & -- & 5 & -- & Verilog \\
+  \hline
+  RVX & MIT & 32 & Monociclo & -- & 2 & -- & Verilog \\
+  \hline
+  SERV & Licença customizada & 32 & Multiciclo & -- & 14\tnote{3} & -- & Verilog \\
+  \hline
+  simple\_riscv\_cpu & Licença customizada e LGPLv3 & 32 & Multiciclo & -- & 6 & -- & Verilog \\
+  \hline
+  RISCV\_Single\_Cycle & Não detectada & 32 & Monociclo & -- & 0 & -- & Verilog \\
+  \hline
+  mystic\_riscv64 & MIT & 64 & Multiciclo & -- & 22\tnote{4} & -- & Verilog \\
+  \hline
+  riscv-core & MIT & 32 & Multiciclo & -- & 11\tnote{4} & -- & Verilog \\
+  \hline
+  Kronos\tnote{5} & Apache 2.0 & 32 & Pipeline & 6 & 5 & 3 & SystemVerilog \\
+  \hline
+\end{tabular}%
+}
+
+\begin{tablenotes}
+\footnotesize
+\item[1] A documentação ou o RTL confirma a presença de \textit{pipeline}, mas
+não declara uma profundidade única que possa ser usada como referência.
+\item[2] No Uriscv, quatro das seis amostras apresentaram três ciclos e duas
+apresentaram 36 ciclos; a tabela mostra a moda, com intervalo de 3--36 ciclos.
+\item[3] No SERV, a latência modal foi de 14 ciclos, observada em três das seis
+amostras; o intervalo completo foi de 14--34 ciclos.
+\item[4] Foram observadas cinco amostras válidas nesses processadores.
+\item[5] O Kronos é apresentado como estudo de divergência e não integra o
+conjunto dos 23 resultados confirmados.
+\end{tablenotes}
+
+\caption{Resultados da versão atual do Processor CI Inspector para os 23 casos
+confirmados e para o Kronos, mantido como estudo de divergência.
+$D_{\mathrm{est}}$ representa a estimativa temporal do Inspector,
+$L_{\mathrm{mode}}$ a latência modal entre busca e \textit{commit}, e
+$D_{\mathrm{ref}}$ a profundidade arquitetural verificada no RTL ou na
+documentação.}
+\label{tab:resultados}
+\end{threeparttable}
+\end{table*}
+
+O termo ``resultado confirmado'' indica concordância entre a saída do
+Inspector e a referência manual para XLEN, linguagem HDL e modelo de execução.
+A licença detectada e a latência observada são apresentadas como resultados da
+ferramenta, mas não foram utilizadas como critérios de inclusão nesse conjunto.
+No caso de processadores com profundidade explicitamente documentada, a
+comparação também considera esse valor.
+
+Entre os sete processadores com \textit{pipeline} no conjunto confirmado,
+quatro possuem profundidade fixa explicitamente documentada: clarvi, cv32e40x,
+cve2 e Fedar F1. As estimativas obtidas para esses quatro processadores foram,
+respectivamente, 6, 4, 2 e 5 estágios, coincidindo com as respectivas
+referências. Para arRISCado, riscv e riscv\_pipeline, a presença de
+\textit{pipeline} foi confirmada, mas não se adotou uma profundidade estrutural
+única como referência; portanto, os valores 4, 6 e 4 devem ser interpretados
+somente como estimativas temporais.
+
+Os resultados também confirmaram 13 implementações multiciclo e três
+implementações monociclo. A classificação do RVX como monociclo merece
+destaque, pois seu RTL executa a decodificação, a operação combinacional e a
+seleção do resultado entre atualizações do estado arquitetural. A antiga
+classificação do RVX como multiciclo não foi mantida. As latências de dois
+ciclos observadas no RVX e no Nerv não alteram essa classificação, pois podem
+incluir a entrega registrada da instrução e o ponto em que o estado
+arquitetural é observado.
+
+\subsubsection{Kronos como Estudo de Divergência}
+
+O Kronos é documentado como um processador RV32 de três estágios em ordem. O
+Inspector identificou corretamente a execução em \textit{pipeline}, com uma
+conclusão arquitetural por ciclo, mas observou latência modal de cinco ciclos.
+Pela convenção atual,
+
+\begin{equation}
+    D_{\mathrm{est}} = L_{\mathrm{mode}} + 1,
+\end{equation}
+
+o que produziu uma estimativa de seis estágios. A descoberta de sinais internos
+encontrou uma cadeia coerente contendo os papéis de \textit{frontend} e
+\textit{execute}, além da interface de escrita do banco de registradores. No
+entanto, o estágio de memória não foi marcado como observável e a busca de
+candidatos foi truncada pelos limites da análise. Assim, o estado
+\texttt{confirmed} da interface indica que há evidência suficiente para
+análises funcionais subsequentes, mas não que todos os três estágios físicos
+tenham sido enumerados.
+
+A divergência do Kronos não indica erro na documentação do processador. Ela
+mostra que a profundidade atualmente apresentada pelo Inspector é uma
+estimativa temporal entre os pontos observados de busca e conclusão, podendo
+incorporar ciclos da interface de instruções, do \textit{wrapper} ou do ponto
+de observação do \textit{writeback}. Portanto, essa estimativa deve ser
+distinguida da profundidade arquitetural declarada pelo projeto.
+
+A detecção de licenças também deve ser interpretada como um levantamento dos
+avisos encontrados no repositório, e não necessariamente como a licença única
+do núcleo. Repositórios como Baby-Risco-5 e Risco-5 contêm arquivos associados
+a mais de uma licença. Em outros casos, o texto não foi associado
+automaticamente a um identificador conhecido: o Nerv e o
+RISCV\_Single\_Cycle foram apresentados como ``Não detectada'', enquanto o
+Picorv32, documentado pelo projeto como ISC, foi classificado genericamente
+como licença customizada. Esses casos evidenciam limitações do reconhecedor de
+licenças e não invalidam a caracterização do \textit{datapath}.
+
+A ferramenta foi integrada ao ambiente de integração contínua do Processor CI,
+permitindo que a inspeção seja executada quando um processador é adicionado ou
+atualizado. Os resultados são armazenados em JSON para permitir tanto revisão
+manual quanto consumo por outras ferramentas. A Figura \ref{fig:json} apresenta
+um trecho da saída atual para o cve2, um dos casos cuja profundidade estimada
+coincidiu com a documentação.
+
+\begin{figure}[t]
+    \centering
+\begin{lstlisting}[
+    language=json,
+    firstnumber=1,
+    captionpos=b
+]
+{
+  "cve2": {
+    "license_types": ["Apache 2.0"],
+    "bits": 32,
+    "language": "SystemVerilog",
+    "multicycle": false,
+    "pipeline": {
+      "depth_estimate": 2,
+      "depth_estimate_source":
+        "write_interface_timing_corrected",
+      "raw_depth_estimate": 3
+    },
+    "cycle": {
+      "fetch_to_commit_latencies": [1, 1, 1, 1, 1, 1],
+      "commit_intervals": [1, 1, 1, 1, 1]
+    }
+  }
+}
+\end{lstlisting}
+\caption{Trecho da saída JSON produzida para o cve2.}
+\label{fig:json}
+\end{figure}

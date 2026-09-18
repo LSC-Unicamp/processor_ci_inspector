@@ -49,8 +49,8 @@
       "evidence": ["cores/RISCV-RV32IM-AXI4-Lite-SoC/README.md"], "review": "corrected"
     },
     "RPU": {
-      "expected": {"xlen": 32, "hdl": "VHDL", "execution_model": "pipelined", "pipeline_stages": 5},
-      "evidence": ["cores/RPU/vhdl/core.vhd", "processor_ci_lab/config/RPU.json"], "review": "corrected"
+      "expected": {"xlen": 32, "hdl": "VHDL", "execution_model": "multi-cycle", "pipeline_stages": null},
+      "evidence": ["cores/RPU/README.md", "cores/RPU/vhdl/control_unit.vhd", "cores/RPU/vhdl/core.vhd", "processor_ci_lab/config/RPU.json"], "review": "confirmed"
     },
     "RS5": {
       "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 4},
@@ -77,8 +77,8 @@
       "evidence": ["cores/SparrowRV/README.md"], "review": "corrected"
     },
     "SprintRV": {
-      "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 5},
-      "evidence": ["cores/SprintRV/README.md"], "review": "corrected"
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
+      "evidence": ["cores/SprintRV/README.md", "processor_ci_lab/config/SprintRV.json"], "review": "corrected"
     },
     "Stardusten_riscv": {
       "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "not-established", "pipeline_stages": null},
@@ -221,8 +221,8 @@
       "evidence": ["cores/mmRISC-1/README.md"], "review": "corrected"
     },
     "mr1": {
-      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 5},
-      "evidence": ["processor_ci_lab/config/mr1.json", "cores/mr1"], "review": "confirmed"
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 4},
+      "evidence": ["cores/mr1/README.md", "processor_ci_lab/config/mr1.json", "cores/mr1/src/main/scala/mr1/MR1.scala", "cores/mr1/src/main/scala/mr1/Fetch.scala", "cores/mr1/src/main/scala/mr1/Decode.scala", "cores/mr1/src/main/scala/mr1/Execute.scala", "cores/mr1/src/main/scala/mr1/Writeback.scala"], "review": "corrected"
     },
     "mriscv": {
       "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "multi-cycle", "pipeline_stages": null},
@@ -309,8 +309,8 @@
       "evidence": ["cores/tinyriscv/README.md"], "review": "corrected"
     },
     "undefined01_riscv": {
-      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "single-cycle", "pipeline_stages": null},
-      "evidence": ["cores/undefined01_riscv"], "review": "confirmed"
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": null},
+      "evidence": ["cores/undefined01_riscv/README.md", "cores/undefined01_riscv/fpga/src/core/riscv_core.v", "cores/undefined01_riscv/fpga/src/core/id_ex.v", "cores/undefined01_riscv/fpga/src/core/ex_mem_wb.v", "RV-Bench/config/cores/undefined01_riscv.json"], "review": "corrected"
     },
     "vanilla-riscv": {
       "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "not-established", "pipeline_stages": null},
@@ -361,16 +361,16 @@
       "evidence": ["RV-Bench/cores/RISCV_Single_Cycle_Core/README.md", "RV-Bench/cores/RISCV_Single_Cycle_Core/src/Single_Cycle_Top.v"], "review": "corrected"
     },
     "RISCV_Verilog": {
-      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "configuration-dependent (single-cycle/pipelined)", "pipeline_stages": "configuration-dependent"},
-      "evidence": ["RV-Bench/cores/RISCV_Verilog/README.md", "RV-Bench/config/cores/RISCV_Verilog.json"], "review": "corrected"
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "single-cycle", "pipeline_stages": null},
+      "evidence": ["RV-Bench/cores/RISCV_Verilog/README.md", "RV-Bench/cores/RISCV_Verilog/single/riscv.v", "RV-Bench/config/cores/RISCV_Verilog.json"], "review": "corrected"
     },
     "RV32i-Verilog": {
       "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "not-established", "pipeline_stages": null},
       "evidence": ["RV-Bench/cores/RV32i-Verilog/README.md", "RV-Bench/cores/RV32i-Verilog/src/core/core.v"], "review": "needs-configuration"
     },
     "Tiny-RISCV-CPU": {
-      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "configuration-dependent (single-cycle/multi-cycle/pipelined)", "pipeline_stages": "configuration-dependent"},
-      "evidence": ["RV-Bench/cores/Tiny-RISCV-CPU/README.md", "RV-Bench/config/cores/Tiny-RISCV-CPU.json"], "review": "needs-configuration"
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "single-cycle", "pipeline_stages": null},
+      "evidence": ["RV-Bench/cores/Tiny-RISCV-CPU/README.md", "RV-Bench/cores/Tiny-RISCV-CPU/RISC-V_SingleCycleCPU-lab/RISCV_TOP.v", "RV-Bench/config/cores/Tiny-RISCV-CPU.json"], "review": "corrected"
     },
     "ZC-RISCV-CORE": {
       "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 3},
@@ -381,8 +381,8 @@
       "evidence": ["RV-Bench/cores/ataradov_riscv/README.md", "RV-Bench/config/cores/ataradov_riscv.json"], "review": "needs-configuration"
     },
     "azalea8_riscv_cpu": {
-      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "configuration-dependent (single-cycle/five-stage-pipelined)", "pipeline_stages": "configuration-dependent"},
-      "evidence": ["RV-Bench/cores/azalea8_riscv_cpu/README.md", "RV-Bench/config/cores/azalea8_riscv_cpu.json"], "review": "needs-configuration"
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "single-cycle", "pipeline_stages": null},
+      "evidence": ["RV-Bench/cores/azalea8_riscv_cpu/README.md", "RV-Bench/cores/azalea8_riscv_cpu/single_cycle_cpu/design/cpu.v", "RV-Bench/config/cores/azalea8_riscv_cpu.json"], "review": "corrected"
     },
     "friscv": {
       "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "pipelined", "pipeline_stages": 3},
@@ -401,8 +401,8 @@
       "evidence": ["RV-Bench/cores/riscv-core/src/rv32.v"], "review": "confirmed"
     },
     "riscv-invicta": {
-      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "pipelined", "pipeline_stages": 1},
-      "evidence": ["RV-Bench/cores/riscv-invicta/README"], "review": "corrected"
+      "expected": {"xlen": 32, "hdl": "Verilog", "execution_model": "single-cycle", "pipeline_stages": null},
+      "evidence": ["RV-Bench/cores/riscv-invicta/README", "RV-Bench/cores/riscv-invicta/hardware/src/datapath.v", "RV-Bench/config/cores/riscv-invicta.json"], "review": "corrected"
     },
     "riscv-multi-core-lotr": {
       "expected": {"xlen": 32, "hdl": "SystemVerilog", "execution_model": "interleaved-multithreaded-pipeline", "pipeline_stages": 4},

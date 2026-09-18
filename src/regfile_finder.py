@@ -5,14 +5,21 @@ import os
 import subprocess
 import logging
 import re
+from itertools import product
 from cocotb import simulator
 from cocotb.handle import _make_sim_object
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, Timer
 try:
-    from .riscv.encoding import ADD, ADDI, JAL, LUI, NOP, ORI, XORI
+    from .riscv.encoding import ADD, ADDI, BEQ, BNE, JAL, LUI, NOP, ORI, XORI
+    from .regfile_interface_expression import (
+        EXPRESSION_PREFIX, EXPRESSION_VERSION, evaluate_expression,
+    )
 except ImportError:
-    from riscv.encoding import ADD, ADDI, JAL, LUI, NOP, ORI, XORI
+    from riscv.encoding import ADD, ADDI, BEQ, BNE, JAL, LUI, NOP, ORI, XORI
+    from regfile_interface_expression import (
+        EXPRESSION_PREFIX, EXPRESSION_VERSION, evaluate_expression,
+    )
 
 # -----------------------------------------------------------------------------
 # Static register-file discovery
@@ -2110,6 +2117,7 @@ def build_regfile_interface_probe_program(max_cycles=REGFILE_WRITE_MAX_CYCLES):
         {"pc": 0x08, "reg": "x5", "reg_index": 5, "value": 0x15, "opclass": "i_alu_add"},
         {"pc": 0x0C, "reg": "x6", "reg_index": 6, "value": 0x26, "opclass": "i_alu_add"},
         {"pc": 0x10, "reg": "x5", "reg_index": 5, "value": 0x35, "opclass": "i_alu_add"},
+        {"pc": 0x14, "reg": "x9", "reg_index": 9, "value": 0x12345000, "opclass": "lui"},
     ]
     return {
         "program_name": "regfile_interface_write_probe_v1",
@@ -2119,15 +2127,48 @@ def build_regfile_interface_probe_program(max_cycles=REGFILE_WRITE_MAX_CYCLES):
             0x08: _addi(5, 0, 0x15),
             0x0C: _addi(6, 5, 0x11),
             0x10: _addi(5, 6, 0x0F),
-            0x14: NOP_INSTRUCTION,
-            0x18: NOP_INSTRUCTION,
-            0x1C: NOP_INSTRUCTION,
+            0x14: _lui(9, 0x12345),
+            0x18: _addi(0, 0, 0x5A),
+            0x1C: BEQ(0, 0, 4),
             REGFILE_INTERFACE_LOOP_PC: _jal(0, 0),
         },
         "loop_pc": REGFILE_INTERFACE_LOOP_PC,
         "write_sequence": write_sequence,
-        "expected_registers": {"x5": 0x35, "x6": 0x26},
+        "expected_registers": {"x5": 0x35, "x6": 0x26, "x9": 0x12345000},
         "overwrite_register": "x5",
+        "max_cycles": max_cycles,
+        "default_instruction": NOP_INSTRUCTION,
+    }
+
+
+def build_regfile_interface_confirmation_program(max_cycles=REGFILE_WRITE_MAX_CYCLES):
+    """Different registers, data and spacing; expressions stay frozen."""
+    loop_pc = 0x28
+    return {
+        "program_name": "regfile_interface_confirmation_v1",
+        "program": {
+            0x00: NOP_INSTRUCTION,
+            0x04: NOP_INSTRUCTION,
+            0x08: _addi(7, 0, 0x67),
+            0x0C: NOP_INSTRUCTION,
+            0x10: _xori(8, 0, 0x28),
+            0x14: _addi(0, 0, 0x5A),
+            0x18: _ori(7, 0, 0x17),
+            0x1C: _lui(12, 0x34567),
+            0x20: _add(13, 7, 8),
+            0x24: BNE(0, 0, 4),
+            loop_pc: _jal(0, 0),
+        },
+        "loop_pc": loop_pc,
+        "write_sequence": [
+            {"pc": 0x08, "reg": "x7", "reg_index": 7, "value": 0x67, "opclass": "i_alu_add"},
+            {"pc": 0x10, "reg": "x8", "reg_index": 8, "value": 0x28, "opclass": "i_alu_xor"},
+            {"pc": 0x18, "reg": "x7", "reg_index": 7, "value": 0x17, "opclass": "i_alu_or"},
+            {"pc": 0x1C, "reg": "x12", "reg_index": 12, "value": 0x34567000, "opclass": "lui"},
+            {"pc": 0x20, "reg": "x13", "reg_index": 13, "value": 0x3F, "opclass": "r_alu_add"},
+        ],
+        "expected_registers": {"x7": 0x17, "x8": 0x28, "x12": 0x34567000, "x13": 0x3F},
+        "overwrite_register": "x7",
         "max_cycles": max_cycles,
         "default_instruction": NOP_INSTRUCTION,
     }
@@ -2301,6 +2342,13 @@ def _signal_values(trace_samples, path):
     return [(sample.get("signals") or {}).get(path) for sample in trace_samples]
 
 
+def _interface_candidate_value(candidate, sample):
+    signals = (sample or {}).get("signals") or {}
+    if candidate.get("expression"):
+        return evaluate_expression(candidate["expression"], signals)
+    return signals.get(candidate.get("path"))
+
+
 def _candidate_lane_values(candidate, value, bit_offset=None):
     if value is not None and bit_offset is not None:
         return [(value >> bit_offset) & 0x1F]
@@ -2328,7 +2376,7 @@ def _score_write_addr_candidate(candidate, trace_samples, update_events):
             observed = []
             for event in update_events:
                 sample = samples.get(event["cycle"] + offset)
-                value = (sample.get("signals") or {}).get(path) if sample else None
+                value = _interface_candidate_value(candidate, sample)
                 lane_values = _candidate_lane_values(candidate, value, bit_offset=bit_offset)
                 observed.extend(lane_values)
                 expected_addr = event.get("write_addr_index", event["reg_index"])
@@ -2366,7 +2414,7 @@ def _score_write_data_candidate(candidate, trace_samples, update_events):
         observed = []
         for event in update_events:
             sample = samples.get(event["cycle"] + offset)
-            value = (sample.get("signals") or {}).get(path) if sample else None
+            value = _interface_candidate_value(candidate, sample)
             lane_values = _candidate_lane_values(candidate, value)
             observed.extend(lane_values)
             if event["new_value"] in lane_values:
@@ -2397,7 +2445,7 @@ def _score_write_data_candidate(candidate, trace_samples, update_events):
 def _score_write_enable_candidate(candidate, trace_samples, update_events):
     path = candidate.get("path")
     samples = _samples_by_cycle(trace_samples)
-    all_values = [v for v in _signal_values(trace_samples, path) if v is not None]
+    all_values = [v for v in (_interface_candidate_value(candidate, sample) for sample in trace_samples) if v is not None]
     active_total = sum(1 for value in all_values if value != 0)
     active_ratio = active_total / max(1, len(all_values))
     stuck_high = active_ratio > 0.85
@@ -2408,7 +2456,7 @@ def _score_write_enable_candidate(candidate, trace_samples, update_events):
         active_matches = 0
         for event in update_events:
             sample = samples.get(event["cycle"] + offset)
-            value = (sample.get("signals") or {}).get(path) if sample else None
+            value = _interface_candidate_value(candidate, sample)
             if value not in (None, 0):
                 active_matches += 1
         score = round(65 * active_matches / max(1, len(update_events))) + max(0, candidate.get("name_score", 0))
@@ -2496,6 +2544,334 @@ def _candidates_at_offset(results, offset):
     return [result for result in results if result.get("timing_offset") == offset]
 
 
+def _signal_expression(path):
+    return {"op": "signal", "path": path}
+
+
+def _expression_candidate(role, expression, offset, score, paths, reason):
+    scopes = {_parent_path(path) for path in paths}
+    return {
+        "path": f"{EXPRESSION_PREFIX}{role}",
+        "name": role,
+        "scope": next(iter(scopes)) if len(scopes) == 1 else None,
+        "handle_type": "virtual_expression",
+        "role": role,
+        "expression": expression,
+        "expression_paths": sorted(paths),
+        "score": max(0, min(100, score - 3 * (len(paths) - 1))),
+        "timing_offset": offset,
+        "name_score": 0,
+        "reasons": [reason],
+        "failed_checks": [],
+    }
+
+
+def _expression_event_values(expr, offset, samples, events):
+    return [evaluate_expression(expr, (samples.get(event["cycle"] + offset) or {}).get("signals") or {})
+            for event in events]
+
+
+def _synthesize_enable_expressions(trace_samples, events, candidates):
+    if len(events) < 2:
+        return []
+    samples = _samples_by_cycle(trace_samples)
+    paths = [candidate["path"] for candidate in candidates.get("write_enable_candidates", [])
+             if candidate.get("width") == 1 and candidate.get("path")
+             and candidate.get("name_score", 0) >= 0]
+    paths = list(dict.fromkeys(paths))
+    literals = []
+    for path in paths:
+        for inverted in (False, True):
+            expr = _signal_expression(path)
+            if inverted:
+                expr = {"op": "not", "args": [expr]}
+            literals.append((expr, {path}))
+    for candidate in candidates.get("write_addr_candidates", []):
+        path = candidate.get("path")
+        width = candidate.get("width")
+        if not path or not width or width > 7 or candidate.get("name_score", 0) < 0:
+            continue
+        expr = {"op": "ne", "args": [_signal_expression(path), {"op": "constant", "value": 0}]}
+        literals.append((expr, {path}))
+
+    results = []
+    for offset in REGFILE_INTERFACE_TIMING_OFFSETS:
+        positive = {event["cycle"] + offset for event in events}
+        negative_cycles = [cycle for cycle in samples if cycle not in positive]
+        ranked = []
+        for expr, expr_paths in literals:
+            event_values = _expression_event_values(expr, offset, samples, events)
+            if any(value is None for value in event_values):
+                continue
+            tp = sum(bool(value) for value in event_values)
+            fp = sum(evaluate_expression(expr, samples[cycle].get("signals") or {}) not in (None, 0)
+                     for cycle in negative_cycles)
+            if tp:
+                ranked.append((10 * tp - 3 * fp, expr, expr_paths))
+        ranked.sort(key=lambda item: item[0], reverse=True)
+        short = ranked[:16]
+        formulas = [(expr, paths_) for _, expr, paths_ in short]
+        for first in range(len(short)):
+            for second in range(first + 1, len(short)):
+                if short[first][2] == short[second][2]:
+                    continue
+                for op in ("and", "or"):
+                    formulas.append(({"op": op, "args": [short[first][1], short[second][1]]},
+                                     short[first][2] | short[second][2]))
+        # Three-term conjunctions are useful for valid & regwrite & (rd != 0).
+        for first in range(min(8, len(short))):
+            for second in range(first + 1, min(8, len(short))):
+                for third in range(second + 1, min(8, len(short))):
+                    paths_ = short[first][2] | short[second][2] | short[third][2]
+                    if len(paths_) != 3:
+                        continue
+                    formulas.append(({"op": "and", "args": [
+                        short[first][1], short[second][1], short[third][1]
+                    ]}, paths_))
+        for expr, expr_paths in formulas:
+            values = _expression_event_values(expr, offset, samples, events)
+            if not values or any(value in (None, 0) for value in values):
+                continue
+            fp = sum(evaluate_expression(expr, samples[cycle].get("signals") or {}) not in (None, 0)
+                     for cycle in negative_cycles)
+            if fp > 1:
+                continue
+            results.append(_expression_candidate(
+                "write_enable", expr, offset, 93 - 15 * fp, expr_paths,
+                f"composite enable covers {len(events)}/{len(events)} storage updates with {fp} extra assertions",
+            ))
+    return sorted(results, key=lambda item: (item["score"], -abs(item["timing_offset"])), reverse=True)[:8]
+
+
+def _numeric_source_expressions(candidates, role, word_width):
+    sources = []
+    for candidate in candidates.get(f"{role}_candidates", []):
+        path, width = candidate.get("path"), candidate.get("width")
+        if not path or not width or width > 256 or candidate.get("name_score", 0) < 0:
+            continue
+        base = _signal_expression(path)
+        if role == "write_addr":
+            if width in (4, 5):
+                sources.append((base, {path}))
+            elif width <= 40:
+                for bit in range(width - 4):
+                    sources.append(({"op": "slice", "args": [base], "lsb": bit, "width": 5}, {path}))
+        elif width == word_width:
+            sources.append((base, {path}))
+        elif width % word_width == 0:
+            for bit in range(0, width, word_width):
+                sources.append(({"op": "slice", "args": [base], "lsb": bit, "width": word_width}, {path}))
+    return sources
+
+
+def _synthesize_mux_expressions(role, trace_samples, events, candidates):
+    if len(events) < 3:
+        return []
+    samples = _samples_by_cycle(trace_samples)
+    sources = _numeric_source_expressions(candidates, role, candidates.get("word_width") or 32)
+    selectors = [candidate["path"] for candidate in candidates.get("write_enable_candidates", [])
+                 if candidate.get("width") == 1 and candidate.get("path")
+                 and candidate.get("name_score", 0) >= 0]
+    selectors = list(dict.fromkeys(selectors))[:96]
+    results = []
+    for offset in REGFILE_INTERFACE_TIMING_OFFSETS:
+        expected = [event.get("write_addr_index", event["reg_index"]) if role == "write_addr"
+                    else event["new_value"] for event in events]
+        ranked = []
+        for expr, paths in sources:
+            values = _expression_event_values(expr, offset, samples, events)
+            coverage = sum(value == target for value, target in zip(values, expected))
+            if 0 < coverage < len(events):
+                ranked.append((coverage, expr, paths, values))
+        ranked.sort(key=lambda item: item[0], reverse=True)
+        # Keep different event-coverage patterns, not twelve aliases of one bus.
+        coverage_counts = {}
+        diverse = []
+        for item in ranked:
+            signature = tuple(value == target for value, target in zip(item[3], expected))
+            if coverage_counts.get(signature, 0) >= 2:
+                continue
+            coverage_counts[signature] = coverage_counts.get(signature, 0) + 1
+            diverse.append(item)
+            if len(diverse) >= 16:
+                break
+        ranked = diverse
+        for first in range(len(ranked)):
+            for second in range(first + 1, len(ranked)):
+                left, right = ranked[first], ranked[second]
+                if left[2] == right[2]:
+                    continue
+                for selector in selectors:
+                    if selector in left[2] | right[2]:
+                        continue
+                    selector_values = [((samples.get(event["cycle"] + offset) or {}).get("signals") or {}).get(selector)
+                                       for event in events]
+                    if any(value is None for value in selector_values) or len(set(selector_values)) < 2:
+                        continue
+                    for high, low in ((left, right), (right, left)):
+                        values = [high[3][i] if selector_values[i] else low[3][i]
+                                  for i in range(len(events))]
+                        if values != expected:
+                            continue
+                        expr = {"op": "mux", "args": [_signal_expression(selector), high[1], low[1]]}
+                        results.append(_expression_candidate(
+                            role, expr, offset, 91, high[2] | low[2] | {selector},
+                            f"two-source mux matches {len(events)}/{len(events)} storage updates",
+                        ))
+    return sorted(results, key=lambda item: (item["score"], -abs(item["timing_offset"])), reverse=True)[:8]
+
+
+def synthesize_regfile_interface_expressions(trace_result, interface_candidates):
+    """Search only bounded formulas; a second program must validate the winner."""
+    trace = trace_result.get("samples", [])
+    events = trace_result.get("update_events", [])
+    if not trace or len(events) < 2:
+        return {}
+    return {
+        "write_enable": _synthesize_enable_expressions(trace, events, interface_candidates),
+        "write_addr": _synthesize_mux_expressions("write_addr", trace, events, interface_candidates),
+        "write_data": _synthesize_mux_expressions("write_data", trace, events, interface_candidates),
+    }
+
+
+def validate_frozen_interface_expressions(selected, trace_result, interface_candidates=None):
+    """Validate selected formulas on an independent trace without re-fitting."""
+    expressions = selected.get("role_expressions") or {}
+    samples = _samples_by_cycle(trace_result.get("samples", []))
+    events = trace_result.get("update_events", [])
+    failures = []
+    failed_roles = set()
+    candidate_by_path = {
+        (role, candidate["path"]): candidate
+        for role in ("write_enable", "write_addr", "write_data")
+        for candidate in (interface_candidates or {}).get(f"{role}_candidates", [])
+        if candidate.get("path")
+    }
+
+    def role_values(role, reference_cycle):
+        offset = selected.get(f"{role}_timing_offset")
+        if offset is None:
+            return [None]
+        sample = samples.get(reference_cycle + offset)
+        if sample is None:
+            return [None]
+        if role in expressions:
+            value = evaluate_expression(expressions[role], sample.get("signals") or {})
+        else:
+            value = (sample.get("signals") or {}).get(selected.get(role))
+        candidate = candidate_by_path.get((role, selected.get(role)), {})
+        if role == "write_addr":
+            bit_offset = selected.get("write_addr_bit_offset")
+            return _candidate_lane_values(candidate, value, bit_offset=bit_offset)
+        if role == "write_data":
+            return _candidate_lane_values(candidate, value)
+        return [value]
+
+    if not trace_result.get("ran") or len(events) < 2 or len({e["reg_index"] for e in events}) < 2:
+        failures.append("confirmation did not observe writes to two distinct registers")
+    expected_count = trace_result.get("expected_write_count")
+    if expected_count is not None:
+        confirmed_indices = {
+            event.get("expected_write_index") for event in events
+            if not event.get("observed_value_fallback")
+        }
+        if not trace_result.get("reached_loop") or confirmed_indices != set(range(expected_count)):
+            failures.append("confirmation did not complete every expected write and self-loop")
+    for role in ("write_enable", "write_addr", "write_data"):
+        if str(selected.get(role) or "").startswith("__storage_"):
+            continue
+        offset = selected.get(f"{role}_timing_offset")
+        if offset is None:
+            failures.append(f"{role} has no timing offset")
+            failed_roles.add(role)
+            continue
+        for event in events:
+            values = role_values(role, event["cycle"])
+            expected = (
+                event.get("write_addr_index", event["reg_index"])
+                if role == "write_addr" else event["new_value"]
+            )
+            if role == "write_enable":
+                correct = any(value not in (None, 0) for value in values)
+            else:
+                correct = expected in values
+            if not correct:
+                failures.append(f"{role} did not match x{event['reg_index']} at cycle {event['cycle']}")
+                failed_roles.add(role)
+                break
+
+    if "write_enable" in expressions and events:
+        offset = selected["write_enable_timing_offset"]
+        positive = {event["cycle"] + offset for event in events}
+        extra = 0
+        for cycle, sample in samples.items():
+            if cycle in positive:
+                continue
+            active = evaluate_expression(expressions["write_enable"], sample.get("signals") or {})
+            if active in (None, 0):
+                continue
+            # An attempted x0 write is architecturally invisible, not a false
+            # assertion of the physical write-enable.
+            reference = cycle - offset
+            addresses = role_values("write_addr", reference)
+            if 0 in addresses:
+                continue
+            if reference < min(event["cycle"] for event in events) - 2:
+                continue
+            data_values = role_values("write_data", reference)
+            storage = (samples.get(reference) or {}).get("regfile_values") or {}
+            if any(storage.get(f"x{addr}") in data_values for addr in addresses if addr is not None):
+                continue
+            extra += 1
+        if extra:
+            failures.append(f"write_enable asserted on {extra} unrelated confirmation cycles")
+            failed_roles.add("write_enable")
+
+    if failures and any("confirmation did not" in failure for failure in failures):
+        failed_roles.update(expressions)
+
+    return {"passed": not failures, "failed_checks": failures,
+            "event_count": len(events), "expression_roles": sorted(expressions),
+            "failed_roles": sorted(failed_roles)}
+
+
+def confirm_frozen_interface_expressions(selected, trace_result, interface_candidates):
+    """Try only first-program formulas; never synthesize from the held-out trace."""
+    roles = tuple((selected.get("role_expressions") or {}).keys())
+    candidates_by_role = (interface_candidates or {}).get("expression_candidates") or {}
+    choices = [candidates_by_role.get(role, []) for role in roles]
+    if not roles or any(not group for group in choices):
+        result = validate_frozen_interface_expressions(selected, trace_result, interface_candidates)
+        result["attempt_count"] = 1
+        return selected, result
+
+    last_result = None
+    attempt_count = 0
+    for combination in product(*choices):
+        trial = dict(selected)
+        trial["role_expressions"] = dict(selected["role_expressions"])
+        trial["reasons"] = list(selected.get("reasons", []))
+        for role, candidate in zip(roles, combination):
+            trial[role] = candidate["path"]
+            trial["role_expressions"][role] = candidate["expression"]
+            trial[f"{role}_timing_offset"] = candidate["timing_offset"]
+            trial["reasons"] = [
+                f"{role} timing offset {candidate['timing_offset']}"
+                if reason.startswith(f"{role} timing offset ") else reason
+                for reason in trial["reasons"]
+            ]
+            if role == "write_addr":
+                trial["write_addr_bit_offset"] = None
+        result = validate_frozen_interface_expressions(trial, trace_result, interface_candidates)
+        attempt_count += 1
+        if result["passed"]:
+            result["attempt_count"] = attempt_count
+            return trial, result
+        last_result = result
+    last_result["attempt_count"] = attempt_count
+    return selected, last_result
+
+
 def _interface_status(score, failed_checks):
     if failed_checks or score < 50:
         return "rejected_interface"
@@ -2528,12 +2904,18 @@ def classify_regfile_interface(trace_result, interface_candidates):
         "write_addr": _score_role_candidates(interface_candidates.get("write_addr_candidates", []), trace_samples, update_events, "write_addr"),
         "write_data": _score_role_candidates(interface_candidates.get("write_data_candidates", []), trace_samples, update_events, "write_data"),
     }
+    for role, expressions in (interface_candidates.get("expression_candidates") or {}).items():
+        role_scores[role] = sorted(
+            role_scores[role] + expressions,
+            key=lambda item: item.get("score", 0), reverse=True,
+        )
     derived_roles = []
     for role in ("write_enable", "write_data"):
         evidence_results = role_scores[role]
         if role == "write_enable":
             evidence_results = [
-                result for result in evidence_results if result.get("name_score", 0) > 0
+            result for result in evidence_results
+            if result.get("name_score", 0) > 0 or result.get("expression")
             ]
         if _needs_derived_role(evidence_results):
             role_scores[role] = sorted(
@@ -2550,7 +2932,7 @@ def classify_regfile_interface(trace_result, interface_candidates):
         if (
             result.get("score", 0) >= 50
             and not result.get("failed_checks")
-            and (result.get("derived") or result.get("name_score", 0) > 0)
+            and (result.get("derived") or result.get("expression") or result.get("name_score", 0) > 0)
         )
     ]
     wa_candidates = [
@@ -2587,6 +2969,11 @@ def classify_regfile_interface(trace_result, interface_candidates):
                     reasons.append("write_enable is derived from storage updates")
                 if wd.get("derived"):
                     reasons.append("write_data is derived from storage updates")
+                expressions = {
+                    role: result["expression"]
+                    for role, result in (("write_enable", we), ("write_addr", wa), ("write_data", wd))
+                    if result.get("expression")
+                }
                 if failed:
                     score = min(score, 59)
 
@@ -2611,6 +2998,14 @@ def classify_regfile_interface(trace_result, interface_candidates):
                     "write_addr_timing_offset": wa.get("timing_offset"),
                     "write_data_timing_offset": wd.get("timing_offset"),
                     "write_addr_bit_offset": wa.get("register_index_bit_offset"),
+                    "role_expressions": expressions,
+                    "expression_version": EXPRESSION_VERSION if expressions else None,
+                    "role_sources": {
+                        role: "storage_event" if result.get("derived") else (
+                            "expression" if result.get("expression") else "signal"
+                        )
+                        for role, result in (("write_enable", we), ("write_addr", wa), ("write_data", wd))
+                    },
                     "reasons": reasons,
                     "failed_checks": failed,
                 })
@@ -2654,6 +3049,7 @@ async def run_regfile_interface_probe_and_trace(dut, selected_regfile, program_m
         "program_name": program_metadata.get("program_name"),
         "regfile_path": selected_regfile.get("path") or selected_regfile.get("candidate_path"),
         "loop_pc": program_metadata.get("loop_pc"),
+        "expected_write_count": len(program_metadata.get("write_sequence", [])),
         "ran": False,
         "reached_loop": False,
         "loop_cycle": None,
@@ -2799,9 +3195,20 @@ def _compact_selected_interface(selected_interface, interface_classification=Non
         "write_addr_timing_offset",
         "write_data_timing_offset",
         "write_addr_bit_offset",
+        "role_expressions",
+        "expression_version",
+        "role_sources",
     )
-    compact = {key: selected_interface.get(key) for key in keys if key in selected_interface}
-    derived_roles = (interface_classification or {}).get("derived_roles")
+    compact = {
+        key: selected_interface[key]
+        for key in keys
+        if key in selected_interface
+        and (key not in ("role_expressions", "expression_version") or selected_interface[key])
+    }
+    derived_roles = [
+        role for role in (interface_classification or {}).get("derived_roles", [])
+        if str(selected_interface.get(role) or "").startswith("__storage_")
+    ]
     if derived_roles:
         compact["derived_roles"] = derived_roles
     return compact
@@ -3384,12 +3791,47 @@ async def run_register_file_finder(dut):
     interface_probe_eligible = _is_interface_probe_eligible(
         selected_regfile_candidate, selected_regfile,
     )
+    interface_expression_confirmation = {"ran": False, "passed": False, "failed_checks": []}
+    interface_expression_synthesis = {}
     if interface_probe_eligible:
         interface_probe = await run_regfile_interface_probe_and_trace(dut, selected_regfile_candidate, interface_probe_program)
+        interface_expression_synthesis = synthesize_regfile_interface_expressions(
+            interface_probe["trace_result"], interface_probe["interface_candidates"]
+        )
+        interface_probe["interface_candidates"]["expression_candidates"] = {
+            role: list(items) for role, items in interface_expression_synthesis.items()
+        }
         interface_classification = classify_regfile_interface(
             interface_probe["trace_result"],
             interface_probe["interface_candidates"],
         )
+        selected_interface = interface_classification["selected"]
+        if selected_interface.get("role_expressions"):
+            confirmation_program = build_regfile_interface_confirmation_program()
+            confirmation_probe = await run_regfile_interface_probe_and_trace(
+                dut, selected_regfile_candidate, confirmation_program
+            )
+            confirmed_selection, interface_expression_confirmation = confirm_frozen_interface_expressions(
+                selected_interface, confirmation_probe["trace_result"], interface_probe["interface_candidates"]
+            )
+            interface_expression_confirmation["ran"] = confirmation_probe["trace_result"].get("ran", False)
+            interface_expression_confirmation["trace_summary"] = _interface_trace_summary(
+                confirmation_probe["trace_result"]
+            )
+            if not interface_expression_confirmation["passed"]:
+                failed_roles = interface_expression_confirmation["failed_roles"]
+                if any(role not in selected_interface["role_expressions"] for role in failed_roles):
+                    failed_roles = list(selected_interface["role_expressions"])
+                for role in failed_roles:
+                    interface_probe["interface_candidates"]["expression_candidates"][role] = []
+                interface_classification = classify_regfile_interface(
+                    interface_probe["trace_result"], interface_probe["interface_candidates"]
+                )
+            else:
+                interface_classification["selected"] = confirmed_selection
+                interface_classification["selected"]["reasons"].append(
+                    "virtual interface expressions passed independent confirmation"
+                )
         # A high-scoring architectural candidate plus an independently
         # confirmed write port is stronger evidence than either observation
         # alone.  This matters for legacy cores that do not fully reset their
@@ -3459,6 +3901,8 @@ async def run_register_file_finder(dut):
         "interface_trace": interface_probe["trace_result"],
         "interface_candidates": interface_probe["interface_candidates"],
         "interface_classification": interface_classification,
+        "interface_expression_confirmation": interface_expression_confirmation,
+        "interface_expression_synthesis": interface_expression_synthesis,
         "selected_regfile_interface": interface_classification["selected"],
     }
     
