@@ -14,6 +14,12 @@ TRACE_UNDERSCORE_INCOMPATIBLE_CORES = {
     "cv32e40x",
 }
 
+
+def job_build_dir() -> Path:
+    """Keep generated simulator state inside the RV-Bench job when available."""
+    scratch = os.environ.get('RVB_SCRATCH_DIR')
+    return Path(scratch) if scratch else BASE_DIR / 'build'
+
 VERILATOR_LANGUAGE_ALIASES = {
     '2005': '1364-2005',
     '2001': '1364-2001',
@@ -71,6 +77,14 @@ def verilator_compile_args(config: dict, requires_timing: bool = False) -> str:
 
 def escape_spaces(path: str) -> str:
     return re.sub(r'(?<!\\) ', r'\\ ', path)
+
+
+def write_include_dir(makefile, path: str) -> None:
+    """Preserve an include directory containing whitespace as one argument."""
+    if any(char.isspace() for char in path):
+        makefile.write(f'COMPILE_ARGS += {shlex.quote("-I" + path)}\n')
+    else:
+        makefile.write(f'VERILOG_INCLUDE_DIRS += {path}\n')
 
 
 def source_requires_timing(path: str) -> bool:
@@ -146,10 +160,9 @@ def standard_makefile(processor_name: str, language: str, config_folder: str, ou
             makefile.write('SIM ?= icarus\n')
             makefile.write('TOPLEVEL_LANG ?= verilog\n')
             makefile.write(f'COMPILE_ARGS ?= -g{language_version}\n')
-            makefile.write(f'VERILOG_INCLUDE_DIRS += {escape_spaces(core_directory)}\n')
+            write_include_dir(makefile, core_directory)
             for dirs in inc_dir:
-                path = escape_spaces(f'{core_directory}/{dirs}')
-                makefile.write(f'VERILOG_INCLUDE_DIRS += {path}\n')
+                write_include_dir(makefile, f'{core_directory}/{dirs}')
             for file in sim_files:
                 path = escape_spaces(f'{core_directory}/{file}')
                 makefile.write(f'VERILOG_SOURCES += {path}\n')
@@ -157,22 +170,26 @@ def standard_makefile(processor_name: str, language: str, config_folder: str, ou
             makefile.write('SIM ?= verilator\n')
             makefile.write('TOPLEVEL_LANG ?= verilog\n')
             makefile.write(f'COMPILE_ARGS ?= {verilator_compile_args(config)}\n')
-            makefile.write(f'VERILOG_INCLUDE_DIRS += {escape_spaces(core_directory)}\n')
+            write_include_dir(makefile, core_directory)
             for dirs in inc_dir:
-                path = escape_spaces(f'{core_directory}/{dirs}')
-                makefile.write(f'VERILOG_INCLUDE_DIRS += {path}\n')
+                write_include_dir(makefile, f'{core_directory}/{dirs}')
             for file in sim_files:
                 path = escape_spaces(f'{core_directory}/{file}')
                 makefile.write(f'VERILOG_SOURCES += {path}\n')
         elif language == 'VHDL':
             makefile.write('SIM ?= verilator\n')
             makefile.write('TOPLEVEL_LANG ?= verilog\n')
-            makefile.write(f'COMPILE_ARGS ?= --language 1800-2012 {VERILATOR_VISIBILITY_FLAGS}\n')
-            makefile.write('VERILOG_SOURCES += sim_build/{processor_name}.v\n')
+            makefile.write(
+                f'COMPILE_ARGS ?= --language 1800-2012 -Wno-fatal -Wno-lint '
+                f'{VERILATOR_VISIBILITY_FLAGS}\n'
+            )
+            makefile.write(
+                f'VERILOG_SOURCES += {job_build_dir()}/vhdl/{processor_name}.v\n'
+            )
         makefile.write(f'TOPLEVEL = {top_module}\n')
         makefile.write(f'MODULE = {cocotb_name}\n')
         makefile.write(f'OUTPUT_DIR = {output_dir}/{processor_name}\n')
-        makefile.write(f'SIM_BUILD = sim_build/{processor_name}\n')
+        makefile.write(f'SIM_BUILD = {job_build_dir()}/sim_build\n')
         _write_isolated_verilator_vpath(makefile)
         makefile.write('export OUTPUT_DIR\n')
         makefile.write('include $(shell cocotb-config --makefiles)/Makefile.sim\n')
@@ -198,9 +215,12 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
         makefile.write(f'export TWO_MEMORIES = {two_memories}\n')
         makefile.write(f'export OLLAMA = {ollama_flag}\n')
         if language.lower() != 'vhdl':
-            makefile.write(
-                f'COMPILE_ARGS ?= {verilator_compile_args(config, source_requires_timing(wrapper_path))}\n'
+            compile_args = verilator_compile_args(
+                config, source_requires_timing(wrapper_path)
             )
+            if two_memories:
+                compile_args += ' -DENABLE_SECOND_MEMORY'
+            makefile.write(f'COMPILE_ARGS ?= {compile_args}\n')
             public_depth = config.get('verilator_public_depth')
             if public_depth is not None:
                 public_depth = int(public_depth)
@@ -212,27 +232,32 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
                 makefile.write(
                     f'EXTRA_ARGS += --no-public-flat-rw --public-depth {public_depth}\n'
                 )
-            makefile.write(f'VERILOG_INCLUDE_DIRS += {escape_spaces(core_directory)}\n')
+            write_include_dir(makefile, core_directory)
             for dirs in inc_dir:
-                path = escape_spaces(f'{core_directory}/{dirs}')
-                makefile.write(f'VERILOG_INCLUDE_DIRS += {path}\n')
+                write_include_dir(makefile, f'{core_directory}/{dirs}')
             for file in sim_files:
                 path = escape_spaces(f'{core_directory}/{file}')
                 makefile.write(f'VERILOG_SOURCES += {path}\n')
         else:
             makefile.write(f'COMPILE_ARGS ?= --language 1800-2012 -DSIMULATION -Wno-fatal -Wno-lint {VERILATOR_VISIBILITY_FLAGS}\n')
-            # directory from where the script is being called
-            makefile.write(f'VERILOG_SOURCES += {BASE_DIR}/build/{processor_name}.v\n')
+            makefile.write(
+                f'VERILOG_SOURCES += {job_build_dir()}/vhdl/{processor_name}.v\n'
+            )
         makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "ahblite_to_wishbone.sv"))}\n')
         makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "axi4lite_to_wishbone.sv"))}\n')
         makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "axi4_to_wishbone.sv"))}\n')
+        blackparrot_bridge = internal_rtl / 'blackparrot_dma_to_wishbone.sv'
+        if blackparrot_bridge.is_file():
+            makefile.write(
+                f'VERILOG_SOURCES += {escape_spaces(str(blackparrot_bridge))}\n'
+            )
         if processor_name == 'soft_riscv':
             makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "memory.sv"))}\n')
         makefile.write(f'VERILOG_SOURCES += {wrapper_path}\n')
         makefile.write(f'TOPLEVEL = {top_module}\n')
         makefile.write(f'MODULE = {cocotb_name}\n')
         makefile.write(f'OUTPUT_DIR = {output_dir}/{processor_name}\n')
-        makefile.write(f'SIM_BUILD = sim_build/{processor_name}\n')
+        makefile.write(f'SIM_BUILD = {job_build_dir()}/sim_build\n')
         _write_isolated_verilator_vpath(makefile)
         makefile.write('export OUTPUT_DIR\n')
         makefile.write('include $(shell cocotb-config --makefiles)/Makefile.sim\n') 

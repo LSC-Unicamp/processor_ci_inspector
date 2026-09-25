@@ -1,9 +1,11 @@
 # Compiled files
 build/
+sim_build/
 debug/
 test/
 out/
 output/
+results.xml
 
 # Python virtual environments
 venv/
@@ -21,5 +23,4 @@ src/__pycache__/
 # Byte-compiled / optimized / DLL files
 *.py[cod]
 *$py.class
-
 

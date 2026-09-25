@@ -6,7 +6,12 @@ import subprocess
 import logging
 import re
 from cocotb import simulator
-from cocotb.handle import _make_sim_object
+try:
+    # cocotb 2.x renamed its raw-handle factory. Inspector supports the 1.9.x
+    # release pinned in requirements.txt as well as newer development setups.
+    from cocotb.handle import _make_sim_object
+except ImportError:
+    from cocotb.handle import SimHandle as _make_sim_object
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, Timer
 try:
@@ -801,6 +806,40 @@ def simulator_safe_hierarchy(root):
     if isinstance(root, _SimulatorSafeHierarchyView):
         return root
     return _SimulatorSafeHierarchyView(root)
+
+
+def resolve_simulator_path(root, path):
+    """Resolve a discovered raw-VPI path without relying on cocotb's cache.
+
+    The discovery walker deliberately tolerates objects that cocotb did not
+    place in ``getattr``/``dir``.  Resolution must use the same raw-child path,
+    otherwise a candidate can be declared visible and then immediately fail
+    lookup on cocotb 2.x.
+    """
+    target = getattr(root, "_target", root)
+    parts = str(path).split('.')
+    root_names = {
+        str(getattr(target, "_name", "")),
+        _leaf_basename(_safe_path(target)),
+    }
+    if parts and parts[0] in root_names:
+        parts = parts[1:]
+
+    handle = target
+    for part in parts:
+        match = re.fullmatch(r'([^\[]+)(?:\[(-?\d+)\])?', part)
+        if match is None:
+            raise AttributeError(f"invalid simulator path component: {part}")
+        name, index = match.groups()
+        child = next(
+            (candidate for child_name, candidate in _iter_sim_children(handle)
+             if child_name == name),
+            None,
+        )
+        if child is None:
+            child = getattr(handle, name)
+        handle = child[int(index)] if index is not None else child
+    return handle
 
 
 def discover_regfile_array_candidates(root, max_depth=25, depths=None, word_widths=None):

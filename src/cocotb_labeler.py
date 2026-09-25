@@ -8,6 +8,7 @@ from regfile_finder import (
     sample_candidate_value,
     selected_candidate_metadata,
     simulator_safe_hierarchy,
+    resolve_simulator_path,
 )
 try:
     from . import Branch, Datapath, Forwarding
@@ -58,20 +59,7 @@ class _ArchitecturalRegfileView:
 
 def resolve_path(dut, path: str):
     """Resolve a string path like 'processorci_top.u_core.regs[5]' into a cocotb handle."""
-    parts = path.split('.')
-    # Drop the first part if it matches top-level name
-    if parts[0] == dut._name:
-        parts = parts[1:]
-
-    handle = dut
-    for part in parts:
-        if '[' in part and ']' in part:
-            # Array element, e.g. regs[5]
-            name, idx = part[:-1].split('[')
-            handle = getattr(handle, name)[int(idx)]
-        else:
-            handle = getattr(handle, part)
-    return handle
+    return resolve_simulator_path(dut, path)
 
 
 @cocotb.test()

@@ -19,11 +19,10 @@ from language import identify_language
 from license import identify_license_type, find_license_files
 from cocotb_makefile_creator import create_cocotb_makefile
 from config import load_config
-from simulate import run_ghdl_import, run_ghdl_elaborate, synthesize_to_verilog
+from simulate import BUILD_DIR, run_ghdl_import, run_ghdl_elaborate, synthesize_to_verilog
 
 DESTINATION_DIR = './cores'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-BUILD_DIR = BASE_DIR / 'build'
 PROTECTED_WORDS = {"reg", "wire", "assign", "input", "output"}  # extend as needed
 
 IMPLEMENTATION_REVISION = 11
@@ -175,6 +174,7 @@ def _core_labeler_impl(
             run_ghdl_elaborate(processor_name, top_module, ghdl_flags)
             verilog_output = BUILD_DIR / f'{processor_name}.v'
             synthesize_to_verilog(processor_name, verilog_output, top_module, synth_flags)
+            fix_unassigned_ghdl_values(verilog_output)
             fix_protected_instances(verilog_output)
         except Exception as e:
             logging.warning('Error during VHDL processing: %s', e)
@@ -184,7 +184,7 @@ def _core_labeler_impl(
     # Create a Makefile for cocotb simulation
     print(f"Directory being passed to cocotb_makefile_creator: {directory}") # debug
     makefile = create_cocotb_makefile(processor_name, language, config_file, top_dir, output_dir, directory, ollama_flag)
-    path_to_main = os.path.abspath(os.path.join(BASE_DIR, 'processor_ci_inspector/src'))
+    path_to_main = str(Path(__file__).resolve().parent)
     try:
         environment = os.environ.copy()
         environment['PYTHONPATH'] = path_to_main
@@ -416,6 +416,19 @@ def fix_protected_instances(verilog_file: Path, backup=True):
 
     verilog_file.write_text(fixed_text)
     print(f"[INFO] Fixed protected instances in {verilog_file}")
+
+
+def fix_unassigned_ghdl_values(verilog_file: Path) -> None:
+    """Replace GHDL's non-Verilog unassigned placeholder with an unknown."""
+    text = verilog_file.read_text()
+    fixed = re.sub(
+        r'<unassigned>\s*\?\s*<unassigned>\s*:\s*<unassigned>',
+        "'x",
+        text,
+    )
+    if fixed != text:
+        verilog_file.write_text(fixed)
+        print(f"[INFO] Replaced GHDL unassigned placeholders in {verilog_file}")
 
 
 

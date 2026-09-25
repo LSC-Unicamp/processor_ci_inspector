@@ -2,16 +2,23 @@
 
 import sys
 import json
+import os
+import re
 import subprocess
 from pathlib import Path
 
 # Diretórios principais
-BASE_DIR = Path('./')
+BASE_DIR = Path(__file__).resolve().parent.parent
 RTL_DIR = BASE_DIR / 'rtl'
 CONFIG_DIR = BASE_DIR / 'config'
 INTERNAL_DIR = BASE_DIR / 'internal'
-BUILD_DIR = BASE_DIR / './build'
+BUILD_DIR = Path(os.environ.get('RVB_SCRATCH_DIR', BASE_DIR / 'build')) / 'vhdl'
 PROCESSADOR_BASE = Path('/eda/processadores')
+
+
+def _work_library(cpu_name):
+    """Return a legal, deterministic VHDL library identifier."""
+    return re.sub(r'[^A-Za-z0-9_]', '_', cpu_name)
 
 
 def run_ghdl_import(cpu_name, vhdl_files, extra_flags=None):
@@ -21,7 +28,7 @@ def run_ghdl_import(cpu_name, vhdl_files, extra_flags=None):
         'ghdl',
         '-i',
         '--std=08',
-        f'--work={cpu_name}',
+        f'--work={_work_library(cpu_name)}',
         f'--workdir={BUILD_DIR}',
         f'-P{BUILD_DIR}',
     ] + list(extra_flags or []) + list(map(str, vhdl_files))
@@ -36,7 +43,7 @@ def run_ghdl_elaborate(cpu_name, top_module, extra_flags=None):
         'ghdl',
         '-m',
         '--std=08',
-        f'--work={cpu_name}',
+        f'--work={_work_library(cpu_name)}',
         f'--workdir={BUILD_DIR}',
         f'-P{BUILD_DIR}',
     ] + list(extra_flags or []) + [f'{top_module}']
@@ -51,7 +58,7 @@ def synthesize_to_verilog(cpu_name, output_file, top_module, extra_flags=None):
         'ghdl',
         'synth',
         '--std=08',
-        f'--work={cpu_name}',
+        f'--work={_work_library(cpu_name)}',
         f'--workdir={BUILD_DIR}',
         f'-P{BUILD_DIR}',
         '--out=verilog',
