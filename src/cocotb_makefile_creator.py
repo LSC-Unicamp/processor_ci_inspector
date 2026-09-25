@@ -131,7 +131,16 @@ def _write_isolated_verilator_vpath(makefile) -> None:
     # Verilator runtime sources and Cocotb's simulator harness.
     makefile.write(
         'PROCESSOR_CI_VERILATOR_ROOT = $(shell verilator -V | '
-        "sed -n 's/^[[:space:]]*VERILATOR_ROOT[[:space:]]*=[[:space:]]*//p' | head -1)\n"
+        # `verilator -V` prints VERILATOR_ROOT twice: first under "Compiled
+        # in defaults if not in environment" (a build-time constant -- some
+        # distributions, e.g. YosysHQ's oss-cad-suite, bake in their own
+        # internal build path there, like /yosyshq/share/verilator, which
+        # does not exist outside their build machine), then again with the
+        # value actually resolved at runtime (Verilator self-locates
+        # relative to its own binary). `head -1` took the first, wrong one;
+        # `tail -1` takes the real one, and degrades safely to the same
+        # single line on a build that only prints VERILATOR_ROOT once.
+        "sed -n 's/^[[:space:]]*VERILATOR_ROOT[[:space:]]*=[[:space:]]*//p' | tail -1)\n"
     )
     makefile.write(
         'PROCESSOR_CI_COCOTB_VERILATOR_DIR = '
