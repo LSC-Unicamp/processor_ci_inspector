@@ -6,8 +6,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from src import _discovery_shared as shared
+from src import Datapath, _discovery_shared as shared
 from src import regfile_finder as finder
+from src.regfile_arch_interface import WRITE_CLASSES
 from src.regfile_interface_expression import ExpressionHandle, evaluate_expression, expression_paths
 
 
@@ -117,6 +118,33 @@ class ExpressionTests(unittest.TestCase):
         self.assertEqual(evaluate_expression({"op": "mux", "args": [{"op": "constant", "value": 1}, {"op": "constant", "value": 7}, {"op": "constant", "value": 8}]}, {}), 7)
         with self.assertRaises(ValueError):
             expression_paths({"op": "mux", "args": [{"op": "constant", "value": 1}]})
+
+    def test_v2_arithmetic_extension_and_mask_operations(self):
+        signal = {"op": "signal", "path": "dut.value"}
+        expressions = {
+            "add": {"op": "add", "args": [signal, {"op": "constant", "value": 5}],
+                    "width": 8},
+            "shift": {"op": "shift_left", "args": [signal], "amount": 4, "width": 16},
+            "zero": {"op": "zero_extend", "args": [signal],
+                     "from_width": 8, "to_width": 32},
+            "sign": {"op": "sign_extend", "args": [signal],
+                     "from_width": 8, "to_width": 32},
+            "mask": {"op": "mask", "args": [signal], "width": 4},
+        }
+        values = {"dut.value": 0xFE}
+
+        self.assertEqual(evaluate_expression(expressions["add"], values), 3)
+        self.assertEqual(evaluate_expression(expressions["shift"], values), 0xFE0)
+        self.assertEqual(evaluate_expression(expressions["zero"], values), 0xFE)
+        self.assertEqual(evaluate_expression(expressions["sign"], values), 0xFFFFFFFE)
+        self.assertEqual(evaluate_expression(expressions["mask"], values), 0xE)
+        for expression in expressions.values():
+            self.assertEqual(expression_paths(expression, version=2), {"dut.value"})
+            with self.assertRaises(ValueError):
+                expression_paths(expression, version=1)
+        self.assertIsNone(evaluate_expression(expressions["add"], {"dut.value": None}))
+        with self.assertRaises(ValueError):
+            expression_paths({"op": "add", "args": [signal], "width": 32}, version=2)
 
     def test_synthesizes_three_predicate_enable_and_confirms(self):
         trace = _trace()
@@ -232,6 +260,100 @@ class ExpressionTests(unittest.TestCase):
         self.assertEqual(shared._safe_signal_int(handles["write_enable"]), 1)
         self.assertEqual(shared._safe_signal_int(handles["write_addr"]), 5)
         self.assertEqual(handles["_role_timing_offsets"]["write_enable"], -1)
+        self.assertEqual(handles["_commit_observation_offset"], handles["_timing_offset"])
+
+    def test_v2_storage_alignment_does_not_shift_interface_commit_twice(self):
+        rd = {"op": "signal", "path": "processorci_top.Processor.rd"}
+        selected = {
+            "status": "confirmed_interface",
+            "interface_semantics": "architectural_write",
+            "validated_instruction_classes": list(WRITE_CLASSES),
+            "expression_version": 2,
+            "timing_offset": -1,
+            "write_enable_timing_offset": -1,
+            "write_addr_timing_offset": -1,
+            "write_data_timing_offset": -1,
+            "write_enable": "__expression__:write_enable",
+            "write_addr": "__expression__:write_addr",
+            "write_data": "__expression__:write_data",
+            "role_expressions": {
+                "write_enable": {"op": "ne", "args": [rd, {"op": "constant", "value": 0}]},
+                "write_addr": rd,
+                "write_data": {"op": "priority_mux", "cases": [{
+                    "when": {"op": "signal", "path": "processorci_top.Processor.alu"},
+                    "value": {"op": "signal", "path": "processorci_top.Processor.wdata"},
+                }], "default": {"op": "constant", "value": 0}},
+            },
+        }
+        dut = SimpleNamespace(
+            Processor=SimpleNamespace(
+                rd=SimpleNamespace(value=5), alu=SimpleNamespace(value=1),
+                wdata=SimpleNamespace(value=0x55),
+            ),
+            _log=SimpleNamespace(info=lambda *args: None, warning=lambda *args: None),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "demo_reg_file.json").write_text(json.dumps({
+                "regfile_interface": finder._compat_regfile_interface(selected),
+                "selected_regfile_interface": finder._compact_selected_interface(selected),
+            }), encoding="utf-8")
+            with mock.patch.dict(os.environ, {"OUTPUT_DIR": directory}):
+                handles = shared._resolve_write_interface(dut, "demo", None)
+        self.assertIsNotNone(handles)
+        self.assertEqual(handles["_timing_offset"], -1)
+        self.assertEqual(handles["_role_timing_offsets"]["write_data"], -1)
+        self.assertEqual(handles["_commit_observation_offset"], 0)
+        self.assertEqual(shared._safe_signal_int(handles["write_data"]), 0x55)
+        fetches = [{"pc": 4 * index, "cycle": index} for index in range(6)]
+        commits = [{"pc": 4 * index, "cycle": index + 2,
+                    "reg": index + 1, "value": index + 1} for index in range(6)]
+        compact, debug = Datapath._build_cycle_measurement(
+            fetches, commits, commit_observation_offset=handles["_commit_observation_offset"]
+        )
+        self.assertEqual(compact["classification"]["pipeline"]["depth_estimate"], 3)
+        self.assertEqual(debug["commit_observation_offset"], 0)
+
+    def test_partial_v2_interface_is_usable_without_commit_shift(self):
+        signal = {"op": "signal", "path": "processorci_top.Processor.wen"}
+        selected = {
+            "status": "confirmed_interface",
+            "interface_semantics": "validated_write_interface",
+            "validated_instruction_classes": ["alu_imm", "alu_reg", "lui"],
+            "missing_instruction_classes": ["auipc", "jal", "jalr", "load"],
+            "expression_version": 2,
+            "timing_offset": -1,
+            "write_enable_timing_offset": -1,
+            "write_addr_timing_offset": 0,
+            "write_data_timing_offset": 1,
+            "write_enable": "__expression__:write_enable",
+            "write_addr": "__expression__:write_addr",
+            "write_data": "__expression__:write_data",
+            "role_expressions": {
+                "write_enable": signal,
+                "write_addr": {"op": "signal", "path": "processorci_top.Processor.rd"},
+                "write_data": {"op": "signal", "path": "processorci_top.Processor.wdata"},
+            },
+        }
+        dut = SimpleNamespace(
+            Processor=SimpleNamespace(
+                wen=SimpleNamespace(value=1), rd=SimpleNamespace(value=5),
+                wdata=SimpleNamespace(value=0x55),
+            ),
+            _log=SimpleNamespace(info=lambda *args: None, warning=lambda *args: None),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "demo_reg_file.json").write_text(json.dumps({
+                "regfile_interface": finder._compat_regfile_interface(selected),
+                "selected_regfile_interface": finder._compact_selected_interface(selected),
+            }), encoding="utf-8")
+            with mock.patch.dict(os.environ, {"OUTPUT_DIR": directory}):
+                handles = shared._resolve_write_interface(dut, "demo", None)
+
+        self.assertIsNotNone(handles)
+        self.assertEqual(handles["_commit_observation_offset"], 0)
+        self.assertEqual(handles["_role_timing_offsets"], {
+            "write_enable": -1, "write_addr": 0, "write_data": 1,
+        })
 
 
 if __name__ == "__main__":

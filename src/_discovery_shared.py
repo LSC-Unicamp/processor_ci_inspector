@@ -25,8 +25,10 @@ try:
         load_regfile_interface,
     )
     from .regfile_interface_expression import (
-        EXPRESSION_VERSION, ExpressionHandle, expression_paths,
+        EXPRESSION_VERSION, ARCHITECTURAL_EXPRESSION_VERSION,
+        ExpressionHandle, expression_paths,
     )
+    from .simulation.data_bus_driver import data_mem_driver
 except ImportError:
     from regfile_finder import (
         _start_clock_once,
@@ -34,8 +36,10 @@ except ImportError:
         load_regfile_interface,
     )
     from regfile_interface_expression import (
-        EXPRESSION_VERSION, ExpressionHandle, expression_paths,
+        EXPRESSION_VERSION, ARCHITECTURAL_EXPRESSION_VERSION,
+        ExpressionHandle, expression_paths,
     )
+    from simulation.data_bus_driver import data_mem_driver
 
 try:
     from .probe_programs import (
@@ -174,91 +178,6 @@ async def instr_mem_driver(dut, memory=None):
             dut.core_data_in.value = 0x00000013  # NOP if address not ready
             if hasattr(dut, "core_data_in_hi"):
                 dut.core_data_in_hi.value = 0x00000013
-
-async def data_mem_driver(dut, memory=None):
-    """
-    Data memory driver for cores with separate instruction and data buses.
-    Zero-wait-state: keeps ACK high and provides immediate responses.
-    """
-    memory = memory or DataMemory()
-    memory.reset()
-    # Check if core has separate data memory interface
-    if not hasattr(dut, 'data_mem_ack'):
-        memory.supported = False
-        return
-
-    memory.supported = all(hasattr(dut, name) for name in (
-        "data_mem_addr", "data_mem_we", "data_mem_data_out"
-    ))
-    dut.data_mem_data_in.value = 0
-    dut.data_mem_ack.value = 1  # Keep ACK high - zero wait state
-    cycle = 0
-    active_transaction = None
-    active_generation = memory.generation
-    delayed_transaction = None
-    delay_remaining = 0
-    while True:
-        await RisingEdge(dut.sys_clk)
-        await Timer(0.001, unit="ns") # let signals settle
-        # Delay ACK only while the configured qualifying load is active.  A
-        # configured delay must not stall idle cycles, stores, or other loads.
-        dut.data_mem_ack.value = 1
-        cycle += 1
-        memory.current_cycle = cycle
-        if active_generation != memory.generation:
-            active_transaction = None
-            delayed_transaction = None
-            delay_remaining = 0
-            active_generation = memory.generation
-        if not memory.supported:
-            dut.data_mem_data_in.value = 0
-            continue
-        requested = (
-            (not hasattr(dut, "data_mem_cyc") or _is_high(dut.data_mem_cyc))
-            and (not hasattr(dut, "data_mem_stb") or _is_high(dut.data_mem_stb))
-        )
-        if not requested:
-            active_transaction = None
-            delayed_transaction = None
-            delay_remaining = 0
-            dut.data_mem_data_in.value = 0
-            continue
-        address = _safe_signal_int(dut.data_mem_addr)
-        is_write = _is_high(dut.data_mem_we)
-        value = _safe_signal_int(dut.data_mem_data_out)
-        transaction = (address, is_write, value)
-        if address is None:
-            continue
-        delay_applies = (
-            memory.response_delay_cycles > 0
-            and not is_write
-            and (
-                memory.response_delay_address is None
-                or (int(address) & ~3) == memory.response_delay_address
-            )
-        )
-        if delay_applies:
-            if delayed_transaction != transaction:
-                delayed_transaction = transaction
-                delay_remaining = memory.response_delay_cycles
-            if delay_remaining > 0:
-                dut.data_mem_ack.value = 0
-                delay_remaining -= 1
-                dut.data_mem_data_in.value = memory.read_word(address)
-                continue
-            dut.data_mem_ack.value = 1
-        if transaction != active_transaction:
-            if is_write:
-                byte_enable = None
-                for name in ("data_mem_wstrb", "data_mem_sel", "data_mem_be"):
-                    if hasattr(dut, name):
-                        byte_enable = _safe_signal_int(getattr(dut, name))
-                        break
-                memory.write_word(address, value or 0, byte_enable, cycle=cycle)
-            else:
-                memory.read_word(address, cycle=cycle)
-            active_transaction = transaction
-        dut.data_mem_data_in.value = memory.read_word(address)
 
 def _get_handle_from_path(obj, path_str):
     """
@@ -431,7 +350,9 @@ def _complete_evaluable_interface(interface_signals):
     for role in ("write_enable", "write_addr", "write_data"):
         if role in expressions:
             try:
-                if not expression_paths(expressions[role]):
+                if not expression_paths(
+                    expressions[role], version=interface_signals.get("_expression_version", EXPRESSION_VERSION)
+                ):
                     return False
             except (TypeError, ValueError):
                 return False
@@ -477,10 +398,21 @@ def _current_regfile_interface_state(core_name):
 
     expressions = selected.get("role_expressions") or {}
     if expressions:
-        if selected.get("expression_version") != EXPRESSION_VERSION:
+        version = selected.get("expression_version")
+        if version not in (EXPRESSION_VERSION, ARCHITECTURAL_EXPRESSION_VERSION):
+            return "not_real_or_incomplete", interface_signals
+        if version == ARCHITECTURAL_EXPRESSION_VERSION and (
+            selected.get("interface_semantics") not in (
+                "architectural_write", "validated_write_interface",
+            )
+            or selected.get("status") != "confirmed_interface"
+        ):
             return "not_real_or_incomplete", interface_signals
         interface_signals = dict(interface_signals)
         interface_signals["_role_expressions"] = expressions
+        interface_signals["_expression_version"] = version
+        if version == ARCHITECTURAL_EXPRESSION_VERSION:
+            interface_signals["_interface_semantics"] = selected.get("interface_semantics")
 
     if selected.get("status") == "rejected_interface":
         return "rejected", interface_signals
@@ -521,6 +453,7 @@ def _resolve_write_interface(dut, core_name, regfile):
                     ),
                     _safe_signal_int,
                     role,
+                    version=interface_signals.get("_expression_version", EXPRESSION_VERSION),
                 )
             except (TypeError, ValueError) as exc:
                 dut._log.warning("[measure] Invalid %s expression: %s", role, exc)
@@ -537,6 +470,13 @@ def _resolve_write_interface(dut, core_name, regfile):
             handles["_timing_offset"] = int(interface_signals.get("timing_offset", 0))
         except (TypeError, ValueError):
             handles["_timing_offset"] = 0
+        # V2's offset aligns a sampled expression to a later storage update;
+        # the interface commit is already timestamped at the sample cycle.
+        handles["_commit_observation_offset"] = (
+            0 if interface_signals.get("_interface_semantics") in (
+                "architectural_write", "validated_write_interface",
+            ) else handles["_timing_offset"]
+        )
         handles["_role_timing_offsets"] = {}
         for role in ("write_enable", "write_addr", "write_data"):
             try:

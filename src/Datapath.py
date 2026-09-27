@@ -571,7 +571,9 @@ async def measure_execution_model(dut, regfile, core_name=None, regfile_metadata
         interface_incomplete = True
 
     if interface_handles:
-        interface_timing_offset = interface_handles.get("_timing_offset", 0)
+        commit_observation_offset = interface_handles.get(
+            "_commit_observation_offset", interface_handles.get("_timing_offset", 0)
+        )
         fetch_events, commit_events = await _observe_signature_commits_with_interface(
             dut,
             interface_handles,
@@ -581,7 +583,7 @@ async def measure_execution_model(dut, regfile, core_name=None, regfile_metadata
         )
         method = "interface"
     else:
-        interface_timing_offset = None
+        commit_observation_offset = None
         fetch_events, commit_events = await _observe_signature_commits_from_regfile(
             dut,
             regfile,
@@ -596,7 +598,7 @@ async def measure_execution_model(dut, regfile, core_name=None, regfile_metadata
         commit_events,
         method=method,
         interface_incomplete=interface_incomplete,
-        commit_observation_offset=interface_timing_offset,
+        commit_observation_offset=commit_observation_offset,
     )
     dut._log.info("[measure] Fetch intervals: %s", compact["fetch_intervals"])
     dut._log.info("[measure] Commit intervals: %s", compact["commit_intervals"])

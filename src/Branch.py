@@ -1,6 +1,7 @@
 """Branch-prediction discovery."""
 
 try:
+    from .analysis_progress import ANALYSIS_IMPLEMENTATION_REVISION, write_analysis_progress
     from ._discovery_shared import (
         BRANCH_PREDICTION_PROBES,
         BRANCH_RESOLUTION_PROBES,
@@ -35,6 +36,7 @@ try:
         ras_depth_sweep,
     )
 except ImportError:
+    from analysis_progress import ANALYSIS_IMPLEMENTATION_REVISION, write_analysis_progress
     from _discovery_shared import (
         BRANCH_PREDICTION_PROBES,
         BRANCH_RESOLUTION_PROBES,
@@ -1507,6 +1509,11 @@ async def branch_prediction_presence_test(dut, regfile, pipeline=None, data_memo
         diagnostics = {}
 
         async def run_probe(spec):
+            write_analysis_progress(
+                output_dir, processor_name, "branch_probe",
+                ANALYSIS_IMPLEMENTATION_REVISION,
+                probe=spec.name, stage="start",
+            )
             metadata = _probe_metadata(spec)
             program_memory.select(spec)
             data_memory.reset(spec.initial_memory)
@@ -1647,6 +1654,11 @@ async def branch_prediction_presence_test(dut, regfile, pipeline=None, data_memo
                     "[branch_prediction] probe=%s invalid reason=%s complete=%s fetches=%d coverage=%.3f",
                     spec.name, failure_reason, termination["complete"], len(fetch_events), coverage,
                 )
+            write_analysis_progress(
+                output_dir, processor_name, "branch_probe",
+                ANALYSIS_IMPLEMENTATION_REVISION,
+                probe=spec.name, stage="complete", valid=valid,
+            )
             return {
                 "complete": termination["complete"],
                 "valid": valid,
@@ -2039,5 +2051,4 @@ async def branch_prediction_presence_test(dut, regfile, pipeline=None, data_memo
 
     finally:
         program_memory.select(CYCLE_SIGNATURE)
-
 

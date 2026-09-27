@@ -20,6 +20,24 @@ VERILATOR_LANGUAGE_ALIASES = {
     '1995': '1364-1995',
 }
 
+ICARUS_GENERATION_ALIASES = {
+    '1364-1995': '1995',
+    '1364-2001': '2001',
+    '1364-2005': '2005',
+    '1800-2005': '2005-sv',
+    '1800-2009': '2009',
+    '1800-2012': '2012',
+    # Icarus has no newer generation switch; 2012 enables its latest
+    # supported SystemVerilog grammar.
+    '1800-2017': '2012',
+    '1800-2023': '2012',
+}
+
+
+def icarus_generation(language_version: str) -> str:
+    version = str(language_version)
+    return ICARUS_GENERATION_ALIASES.get(version, version)
+
 
 def verilator_compile_args(config: dict, requires_timing: bool = False) -> str:
     """Build arguments for mixed Verilog core and SystemVerilog wrapper sources."""
@@ -73,6 +91,15 @@ def escape_spaces(path: str) -> str:
     return re.sub(r'(?<!\\) ', r'\\ ', path)
 
 
+def _write_include_directories(makefile, core_directory: str, include_dirs: list[str]) -> None:
+    for directory in (core_directory, *(os.path.join(core_directory, item) for item in include_dirs)):
+        if any(character.isspace() for character in directory):
+            # cocotb's +incdir+ expansion splits Make words even when spaces are escaped.
+            makefile.write(f"COMPILE_ARGS += -I{shlex.quote(directory)}\n")
+        else:
+            makefile.write(f'VERILOG_INCLUDE_DIRS += {escape_spaces(directory)}\n')
+
+
 def source_requires_timing(path: str) -> bool:
     """Detect active Verilog delay controls in a wrapper source."""
     try:
@@ -92,6 +119,7 @@ def resolve_internal_rtl_directory(top_folder: str) -> Path:
     top_path = Path(top_folder)
     candidates = (
         top_path / 'internal',
+        top_path.parent / 'automated_wrappers_golden' / 'internal',
         top_path.parent / 'wrappers_golden' / 'internal',
         BASE_DIR / 'RV-Bench' / 'wrappers_golden' / 'internal',
     )
@@ -145,11 +173,8 @@ def standard_makefile(processor_name: str, language: str, config_folder: str, ou
         if language == 'Verilog':
             makefile.write('SIM ?= icarus\n')
             makefile.write('TOPLEVEL_LANG ?= verilog\n')
-            makefile.write(f'COMPILE_ARGS ?= -g{language_version}\n')
-            makefile.write(f'VERILOG_INCLUDE_DIRS += {escape_spaces(core_directory)}\n')
-            for dirs in inc_dir:
-                path = escape_spaces(f'{core_directory}/{dirs}')
-                makefile.write(f'VERILOG_INCLUDE_DIRS += {path}\n')
+            makefile.write(f'COMPILE_ARGS ?= -g{icarus_generation(language_version)}\n')
+            _write_include_directories(makefile, core_directory, inc_dir)
             for file in sim_files:
                 path = escape_spaces(f'{core_directory}/{file}')
                 makefile.write(f'VERILOG_SOURCES += {path}\n')
@@ -157,10 +182,7 @@ def standard_makefile(processor_name: str, language: str, config_folder: str, ou
             makefile.write('SIM ?= verilator\n')
             makefile.write('TOPLEVEL_LANG ?= verilog\n')
             makefile.write(f'COMPILE_ARGS ?= {verilator_compile_args(config)}\n')
-            makefile.write(f'VERILOG_INCLUDE_DIRS += {escape_spaces(core_directory)}\n')
-            for dirs in inc_dir:
-                path = escape_spaces(f'{core_directory}/{dirs}')
-                makefile.write(f'VERILOG_INCLUDE_DIRS += {path}\n')
+            _write_include_directories(makefile, core_directory, inc_dir)
             for file in sim_files:
                 path = escape_spaces(f'{core_directory}/{file}')
                 makefile.write(f'VERILOG_SOURCES += {path}\n')
@@ -212,10 +234,7 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
                 makefile.write(
                     f'EXTRA_ARGS += --no-public-flat-rw --public-depth {public_depth}\n'
                 )
-            makefile.write(f'VERILOG_INCLUDE_DIRS += {escape_spaces(core_directory)}\n')
-            for dirs in inc_dir:
-                path = escape_spaces(f'{core_directory}/{dirs}')
-                makefile.write(f'VERILOG_INCLUDE_DIRS += {path}\n')
+            _write_include_directories(makefile, core_directory, inc_dir)
             for file in sim_files:
                 path = escape_spaces(f'{core_directory}/{file}')
                 makefile.write(f'VERILOG_SOURCES += {path}\n')

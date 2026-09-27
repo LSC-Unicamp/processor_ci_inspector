@@ -3,6 +3,7 @@
 import time as _wall_time
 
 try:
+    from .analysis_progress import ANALYSIS_IMPLEMENTATION_REVISION, write_analysis_progress
     from .forwarding_proof import enforce_forwarding_positive
     from ._discovery_shared import (
         CYCLE_SIGNATURE,
@@ -38,6 +39,7 @@ try:
         write_pipeline_interface,
     )
 except ImportError:
+    from analysis_progress import ANALYSIS_IMPLEMENTATION_REVISION, write_analysis_progress
     from forwarding_proof import enforce_forwarding_positive
     from _discovery_shared import (
         CYCLE_SIGNATURE,
@@ -75,7 +77,7 @@ except ImportError:
 
 FORWARDING_SCHEMA_VERSION = 2
 FORWARDING_PROBE_SUITE_VERSION = "paired-forwarding-v8"
-FORWARDING_IMPLEMENTATION_REVISION = 11
+FORWARDING_IMPLEMENTATION_REVISION = ANALYSIS_IMPLEMENTATION_REVISION
 HAZARD_BASE_PC = FORWARDING_PROBES["alu_to_alu"].base_addresses[0]
 HAZARD_BASE_PCS = FORWARDING_PROBES["alu_to_alu"].base_addresses
 HAZARD_WRITE_TEMPLATE = [
@@ -236,28 +238,10 @@ def _write_forwarding_progress(
     output_dir, processor_name, phase, **details,
 ):
     """Atomically refresh the per-core watchdog heartbeat."""
-    path = os.path.join(
-        output_dir, f"{processor_name}_analysis_progress.json",
+    return write_analysis_progress(
+        output_dir, processor_name, phase,
+        FORWARDING_IMPLEMENTATION_REVISION, **details,
     )
-    previous = {}
-    try:
-        with open(path, "r", encoding="utf-8") as stream:
-            previous = json.load(stream)
-    except Exception:
-        pass
-    record = {
-        "implementation_revision": FORWARDING_IMPLEMENTATION_REVISION,
-        "processor": processor_name,
-        "phase": phase,
-        "sequence": int(previous.get("sequence", 0)) + 1,
-        "updated_at_unix": _wall_time.time(),
-        **details,
-    }
-    temporary = f"{path}.tmp"
-    with open(temporary, "w", encoding="utf-8") as stream:
-        json.dump(record, stream, indent=2)
-    os.replace(temporary, path)
-    return record
 
 def _evaluate_calibration_signature(spec, regfile, regfile_metadata, data_memory):
     """Evaluate calibration from final architectural state, not transient commits."""

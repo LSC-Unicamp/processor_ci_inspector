@@ -20,13 +20,14 @@ from license import identify_license_type, find_license_files
 from cocotb_makefile_creator import create_cocotb_makefile
 from config import load_config
 from simulate import run_ghdl_import, run_ghdl_elaborate, synthesize_to_verilog
+from analysis_progress import ANALYSIS_IMPLEMENTATION_REVISION, write_analysis_progress
 
 DESTINATION_DIR = './cores'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 BUILD_DIR = BASE_DIR / 'build'
 PROTECTED_WORDS = {"reg", "wire", "assign", "input", "output"}  # extend as needed
 
-IMPLEMENTATION_REVISION = 11
+IMPLEMENTATION_REVISION = ANALYSIS_IMPLEMENTATION_REVISION
 PROCESS_TERMINATION_GRACE_SECONDS = 3.0
 DEFAULT_CORE_TIMEOUT_SECONDS = 900
 DEFAULT_CORE_IDLE_TIMEOUT_SECONDS = 180
@@ -65,25 +66,13 @@ def _write_core_progress(
     output_dir: str, processor_name: str, phase: str, **details,
 ) -> dict:
     """Atomically publish a heartbeat that the outer watchdog can observe."""
-    path = _core_progress_path(output_dir, processor_name)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    previous = {}
-    try:
-        previous = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        pass
-    record = {
-        "implementation_revision": IMPLEMENTATION_REVISION,
-        "processor": processor_name,
-        "phase": phase,
-        "sequence": int(previous.get("sequence", 0)) + 1,
-        "updated_at_unix": time.time(),
+    return write_analysis_progress(
+        Path(output_dir) / processor_name,
+        processor_name,
+        phase,
+        IMPLEMENTATION_REVISION,
         **details,
-    }
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(record, indent=2), encoding="utf-8")
-    temporary.replace(path)
-    return record
+    )
 
 
 def _read_core_progress(path: Path) -> Optional[dict]:
@@ -419,12 +408,15 @@ def fix_protected_instances(verilog_file: Path, backup=True):
 
 
 
-def clone_repo(url: str, repo_name: str) -> Optional[str]:
+def clone_repo(
+    url: str, repo_name: str, destination_dir: str = DESTINATION_DIR,
+) -> Optional[str]:
     """Clones a GitHub repository to a specified directory.
 
     Args:
         url (str): URL of the GitHub repository.
         repo_name (str): Name of the repository (used as the directory name).
+        destination_dir (str): Core root selected by the caller.
 
     Returns:
         str: Path to the cloned repository.
@@ -434,7 +426,7 @@ def clone_repo(url: str, repo_name: str) -> Optional[str]:
     """
     url = url + '.git' if not url.endswith('.git') else url
 
-    destination_path = os.path.join(DESTINATION_DIR, repo_name)
+    destination_path = os.path.join(destination_dir, repo_name)
 
     try:
         subprocess.run(
@@ -672,10 +664,10 @@ def main(
                 logging.warning(f'No repository URL found for {processor_name}. Skipping.')
                 continue
             # Checks if the repository is already cloned
-            repo_path = os.path.join(DESTINATION_DIR, processor_name)
+            repo_path = os.path.join(directory, processor_name)
             if not os.path.exists(repo_path):
                 print(f'Cloning repository {url} for processor {processor_name}...')
-                clone_repo(url, processor_name)
+                clone_repo(url, processor_name, directory)
             else:
                 print(f'Repository {processor_name} already exists. Skipping clone.')
         except (KeyError, OSError, json.JSONDecodeError) as error:

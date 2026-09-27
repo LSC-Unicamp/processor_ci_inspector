@@ -10,6 +10,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import main
+from analysis_progress import ANALYSIS_IMPLEMENTATION_REVISION, write_analysis_progress
 from forwarding_proof import enforce_forwarding_positive
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import audit_forwarding_results
@@ -42,6 +43,40 @@ def _heartbeat_core_worker(result_queue, *args):
 
 
 class ForwardingLifecycleTests(unittest.TestCase):
+    def test_clone_repo_uses_requested_core_root(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.object(main.subprocess, "run") as run:
+                destination = main.clone_repo(
+                    "https://example.invalid/core", "demo", directory,
+                )
+
+            self.assertEqual(destination, str(Path(directory) / "demo"))
+            run.assert_called_once_with(
+                [
+                    "git", "clone", "--recursive",
+                    "https://example.invalid/core.git",
+                    str(Path(directory) / "demo"),
+                ],
+                check=True,
+            )
+
+    def test_branch_progress_advances_supervisor_marker(self):
+        with tempfile.TemporaryDirectory() as directory:
+            first = main._write_core_progress(directory, "core", "compilation_start")
+            second = write_analysis_progress(
+                Path(directory) / "core", "core", "branch_probe",
+                ANALYSIS_IMPLEMENTATION_REVISION,
+                probe="direction", stage="complete",
+            )
+
+            self.assertEqual(second["sequence"], first["sequence"] + 1)
+            self.assertEqual(second["phase"], "branch_probe")
+            self.assertEqual(second["probe"], "direction")
+            self.assertEqual(
+                main._read_core_progress(main._core_progress_path(directory, "core")),
+                second,
+            )
+
     def test_runtime_positive_gate_downgrades_missing_relocation(self):
         result = {
             "status": "detected",

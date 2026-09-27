@@ -13,12 +13,26 @@ from cocotb.triggers import RisingEdge, Timer
 try:
     from .riscv.encoding import ADD, ADDI, BEQ, BNE, JAL, LUI, NOP, ORI, XORI
     from .regfile_interface_expression import (
-        EXPRESSION_PREFIX, EXPRESSION_VERSION, evaluate_expression,
+        EXPRESSION_PREFIX, EXPRESSION_VERSION, ARCHITECTURAL_EXPRESSION_VERSION,
+        evaluate_expression,
+    )
+    from .simulation import DataMemory
+    from .simulation.data_bus_driver import data_mem_driver
+    from .regfile_arch_interface import (
+        analyze_architectural_trace, build_architectural_write_program,
+        synthesize_architectural_interface, validate_architectural_interface,
     )
 except ImportError:
     from riscv.encoding import ADD, ADDI, BEQ, BNE, JAL, LUI, NOP, ORI, XORI
     from regfile_interface_expression import (
-        EXPRESSION_PREFIX, EXPRESSION_VERSION, evaluate_expression,
+        EXPRESSION_PREFIX, EXPRESSION_VERSION, ARCHITECTURAL_EXPRESSION_VERSION,
+        evaluate_expression,
+    )
+    from simulation import DataMemory
+    from simulation.data_bus_driver import data_mem_driver
+    from regfile_arch_interface import (
+        analyze_architectural_trace, build_architectural_write_program,
+        synthesize_architectural_interface, validate_architectural_interface,
     )
 
 # -----------------------------------------------------------------------------
@@ -704,11 +718,11 @@ def _is_hierarchy_handle(handle):
 def _looks_like_generated_instance_array(handle):
     """Identify simulator arrays created for generate-block module instances."""
     handle_type = _safe_type(handle)
-    path = _safe_path(handle).lower()
+    name = _leaf_basename(_safe_path(handle)).lower()
     if handle_type in {"GPI_GENARRAY", "GPI_MODULE_ARRAY"}:
         return True
-    generated_parts = ("genblk", ".generate", "__gen", ".gen_")
-    return handle_type in ARRAY_TYPES and any(part in path for part in generated_parts)
+    generated_parts = ("genblk", "generate", "__gen", "gen_")
+    return handle_type in ARRAY_TYPES and any(part in name for part in generated_parts)
 
 
 def _normalize_misclassified_hierarchy(handle):
@@ -1157,16 +1171,49 @@ def build_regfile_write_program(max_cycles=REGFILE_WRITE_MAX_CYCLES):
     }
 
 
-async def regfile_write_instr_mem_driver(dut, program_metadata):
+def _serve_unified_data_transaction(memory, address, is_write, write_value,
+                                    cycle, previous_transaction):
+    transaction = (address, is_write, write_value if is_write else None)
+    if transaction != previous_transaction:
+        if is_write:
+            memory.write_word(address, write_value or 0, cycle=cycle)
+        else:
+            memory.read_word(address, cycle=cycle)
+    return memory.read_word(address), transaction
+
+
+async def regfile_write_instr_mem_driver(dut, program_metadata, data_memory=None):
     program = program_metadata.get("program", program_metadata)
     default_instruction = program_metadata.get("default_instruction", NOP_INSTRUCTION)
+    active_data_transaction = None
+    cycle = 0
 
     while True:
         await RisingEdge(dut.sys_clk)
         await Timer(0.001, unit="ns")
+        cycle += 1
 
         try:
             dut.core_ack.value = 1
+            if data_memory is not None:
+                data_memory.current_cycle = cycle
+            bus_addr = _safe_value_int(getattr(dut, "core_addr", None))
+            data_requested = (
+                (not hasattr(dut, "core_cyc") or bool(_safe_value_int(dut.core_cyc)))
+                and (not hasattr(dut, "core_stb") or bool(_safe_value_int(dut.core_stb)))
+            )
+            if (data_memory is not None and not hasattr(dut, "data_mem_ack")
+                    and data_requested
+                    and bus_addr in program_metadata.get("data_access_addresses", ())):
+                value, active_data_transaction = _serve_unified_data_transaction(
+                    data_memory, bus_addr,
+                    bool(_safe_value_int(getattr(dut, "core_we", None))),
+                    _safe_value_int(getattr(dut, "core_data_out", None)),
+                    cycle, active_data_transaction,
+                )
+                dut.core_data_in.value = value
+                continue
+            active_data_transaction = None
             addr = _instruction_address(dut)
             if addr is not None:
                 relative_addr = _program_relative_address(dut, program_metadata, addr)
@@ -2008,7 +2055,9 @@ def _collect_leaf_signals_in_scope(scope_handle, include_child_scopes=False):
     return leaves
 
 
-def collect_nearby_regfile_interface_candidates(dut, selected_regfile):
+def collect_nearby_regfile_interface_candidates(
+    dut, selected_regfile, expanded=False, max_candidates=512,
+):
     regfile_path = selected_regfile.get("path") or selected_regfile.get("candidate_path")
     parent_scope = _parent_path(regfile_path)
     parent_handle = _resolve_path(dut, parent_scope)
@@ -2017,6 +2066,9 @@ def collect_nearby_regfile_interface_candidates(dut, selected_regfile):
         "regfile_path": regfile_path,
         "parent_scope": parent_scope,
         "searched_scopes": [],
+        "search_mode": "expanded" if expanded else "nearby",
+        "candidate_limit": max_candidates,
+        "candidates_truncated": False,
         "word_width": word_width,
         "write_enable_candidates": [],
         "write_addr_candidates": [],
@@ -2045,12 +2097,31 @@ def collect_nearby_regfile_interface_candidates(dut, selected_regfile):
     seen = set()
     leaves = []
     for index, scope_handle in enumerate(scope_handles):
-        leaves.extend(
-            _collect_leaf_signals_in_scope(
-                scope_handle,
-                include_child_scopes=index == 0,
-            )
+        scoped_leaves = _collect_leaf_signals_in_scope(
+            scope_handle,
+            include_child_scopes=(index == 0 or expanded),
         )
+        for leaf in scoped_leaves:
+            leaf["scope_distance"] = index
+        leaves.extend(scoped_leaves)
+
+    if expanded:
+        def leaf_rank(leaf):
+            width = leaf.get("width")
+            path = leaf.get("path") or ""
+            role_hint = max(
+                _interface_name_score(path, role)[0]
+                for role in ("write_enable", "write_addr", "write_data")
+            )
+            width_rank = 2 if width in (1, 2, 3, 4, 5, 6, 7, word_width) else (
+                1 if width and width <= 256 else 0
+            )
+            return (-width_rank, -role_hint, leaf.get("scope_distance", 99), path)
+
+        leaves = sorted(leaves, key=leaf_rank)
+        if len(leaves) > max_candidates:
+            result["candidates_truncated"] = True
+            leaves = leaves[:max_candidates]
 
     for leaf in leaves:
         path = leaf["path"]
@@ -2188,12 +2259,17 @@ def _watched_regfile_values_for_program(dut, selected_regfile, program_metadata)
         reg = entry.get("reg")
         if reg:
             watched[reg] = values.get(reg)
+    if program_metadata.get("architectural_probe"):
+        watched["x0"] = values.get("x0")
     return watched
 
 
 def _interface_signal_paths(interface_candidates):
     paths = []
-    for key in ("write_enable_candidates", "write_addr_candidates", "write_data_candidates"):
+    for key in (
+        "write_enable_candidates", "write_addr_candidates", "write_data_candidates",
+        "unclassified_candidates",
+    ):
         for candidate in interface_candidates.get(key, []):
             path = candidate.get("path")
             if path and path not in paths:
@@ -3043,12 +3119,17 @@ def classify_regfile_interface(trace_result, interface_candidates):
     }
 
 
-async def run_regfile_interface_probe_and_trace(dut, selected_regfile, program_metadata):
-    interface_candidates = collect_nearby_regfile_interface_candidates(dut, selected_regfile)
+async def run_regfile_interface_probe_and_trace(
+    dut, selected_regfile, program_metadata, expanded_candidates=False,
+):
+    interface_candidates = collect_nearby_regfile_interface_candidates(
+        dut, selected_regfile, expanded=expanded_candidates,
+    )
     trace_result = {
         "program_name": program_metadata.get("program_name"),
         "regfile_path": selected_regfile.get("path") or selected_regfile.get("candidate_path"),
         "loop_pc": program_metadata.get("loop_pc"),
+        "fetch_width_bytes": 8 if hasattr(dut, "core_data_in_hi") else 4,
         "expected_write_count": len(program_metadata.get("write_sequence", [])),
         "ran": False,
         "reached_loop": False,
@@ -3068,17 +3149,33 @@ async def run_regfile_interface_probe_and_trace(dut, selected_regfile, program_m
 
     signal_paths = _interface_signal_paths(interface_candidates)
     driver_task = None
+    data_task = None
+    data_memory = None
     try:
         await _start_clock_once(dut)
-        driver_task = cocotb.start_soon(regfile_write_instr_mem_driver(dut, program_metadata))
+        if program_metadata.get("data_memory_initial"):
+            data_memory = DataMemory()
+            data_memory.configure_response_delay(
+                program_metadata.get("load_delay_cycles", 0),
+                next(iter(program_metadata["data_memory_initial"])),
+            )
+            if hasattr(dut, "data_mem_ack"):
+                data_task = cocotb.start_soon(data_mem_driver(dut, data_memory))
+            else:
+                data_memory.supported = all(hasattr(dut, name) for name in (
+                    "core_we", "core_data_out", "core_addr", "core_data_in"
+                ))
+        driver_task = cocotb.start_soon(regfile_write_instr_mem_driver(dut, program_metadata, data_memory))
         await _reset_for_regfile_program(dut, program_metadata)
+        if data_memory is not None:
+            data_memory.reset(program_metadata["data_memory_initial"])
 
         loop_pc = program_metadata["loop_pc"]
         first_loop_cycle = None
         trace_result["ran"] = True
         for cycle in range(program_metadata["max_cycles"]):
             await RisingEdge(dut.sys_clk)
-            await Timer(0.001, unit="ns")
+            await Timer(0.002, unit="ns")
 
             pc = _instruction_address(dut)
             if pc is not None:
@@ -3093,6 +3190,7 @@ async def run_regfile_interface_probe_and_trace(dut, selected_regfile, program_m
                 "cycle": cycle,
                 "pc": pc,
                 "in_loop": in_loop,
+                "fetch_valid": bool(transaction_ok),
                 "regfile_values": _watched_regfile_values_for_program(dut, selected_regfile, program_metadata),
                 "signals": _sample_interface_signals(dut, signal_paths),
             })
@@ -3103,9 +3201,30 @@ async def run_regfile_interface_probe_and_trace(dut, selected_regfile, program_m
 
         if not trace_result["reached_loop"]:
             trace_result["error"] = f"loop PC 0x{loop_pc:08x} not reached within {program_metadata['max_cycles']} cycles"
-        trace_result["update_events"] = detect_regfile_storage_update_events(
-            trace_result["samples"], program_metadata
+        trace_result["update_events"] = (
+            [] if program_metadata.get("architectural_probe")
+            else detect_regfile_storage_update_events(trace_result["samples"], program_metadata)
         )
+        if data_memory is not None:
+            expected_loads = {
+                int(address) & ~3: int(value) & 0xFFFFFFFF
+                for address, value in program_metadata["data_memory_initial"].items()
+            }
+            expected_store = program_metadata.get("expected_store") or {}
+            trace_result["data_memory"] = {
+                "supported": bool(data_memory.supported),
+                "transactions": list(data_memory.transactions),
+                "load_verified": any(
+                    tx["kind"] == "load" and expected_loads.get(tx["address"]) == tx["value"]
+                    for tx in data_memory.transactions
+                ),
+                "store_verified": any(
+                    tx["kind"] == "store"
+                    and tx["address"] == expected_store.get("address")
+                    and tx["value"] == expected_store.get("value")
+                    for tx in data_memory.transactions
+                ),
+            }
         storage_delta = {
             "physical_index_plus_1": 1,
             "physical_index_minus_1": -1,
@@ -3117,12 +3236,14 @@ async def run_regfile_interface_probe_and_trace(dut, selected_regfile, program_m
         trace_result["error"] = str(exc)
         return {"interface_candidates": interface_candidates, "trace_result": trace_result}
     finally:
-        if driver_task is not None:
+        for task in (driver_task, data_task):
+            if task is None:
+                continue
             try:
-                if hasattr(driver_task, "cancel"):
-                    driver_task.cancel()
+                if hasattr(task, "cancel"):
+                    task.cancel()
                 else:
-                    driver_task.kill()
+                    task.kill()
             except Exception:
                 pass
 
@@ -3198,6 +3319,9 @@ def _compact_selected_interface(selected_interface, interface_classification=Non
         "role_expressions",
         "expression_version",
         "role_sources",
+        "interface_semantics",
+        "validated_instruction_classes",
+        "missing_instruction_classes",
     )
     compact = {
         key: selected_interface[key]
@@ -3211,6 +3335,18 @@ def _compact_selected_interface(selected_interface, interface_classification=Non
     ]
     if derived_roles:
         compact["derived_roles"] = derived_roles
+    if not (
+        selected_interface.get("status") == "confirmed_interface"
+        and selected_interface.get("expression_version") == ARCHITECTURAL_EXPRESSION_VERSION
+        and selected_interface.get("interface_semantics") in (
+            "architectural_write", "validated_write_interface",
+        )
+    ):
+        for key in (
+            "interface_semantics", "validated_instruction_classes",
+            "missing_instruction_classes",
+        ):
+            compact.pop(key, None)
     return compact
 
 
@@ -3221,6 +3357,29 @@ def _compat_regfile_interface(selected_interface):
         "write_addr": selected_interface.get("write_addr"),
         "write_data": selected_interface.get("write_data"),
     }
+
+
+def _interface_uses_storage_fallback(selected_interface):
+    return any(
+        str((selected_interface or {}).get(role) or "").startswith("__storage_")
+        for role in ("write_enable", "write_addr", "write_data")
+    )
+
+
+def _prefer_virtual_interface(current, candidate):
+    """Preserve confirmed legacy ports unless the new tuple has full coverage."""
+    if not candidate or candidate.get("status") != "confirmed_interface":
+        return False
+    if candidate.get("interface_semantics") == "architectural_write":
+        return True
+    return (
+        candidate.get("interface_semantics") == "validated_write_interface"
+        and (
+            not current
+            or current.get("status") != "confirmed_interface"
+            or _interface_uses_storage_fallback(current)
+        )
+    )
 
 
 def selected_candidate_metadata(output_data):
@@ -3793,6 +3952,7 @@ async def run_register_file_finder(dut):
     )
     interface_expression_confirmation = {"ran": False, "passed": False, "failed_checks": []}
     interface_expression_synthesis = {}
+    architectural_interface_discovery = {"ran": False, "passed": False, "failed_checks": []}
     if interface_probe_eligible:
         interface_probe = await run_regfile_interface_probe_and_trace(dut, selected_regfile_candidate, interface_probe_program)
         interface_expression_synthesis = synthesize_regfile_interface_expressions(
@@ -3846,6 +4006,104 @@ async def run_register_file_finder(dut):
             selected_regfile["reasons"] = list(
                 selected_regfile.get("reasons", [])
             ) + ["candidate confirmed by matching dynamic write interface"]
+        try:
+            width = _infer_candidate_word_width(dut, selected_regfile_candidate)
+            arch_program = build_architectural_write_program()
+            arch_probe = await run_regfile_interface_probe_and_trace(
+                dut, selected_regfile_candidate, arch_program
+            )
+            arch_trace = arch_probe["trace_result"]
+            discovery_evidence = analyze_architectural_trace(arch_trace, arch_program, width)
+            architectural_interface_discovery = {
+                "ran": arch_trace.get("ran", False),
+                "trace_summary": _interface_trace_summary(arch_trace),
+                "trace": arch_trace,
+                "interface_candidates": arch_probe["interface_candidates"],
+                "evidence": discovery_evidence,
+                "passed": False,
+                "failed_checks": list(discovery_evidence["failed_checks"]),
+            }
+            frozen, discovery_validation = synthesize_architectural_interface(
+                arch_trace,
+                discovery_evidence,
+                arch_probe["interface_candidates"],
+                width,
+                seed=interface_classification.get("selected"),
+            )
+            architectural_interface_discovery["synthesis"] = discovery_validation
+            expanded_search = False
+            if (
+                frozen is None
+                and (discovery_evidence.get("passed") or discovery_evidence.get("partial_passed"))
+                and discovery_validation.get("failure_stage") == "synthesis"
+            ):
+                expanded_search = True
+                arch_probe = await run_regfile_interface_probe_and_trace(
+                    dut, selected_regfile_candidate, arch_program,
+                    expanded_candidates=True,
+                )
+                arch_trace = arch_probe["trace_result"]
+                discovery_evidence = analyze_architectural_trace(
+                    arch_trace, arch_program, width
+                )
+                frozen, discovery_validation = synthesize_architectural_interface(
+                    arch_trace,
+                    discovery_evidence,
+                    arch_probe["interface_candidates"],
+                    width,
+                    seed=interface_classification.get("selected"),
+                )
+                architectural_interface_discovery.update({
+                    "trace_summary": _interface_trace_summary(arch_trace),
+                    "trace": arch_trace,
+                    "interface_candidates": arch_probe["interface_candidates"],
+                    "evidence": discovery_evidence,
+                    "synthesis": discovery_validation,
+                    "expanded_search": True,
+                })
+            if frozen is not None:
+                held_out_program = build_architectural_write_program(held_out=True)
+                held_out_probe = await run_regfile_interface_probe_and_trace(
+                    dut, selected_regfile_candidate, held_out_program,
+                    expanded_candidates=expanded_search,
+                )
+                held_out_trace = held_out_probe["trace_result"]
+                held_out_evidence = analyze_architectural_trace(
+                    held_out_trace, held_out_program, width
+                )
+                frozen_validation = validate_architectural_interface(
+                    frozen, held_out_trace, held_out_evidence, width
+                )
+                architectural_interface_discovery["confirmation"] = {
+                    "trace_summary": _interface_trace_summary(held_out_trace),
+                    "trace": held_out_trace,
+                    "evidence": held_out_evidence,
+                    "validation": frozen_validation,
+                }
+                if frozen_validation["passed"]:
+                    architectural_interface_discovery["passed"] = True
+                    architectural_interface_discovery["failed_checks"] = []
+                    if _prefer_virtual_interface(
+                        interface_classification.get("selected"), frozen
+                    ):
+                        interface_classification["selected"] = frozen
+                    dut._log.info(
+                        "Virtual GPR write interface confirmed: semantics=%s classes=%s",
+                        frozen.get("interface_semantics"),
+                        ",".join(frozen.get("validated_instruction_classes") or ()),
+                    )
+                else:
+                    architectural_interface_discovery["failed_checks"] = frozen_validation["failed_checks"]
+            else:
+                architectural_interface_discovery["failed_checks"] = discovery_validation["failed_checks"]
+            if not architectural_interface_discovery["passed"]:
+                dut._log.info(
+                    "Virtual GPR write interface not confirmed: %s",
+                    "; ".join(architectural_interface_discovery["failed_checks"][:4]),
+                )
+        except Exception as exc:
+            architectural_interface_discovery["failed_checks"] = [str(exc)]
+            dut._log.warning("Architectural GPR write probe failed; keeping v1 interface: %s", exc)
     dynamic_program_output = dict(dynamic_program)
     dynamic_program_output["run_result"] = {
         "ran": trace_result.get("ran"),
@@ -3903,6 +4161,7 @@ async def run_register_file_finder(dut):
         "interface_classification": interface_classification,
         "interface_expression_confirmation": interface_expression_confirmation,
         "interface_expression_synthesis": interface_expression_synthesis,
+        "architectural_interface_discovery": architectural_interface_discovery,
         "selected_regfile_interface": interface_classification["selected"],
     }
     

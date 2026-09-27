@@ -101,6 +101,23 @@ class Phase1DiscoveryTests(unittest.TestCase):
 
         self.assertTrue(finder._looks_like_generated_instance_array(generated))
 
+    def test_discovers_register_array_inside_generated_scope(self):
+        registers = FakeArray(
+            "dut.core.genblk1.gpr1",
+            [FakeSignal(f"dut.core.genblk1.gpr1.{index}", 32) for index in range(32)],
+        )
+        dut = FakeModule(
+            "dut",
+            core=FakeModule(
+                "dut.core",
+                genblk1=FakeModule("dut.core.genblk1", gpr1=registers),
+            ),
+        )
+
+        self.assertFalse(finder._looks_like_generated_instance_array(registers))
+        candidates = finder.discover_regfile_array_candidates(dut)
+        self.assertTrue(any(candidate["path"] == registers._path for candidate in candidates))
+
     def test_discovers_unpacked_array_of_words(self):
         elements = [FakeSignal(f"dut.core.regs.{i}", 32) for i in range(32)]
         dut = FakeModule("dut", core=FakeModule("dut.core", regs=FakeArray("dut.core.regs", elements)))
@@ -265,6 +282,26 @@ class Phase3ProgramTests(unittest.TestCase):
 
             self.assertEqual(resolved, internal)
 
+    def test_automated_wrapper_set_reuses_automated_golden_internal_rtl(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            wrapper_set = root / "automated_wrappers"
+            internal = root / "automated_wrappers_golden" / "internal"
+            wrapper_set.mkdir(parents=True)
+            internal.mkdir(parents=True)
+            for filename in (
+                "ahblite_to_wishbone.sv",
+                "axi4lite_to_wishbone.sv",
+                "axi4_to_wishbone.sv",
+            ):
+                (internal / filename).write_text("", encoding="utf-8")
+
+            resolved = cocotb_makefile_creator.resolve_internal_rtl_directory(
+                str(wrapper_set)
+            )
+
+            self.assertEqual(resolved, internal)
+
     def test_program_generation_has_loop_and_expected_registers(self):
         metadata = finder.build_regfile_write_program()
 
@@ -299,6 +336,53 @@ class Phase3ProgramTests(unittest.TestCase):
             self.assertIn("--public-flat-rw", makefile_text)
             self.assertIn("--trace-structs", makefile_text)
             self.assertIn("--trace-underscore", makefile_text)
+
+    def test_icarus_makefile_maps_ieee_language_version(self):
+        config = {
+            "include_dirs": [],
+            "files": [],
+            "top_module": "core_top",
+            "language_version": "1800-2017",
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            makefile_path = Path(temp_dir) / "core.mk"
+            makefile_path.write_text("", encoding="utf-8")
+
+            with mock.patch.object(
+                cocotb_makefile_creator, "load_config", return_value=config
+            ):
+                cocotb_makefile_creator.standard_makefile(
+                    "core", "Verilog", "config", temp_dir,
+                    str(makefile_path), "/cores/core",
+                )
+
+            makefile_text = makefile_path.read_text(encoding="utf-8")
+            self.assertIn("COMPILE_ARGS ?= -g2012", makefile_text)
+            self.assertNotIn("-g1800-2017", makefile_text)
+
+    def test_makefile_quotes_include_directories_with_spaces(self):
+        config = {
+            "include_dirs": ["RISC-V Pipelined Processor/RISC-V"],
+            "files": ["RISC-V Pipelined Processor/RISC-V/design.sv"],
+            "top_module": "core_top",
+            "language_version": "1800-2023",
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            makefile_path = Path(temp_dir) / "core.mk"
+            makefile_path.write_text("", encoding="utf-8")
+
+            with mock.patch.object(cocotb_makefile_creator, "load_config", return_value=config):
+                cocotb_makefile_creator.standard_makefile(
+                    "core", "SystemVerilog", "config", temp_dir,
+                    str(makefile_path), "/cores/core",
+                )
+
+            makefile_text = makefile_path.read_text(encoding="utf-8")
+            self.assertIn(
+                "COMPILE_ARGS += -I'/cores/core/RISC-V Pipelined Processor/RISC-V'",
+                makefile_text,
+            )
+            self.assertNotIn("VERILOG_INCLUDE_DIRS += /cores/core/RISC-V\\ ", makefile_text)
 
     def test_cv32e40x_omits_crashing_trace_underscore_flag(self):
         config = {
@@ -698,6 +782,40 @@ class InterfaceDiscoveryTests(unittest.TestCase):
         self.assertTrue(any(c["path"] == "dut.core.rd" for c in candidates["write_addr_candidates"]))
         self.assertTrue(any(c["path"] == "dut.core.wb.wb_data" for c in candidates["write_data_candidates"]))
         self.assertTrue(any(c["path"] == "dut.core.random_bus" for c in candidates["unclassified_candidates"]))
+
+    def test_expanded_collection_reaches_sibling_writeback_scope(self):
+        elements = [FakeSignal(f"dut.soc.core.rf.REGS.{i}", 32) for i in range(32)]
+        rf = FakeModule("dut.soc.core.rf", REGS=FakeArray("dut.soc.core.rf.REGS", elements))
+        wb = FakeModule(
+            "dut.soc.core.wb",
+            commit_valid=FakeSignal("dut.soc.core.wb.commit_valid", 1),
+            commit_kind=FakeSignal("dut.soc.core.wb.commit_kind", 3),
+            commit_data=FakeSignal("dut.soc.core.wb.commit_data", 32),
+        )
+        core = FakeModule("dut.soc.core", rf=rf, wb=wb)
+        dut = FakeModule("dut", soc=FakeModule("dut.soc", core=core))
+        selected = {
+            "path": "dut.soc.core.rf.REGS", "kind": "array_of_words",
+            "depth": 32, "word_width": 32,
+        }
+
+        nearby = finder.collect_nearby_regfile_interface_candidates(dut, selected)
+        expanded = finder.collect_nearby_regfile_interface_candidates(
+            dut, selected, expanded=True
+        )
+
+        self.assertFalse(any(
+            candidate["path"] == "dut.soc.core.wb.commit_valid"
+            for candidate in nearby["write_enable_candidates"]
+        ))
+        self.assertTrue(any(
+            candidate["path"] == "dut.soc.core.wb.commit_valid"
+            for candidate in expanded["write_enable_candidates"]
+        ))
+        self.assertIn(
+            "dut.soc.core.wb.commit_kind",
+            finder._interface_signal_paths(expanded),
+        )
 
     def test_interface_probe_program_has_expected_writes_and_loop(self):
         metadata = finder.build_regfile_interface_probe_program()
