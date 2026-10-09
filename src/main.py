@@ -19,7 +19,7 @@ from language import identify_language
 from license import identify_license_type, find_license_files
 from cocotb_makefile_creator import create_cocotb_makefile
 from config import load_config
-from simulate import run_ghdl_import, run_ghdl_elaborate, synthesize_to_verilog
+from simulate import BUILD_DIR as VHDL_BUILD_DIR, run_ghdl_import, run_ghdl_elaborate, synthesize_to_verilog
 
 DESTINATION_DIR = './cores'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -170,10 +170,10 @@ def _core_labeler_impl(
         ghdl_flags = [flag for flag in extra_flags if flag != '--latches']
         synth_flags = extra_flags if '--latches' in extra_flags else ['--latches', *extra_flags]
         try:
-            BUILD_DIR.mkdir(exist_ok=True)
+            VHDL_BUILD_DIR.mkdir(parents=True, exist_ok=True)
             run_ghdl_import(processor_name, sim_files, ghdl_flags)
             run_ghdl_elaborate(processor_name, top_module, ghdl_flags)
-            verilog_output = BUILD_DIR / f'{processor_name}.v'
+            verilog_output = VHDL_BUILD_DIR / f'{processor_name}.v'
             synthesize_to_verilog(processor_name, verilog_output, top_module, synth_flags)
             fix_protected_instances(verilog_output)
         except Exception as e:
@@ -184,7 +184,7 @@ def _core_labeler_impl(
     # Create a Makefile for cocotb simulation
     print(f"Directory being passed to cocotb_makefile_creator: {directory}") # debug
     makefile = create_cocotb_makefile(processor_name, language, config_file, top_dir, output_dir, directory, ollama_flag)
-    path_to_main = os.path.abspath(os.path.join(BASE_DIR, 'processor_ci_inspector/src'))
+    path_to_main = str(Path(__file__).resolve().parent)
     try:
         environment = os.environ.copy()
         environment['PYTHONPATH'] = path_to_main
@@ -410,6 +410,10 @@ def fix_protected_instances(verilog_file: Path, backup=True):
     # Match: <word> <identifier> (
     pattern = re.compile(r"\b(\w+)\s+(\w+)\s*\(")
     fixed_text = pattern.sub(replacer, text)
+    # GHDL can emit <unassigned> for an undriven VHDL value. It is a useful
+    # diagnostic marker but invalid Verilog; an unknown value preserves its
+    # meaning and lets Verilator compile the rest of the generated model.
+    fixed_text = fixed_text.replace('<unassigned>', "'x")
 
     if backup:
         verilog_file.with_suffix(".v.bak").write_text(text)

@@ -1882,7 +1882,7 @@ async def forwarding_presence_test(dut, regfile, pipeline=None, data_memory=None
             dut.core_ack.value = 0
             await _load_optional_internal_program(dut, program_memory.image)
             await _load_optional_internal_data(dut, spec.initial_memory)
-            await Timer(50, unit="ns")
+            await Timer(50, units="ns")
             data_memory.reset(spec.initial_memory)
             dut.rst_n.value = 1
             memory_epoch = data_memory.current_cycle

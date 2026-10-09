@@ -147,28 +147,31 @@ async def processor_test(dut):
         await _discovery._load_optional_internal_program(
             dut, _discovery.program_memory.image,
         )
-        await _discovery.Timer(50, unit="ns")
+        await _discovery.Timer(50, units="ns")
         dut.rst_n.value = 1
 
         datapath = await Datapath.test_datapath_structure(
             dut, regfile, regfile_discovery=discovery,
         )
-        pipeline = datapath["pipeline"]
-        if Forwarding._is_pipeline_classification(pipeline):
-            await Forwarding.forwarding_presence_test(
-                dut,
-                regfile,
-                pipeline=pipeline,
-                data_memory=data_memory,
-                regfile_discovery=discovery,
-            )
+        if _discovery._env_flag("RVB_INSPECTOR_SKIP_EXPERIMENTAL"):
+            dut._log.info("Skipping forwarding and branch prediction probes for RV-Bench")
         else:
-            dut._log.info("[forwarding] Not applicable to this execution model")
-            Forwarding.record_not_applicable(dut)
+            pipeline = datapath["pipeline"]
+            if Forwarding._is_pipeline_classification(pipeline):
+                await Forwarding.forwarding_presence_test(
+                    dut,
+                    regfile,
+                    pipeline=pipeline,
+                    data_memory=data_memory,
+                    regfile_discovery=discovery,
+                )
+            else:
+                dut._log.info("[forwarding] Not applicable to this execution model")
+                Forwarding.record_not_applicable(dut)
 
-        await Branch.branch_prediction_presence_test(
-            dut, regfile, pipeline=pipeline, data_memory=data_memory,
-        )
+            await Branch.branch_prediction_presence_test(
+                dut, regfile, pipeline=pipeline, data_memory=data_memory,
+            )
     finally:
         # Do not leave VPI-backed coroutines alive during simulator teardown.
         for task in (instruction_driver_task, data_driver_task):

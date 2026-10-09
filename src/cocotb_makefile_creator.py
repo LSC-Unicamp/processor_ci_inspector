@@ -21,7 +21,8 @@ VERILATOR_LANGUAGE_ALIASES = {
 }
 
 
-def verilator_compile_args(config: dict, requires_timing: bool = False) -> str:
+def verilator_compile_args(config: dict, requires_timing: bool = False,
+                           wrapper_top: bool = False) -> str:
     """Build arguments for mixed Verilog core and SystemVerilog wrapper sources."""
     language_version = str(config.get('language_version', '1800-2017'))
     language_version = VERILATOR_LANGUAGE_ALIASES.get(language_version, language_version)
@@ -36,6 +37,11 @@ def verilator_compile_args(config: dict, requires_timing: bool = False) -> str:
         if flag == '--language' and index + 1 < len(extra_flags):
             language_version = str(extra_flags[index + 1])
             index += 2
+            continue
+        if wrapper_top and flag.startswith('-G'):
+            # -G targets Verilator's top module. The Processor CI wrapper has
+            # no such parameters; its core instance owns any overrides.
+            index += 1
             continue
         filtered_flags.append(flag)
         index += 1
@@ -65,12 +71,25 @@ def verilator_compile_args(config: dict, requires_timing: bool = False) -> str:
         '--language', language_version, *extension_language, '-DSIMULATION', '-Wno-fatal',
         '-Wno-lint', *visibility_flags, *filtered_flags,
     ]
+    if config.get('two_memory', config.get('two_memories', False)) and not any(
+        flag in {'-DENABLE_SECOND_MEMORY', '+define+ENABLE_SECOND_MEMORY'}
+        for flag in filtered_flags
+    ):
+        args.append('-DENABLE_SECOND_MEMORY')
     if requires_timing and '--timing' not in filtered_flags and '--no-timing' not in filtered_flags:
         args.append('--timing')
     return ' '.join(shlex.quote(arg) for arg in args)
 
 def escape_spaces(path: str) -> str:
     return re.sub(r'(?<!\\) ', r'\\ ', path)
+
+
+def write_verilog_include_dir(makefile, directory: str) -> None:
+    """Preserve spaces through Cocotb's include-dir word splitting."""
+    if ' ' in directory:
+        makefile.write(f'COMPILE_ARGS += {shlex.quote("-I" + directory)}\n')
+    else:
+        makefile.write(f'VERILOG_INCLUDE_DIRS += {directory}\n')
 
 
 def source_requires_timing(path: str) -> bool:
@@ -146,10 +165,9 @@ def standard_makefile(processor_name: str, language: str, config_folder: str, ou
             makefile.write('SIM ?= icarus\n')
             makefile.write('TOPLEVEL_LANG ?= verilog\n')
             makefile.write(f'COMPILE_ARGS ?= -g{language_version}\n')
-            makefile.write(f'VERILOG_INCLUDE_DIRS += {escape_spaces(core_directory)}\n')
+            write_verilog_include_dir(makefile, core_directory)
             for dirs in inc_dir:
-                path = escape_spaces(f'{core_directory}/{dirs}')
-                makefile.write(f'VERILOG_INCLUDE_DIRS += {path}\n')
+                write_verilog_include_dir(makefile, f'{core_directory}/{dirs}')
             for file in sim_files:
                 path = escape_spaces(f'{core_directory}/{file}')
                 makefile.write(f'VERILOG_SOURCES += {path}\n')
@@ -157,18 +175,18 @@ def standard_makefile(processor_name: str, language: str, config_folder: str, ou
             makefile.write('SIM ?= verilator\n')
             makefile.write('TOPLEVEL_LANG ?= verilog\n')
             makefile.write(f'COMPILE_ARGS ?= {verilator_compile_args(config)}\n')
-            makefile.write(f'VERILOG_INCLUDE_DIRS += {escape_spaces(core_directory)}\n')
+            write_verilog_include_dir(makefile, core_directory)
             for dirs in inc_dir:
-                path = escape_spaces(f'{core_directory}/{dirs}')
-                makefile.write(f'VERILOG_INCLUDE_DIRS += {path}\n')
+                write_verilog_include_dir(makefile, f'{core_directory}/{dirs}')
             for file in sim_files:
                 path = escape_spaces(f'{core_directory}/{file}')
                 makefile.write(f'VERILOG_SOURCES += {path}\n')
         elif language == 'VHDL':
             makefile.write('SIM ?= verilator\n')
             makefile.write('TOPLEVEL_LANG ?= verilog\n')
-            makefile.write(f'COMPILE_ARGS ?= --language 1800-2012 {VERILATOR_VISIBILITY_FLAGS}\n')
-            makefile.write('VERILOG_SOURCES += sim_build/{processor_name}.v\n')
+            makefile.write(f'COMPILE_ARGS ?= --language 1800-2012 -Wno-fatal {VERILATOR_VISIBILITY_FLAGS}\n')
+            vhdl_dir = Path(os.environ.get('RVB_SCRATCH_DIR', BASE_DIR / 'build')) / 'vhdl'
+            makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(vhdl_dir / f"{processor_name}.v"))}\n')
         makefile.write(f'TOPLEVEL = {top_module}\n')
         makefile.write(f'MODULE = {cocotb_name}\n')
         makefile.write(f'OUTPUT_DIR = {output_dir}/{processor_name}\n')
@@ -199,7 +217,7 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
         makefile.write(f'export OLLAMA = {ollama_flag}\n')
         if language.lower() != 'vhdl':
             makefile.write(
-                f'COMPILE_ARGS ?= {verilator_compile_args(config, source_requires_timing(wrapper_path))}\n'
+                f'COMPILE_ARGS ?= {verilator_compile_args(config, source_requires_timing(wrapper_path), wrapper_top=True)}\n'
             )
             public_depth = config.get('verilator_public_depth')
             if public_depth is not None:
@@ -212,22 +230,24 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
                 makefile.write(
                     f'EXTRA_ARGS += --no-public-flat-rw --public-depth {public_depth}\n'
                 )
-            makefile.write(f'VERILOG_INCLUDE_DIRS += {escape_spaces(core_directory)}\n')
+            write_verilog_include_dir(makefile, core_directory)
             for dirs in inc_dir:
-                path = escape_spaces(f'{core_directory}/{dirs}')
-                makefile.write(f'VERILOG_INCLUDE_DIRS += {path}\n')
+                write_verilog_include_dir(makefile, f'{core_directory}/{dirs}')
             for file in sim_files:
                 path = escape_spaces(f'{core_directory}/{file}')
                 makefile.write(f'VERILOG_SOURCES += {path}\n')
         else:
             makefile.write(f'COMPILE_ARGS ?= --language 1800-2012 -DSIMULATION -Wno-fatal -Wno-lint {VERILATOR_VISIBILITY_FLAGS}\n')
             # directory from where the script is being called
-            makefile.write(f'VERILOG_SOURCES += {BASE_DIR}/build/{processor_name}.v\n')
+            vhdl_dir = Path(os.environ.get('RVB_SCRATCH_DIR', BASE_DIR / 'build')) / 'vhdl'
+            makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(vhdl_dir / f"{processor_name}.v"))}\n')
         makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "ahblite_to_wishbone.sv"))}\n')
         makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "axi4lite_to_wishbone.sv"))}\n')
         makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "axi4_to_wishbone.sv"))}\n')
         if processor_name == 'soft_riscv':
             makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "memory.sv"))}\n')
+        if processor_name == 'black-parrot':
+            makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "blackparrot_dma_to_wishbone.sv"))}\n')
         makefile.write(f'VERILOG_SOURCES += {wrapper_path}\n')
         makefile.write(f'TOPLEVEL = {top_module}\n')
         makefile.write(f'MODULE = {cocotb_name}\n')

@@ -117,7 +117,7 @@ async def _load_optional_internal_program(dut, program):
         dut.imem_prog_data.value = int(instruction)
         dut.imem_prog_we.value = 1
         await RisingEdge(dut.sys_clk)
-        await Timer(0.001, unit="ns")
+        await Timer(0.001, units="ns")
     dut.imem_prog_we.value = 0
 
 async def _load_optional_internal_data(dut, memory):
@@ -131,7 +131,7 @@ async def _load_optional_internal_data(dut, memory):
         dut.dmem_prog_data.value = int(value) & 0xFFFFFFFF
         dut.dmem_prog_we.value = 1
         await RisingEdge(dut.sys_clk)
-        await Timer(0.001, unit="ns")
+        await Timer(0.001, units="ns")
     dut.dmem_prog_we.value = 0
 
 async def instr_mem_driver(dut, memory=None):
@@ -146,7 +146,7 @@ async def instr_mem_driver(dut, memory=None):
     cycle_count = 0
     while True:
         await RisingEdge(dut.sys_clk)
-        await Timer(0.001, unit="ns") # let signals settle
+        await Timer(0.001, units="ns") # let signals settle
         dut.core_ack.value = 1
         cycle_count += 1
         
@@ -154,7 +154,7 @@ async def instr_mem_driver(dut, memory=None):
         addr_signal = dut.imem_fetch_addr if hasattr(dut, "imem_fetch_addr") else dut.core_addr
         addr_val = addr_signal.value
         if addr_val.is_resolvable:
-            addr = addr_val.to_unsigned()
+            addr = int(addr_val)
             instr = memory.read(addr)
             dut.core_data_in.value = instr
             if hasattr(dut, "core_data_in_hi"):
@@ -193,7 +193,7 @@ async def data_mem_driver(dut, memory=None):
     delay_remaining = 0
     while True:
         await RisingEdge(dut.sys_clk)
-        await Timer(0.001, unit="ns") # let signals settle
+        await Timer(0.001, units="ns") # let signals settle
         # Delay ACK only while the configured qualifying load is active.  A
         # configured delay must not stall idle cycles, stores, or other loads.
         dut.data_mem_ack.value = 1
@@ -797,10 +797,10 @@ async def _observe_probe_commits(
         cycles_used = cycle + 1
         if pipeline_observer is not None:
             await FallingEdge(dut.sys_clk)
-            await Timer(0.001, unit="ns")
+            await Timer(0.001, units="ns")
             pipeline_observer.sample(cycle, phase="pre_edge")
         await RisingEdge(dut.sys_clk)
-        await Timer(0.001, unit="ns")
+        await Timer(0.001, units="ns")
         if pipeline_observer is not None:
             pipeline_observer.sample(cycle, phase="post_edge")
         if data_memory is not None and memory_events is not None:

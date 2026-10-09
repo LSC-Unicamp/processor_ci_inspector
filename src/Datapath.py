@@ -162,7 +162,7 @@ async def _observe_signature_commits_with_interface(
 
     for cycle in range(max_cycles):
         await RisingEdge(dut.sys_clk)
-        await Timer(0.001, unit="ns")
+        await Timer(0.001, units="ns")
 
         _record_signature_fetch(dut, cycle, fetch_events, seen_fetch_pcs)
 
@@ -265,7 +265,7 @@ async def _observe_signature_commits_from_regfile(dut, regfile, regfile_metadata
 
     for cycle in range(max_cycles):
         await RisingEdge(dut.sys_clk)
-        await Timer(0.001, unit="ns")
+        await Timer(0.001, units="ns")
 
         _record_signature_fetch(dut, cycle, fetch_events, seen_fetch_pcs)
 

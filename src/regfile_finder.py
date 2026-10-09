@@ -6,7 +6,12 @@ import subprocess
 import logging
 import re
 from cocotb import simulator
-from cocotb.handle import _make_sim_object
+try:
+    # cocotb 2.x renamed its raw-handle factory. Inspector supports the 1.9.x
+    # release pinned in requirements.txt as well as newer development setups.
+    from cocotb.handle import _make_sim_object
+except ImportError:
+    from cocotb.handle import SimHandle as _make_sim_object
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, Timer
 try:
@@ -803,6 +808,40 @@ def simulator_safe_hierarchy(root):
     return _SimulatorSafeHierarchyView(root)
 
 
+def resolve_simulator_path(root, path):
+    """Resolve a discovered raw-VPI path without relying on cocotb's cache.
+
+    The discovery walker deliberately tolerates objects that cocotb did not
+    place in ``getattr``/``dir``.  Resolution must use the same raw-child path,
+    otherwise a candidate can be declared visible and then immediately fail
+    lookup on cocotb 2.x.
+    """
+    target = getattr(root, "_target", root)
+    parts = str(path).split('.')
+    root_names = {
+        str(getattr(target, "_name", "")),
+        _leaf_basename(_safe_path(target)),
+    }
+    if parts and parts[0] in root_names:
+        parts = parts[1:]
+
+    handle = target
+    for part in parts:
+        match = re.fullmatch(r'([^\[]+)(?:\[(-?\d+)\])?', part)
+        if match is None:
+            raise AttributeError(f"invalid simulator path component: {part}")
+        name, index = match.groups()
+        child = next(
+            (candidate for child_name, candidate in _iter_sim_children(handle)
+             if child_name == name),
+            None,
+        )
+        if child is None:
+            child = getattr(handle, name)
+        handle = child[int(index)] if index is not None else child
+    return handle
+
+
 def discover_regfile_array_candidates(root, max_depth=25, depths=None, word_widths=None):
     """
     Walk the visible simulation hierarchy and find static array-like register-file
@@ -1156,7 +1195,7 @@ async def regfile_write_instr_mem_driver(dut, program_metadata):
 
     while True:
         await RisingEdge(dut.sys_clk)
-        await Timer(0.001, unit="ns")
+        await Timer(0.001, units="ns")
 
         try:
             dut.core_ack.value = 1
@@ -1201,7 +1240,7 @@ async def run_regfile_write_program(dut, program_metadata):
         return result
 
     try:
-        cocotb.start_soon(Clock(dut.sys_clk, 10, unit="ns").start())
+        cocotb.start_soon(Clock(dut.sys_clk, 10, units="ns").start())
         cocotb.start_soon(regfile_write_instr_mem_driver(dut, program_metadata))
 
         if hasattr(dut, "rst_n"):
@@ -1210,7 +1249,7 @@ async def run_regfile_write_program(dut, program_metadata):
             dut.reset_core.value = 1
         dut.core_ack.value = 0
         dut.core_data_in.value = NOP_INSTRUCTION
-        await Timer(50, unit="ns")
+        await Timer(50, units="ns")
         if hasattr(dut, "rst_n"):
             dut.rst_n.value = 1
         if hasattr(dut, "reset_core"):
@@ -1223,7 +1262,7 @@ async def run_regfile_write_program(dut, program_metadata):
 
         for cycle in range(max_cycles):
             await RisingEdge(dut.sys_clk)
-            await Timer(0.001, unit="ns")
+            await Timer(0.001, units="ns")
 
             pc = _instruction_address(dut)
             if pc is None:
@@ -1625,7 +1664,7 @@ def classify_regfile_candidates(trace_result, program_metadata):
 async def _start_clock_once(dut):
     if getattr(dut, "_regfile_finder_clock_started", False):
         return
-    cocotb.start_soon(Clock(dut.sys_clk, 10, unit="ns").start())
+    cocotb.start_soon(Clock(dut.sys_clk, 10, units="ns").start())
     try:
         setattr(dut, "_regfile_finder_clock_started", True)
     except Exception:
@@ -1642,7 +1681,7 @@ async def _load_optional_internal_program(dut, program_metadata):
         dut.imem_prog_data.value = int(instruction)
         dut.imem_prog_we.value = 1
         await RisingEdge(dut.sys_clk)
-        await Timer(0.001, unit="ns")
+        await Timer(0.001, units="ns")
     dut.imem_prog_we.value = 0
 
 
@@ -1655,7 +1694,7 @@ async def _reset_for_regfile_program(dut, program_metadata=None):
     dut.core_data_in.value = NOP_INSTRUCTION
     if program_metadata:
         await _load_optional_internal_program(dut, program_metadata)
-    await Timer(50, unit="ns")
+    await Timer(50, units="ns")
     if hasattr(dut, "rst_n"):
         dut.rst_n.value = 1
     if hasattr(dut, "reset_core"):
@@ -1740,7 +1779,7 @@ async def run_regfile_program_and_trace(dut, program_metadata, candidates):
 
         for cycle in range(max_cycles):
             await RisingEdge(dut.sys_clk)
-            await Timer(0.001, unit="ns")
+            await Timer(0.001, units="ns")
 
             pc = _instruction_address(dut)
             if pc is not None:
@@ -2682,7 +2721,7 @@ async def run_regfile_interface_probe_and_trace(dut, selected_regfile, program_m
         trace_result["ran"] = True
         for cycle in range(program_metadata["max_cycles"]):
             await RisingEdge(dut.sys_clk)
-            await Timer(0.001, unit="ns")
+            await Timer(0.001, units="ns")
 
             pc = _instruction_address(dut)
             if pc is not None:
