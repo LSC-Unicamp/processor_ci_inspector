@@ -204,18 +204,36 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
     top_module = "processorci_top"
     inc_dir = config['include_dirs']
     sim_files = config['files']
-    two_memories = config.get('two_memory', config.get('two_memories', False))
-    wrapper_path = os.path.join(top_folder, f"{processor_name}.sv")
-    
-    internal_rtl = resolve_internal_rtl_directory(top_folder)
+    two_memories = bool(config.get('two_memory', config.get('two_memories', False))) or (
+        str((config.get('interface') or {}).get('memory_interface', '')).lower() == 'dual'
+    )
+    native_vhdl = next(
+        (Path(top_folder) / f'{processor_name}{extension}' for extension in ('.vhd', '.vhdl')
+         if (Path(top_folder) / f'{processor_name}{extension}').is_file()),
+        None,
+    ) if language.lower() == 'vhdl' else None
+    wrapper_path = str(native_vhdl or Path(top_folder) / f'{processor_name}.sv')
+    internal_rtl = None if native_vhdl else resolve_internal_rtl_directory(top_folder)
 
     # Write the Makefile content
     with open(makefile_path, 'a', encoding='utf-8') as makefile:
-        makefile.write('SIM ?= verilator\n')
-        makefile.write('TOPLEVEL_LANG ?= verilog\n')
+        makefile.write(f'SIM ?= {"ghdl" if native_vhdl else "verilator"}\n')
+        makefile.write(f'TOPLEVEL_LANG ?= {"vhdl" if native_vhdl else "verilog"}\n')
         makefile.write(f'export TWO_MEMORIES = {two_memories}\n')
         makefile.write(f'export OLLAMA = {ollama_flag}\n')
-        if language.lower() != 'vhdl':
+        if native_vhdl:
+            version = str(config.get('language_version') or '08')
+            if version in {'2008', 'vhdl2008'}:
+                version = '08'
+            flags = [str(flag) for flag in config.get('extra_flags', []) if flag != '--latches']
+            makefile.write(f'GHDL_ARGS ?= {" ".join(shlex.quote(flag) for flag in [f"--std={version}", *flags])}\n')
+            if config.get('work_library'):
+                makefile.write(f'RTL_LIBRARY ?= {config["work_library"]}\n')
+            for file in sim_files:
+                path = escape_spaces(f'{core_directory}/{file}')
+                makefile.write(f'VHDL_SOURCES += {path}\n')
+            makefile.write(f'VHDL_SOURCES += {escape_spaces(wrapper_path)}\n')
+        elif language.lower() != 'vhdl':
             makefile.write(
                 f'COMPILE_ARGS ?= {verilator_compile_args(config, source_requires_timing(wrapper_path), wrapper_top=True)}\n'
             )
@@ -241,19 +259,21 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
             # directory from where the script is being called
             vhdl_dir = Path(os.environ.get('RVB_SCRATCH_DIR', BASE_DIR / 'build')) / 'vhdl'
             makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(vhdl_dir / f"{processor_name}.v"))}\n')
-        makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "ahblite_to_wishbone.sv"))}\n')
-        makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "axi4lite_to_wishbone.sv"))}\n')
-        makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "axi4_to_wishbone.sv"))}\n')
-        if processor_name == 'soft_riscv':
-            makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "memory.sv"))}\n')
-        if processor_name == 'black-parrot':
-            makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "blackparrot_dma_to_wishbone.sv"))}\n')
-        makefile.write(f'VERILOG_SOURCES += {wrapper_path}\n')
+        if not native_vhdl:
+            makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "ahblite_to_wishbone.sv"))}\n')
+            makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "axi4lite_to_wishbone.sv"))}\n')
+            makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "axi4_to_wishbone.sv"))}\n')
+            if processor_name == 'soft_riscv':
+                makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "memory.sv"))}\n')
+            if processor_name == 'black-parrot':
+                makefile.write(f'VERILOG_SOURCES += {escape_spaces(str(internal_rtl / "blackparrot_dma_to_wishbone.sv"))}\n')
+            makefile.write(f'VERILOG_SOURCES += {escape_spaces(wrapper_path)}\n')
         makefile.write(f'TOPLEVEL = {top_module}\n')
         makefile.write(f'MODULE = {cocotb_name}\n')
         makefile.write(f'OUTPUT_DIR = {output_dir}/{processor_name}\n')
         makefile.write(f'SIM_BUILD = sim_build/{processor_name}\n')
-        _write_isolated_verilator_vpath(makefile)
+        if not native_vhdl:
+            _write_isolated_verilator_vpath(makefile)
         makefile.write('export OUTPUT_DIR\n')
         makefile.write('include $(shell cocotb-config --makefiles)/Makefile.sim\n') 
 
@@ -301,7 +321,12 @@ def create_cocotb_makefile(processor_name: str, language: str, config_folder: st
     # Check if the top folder exists
     if os.path.exists(top_folder):
         top_path = top_folder  # Keep relative path
-        top_file = os.path.join(top_folder, f'{processor_name}.sv')
+        extensions = ('.vhd', '.vhdl', '.sv') if language.lower() == 'vhdl' else ('.sv',)
+        top_file = next(
+            (os.path.join(top_folder, f'{processor_name}{extension}') for extension in extensions
+             if os.path.isfile(os.path.join(top_folder, f'{processor_name}{extension}'))),
+            os.path.join(top_folder, f'{processor_name}{extensions[0]}'),
+        )
     else:
         top_path = ""
         top_file = ""

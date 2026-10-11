@@ -159,8 +159,13 @@ def _core_labeler_impl(
 
     print(language)
 
-    #VHDL treatment
-    if language.lower() == 'vhdl':
+    # A native VHDL wrapper is compiled with the core by Cocotb/GHDL. The
+    # Verilog conversion below is only for VHDL cores without that wrapper.
+    native_vhdl_wrapper = any(
+        (Path(top_dir) / f'{processor_name}{extension}').is_file()
+        for extension in ('.vhd', '.vhdl')
+    )
+    if language.lower() == 'vhdl' and not native_vhdl_wrapper:
         sim_files = config['files']
         for i in range(len(sim_files)):
             sim_files[i] = os.path.join(directory, sim_files[i])
@@ -662,7 +667,8 @@ def main(
     os.makedirs(output_directory, exist_ok=True)
 
     wrapper_names = {
-        path.stem for path in Path(top_directory).glob('*.sv')
+        path.stem for extension in ('*.sv', '*.vhd', '*.vhdl')
+        for path in Path(top_directory).glob(extension)
     }
     for config_file in os.listdir(config_directory):
         processor_name = os.path.splitext(config_file)[0]
