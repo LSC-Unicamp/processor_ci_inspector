@@ -162,9 +162,17 @@ def standard_makefile(processor_name: str, language: str, config_folder: str, ou
     # Write the Makefile content
     with open(makefile_path, 'a', encoding='utf-8') as makefile:
         if language == 'Verilog':
-            makefile.write('SIM ?= icarus\n')
-            makefile.write('TOPLEVEL_LANG ?= verilog\n')
-            makefile.write(f'COMPILE_ARGS ?= -g{language_version}\n')
+            # Icarus does not accept Verilator's -G top overrides. Named
+            # RV-Bench presets use Verilator so their selected core parameters
+            # reach the simulator; ordinary standalone Verilog keeps Icarus.
+            if config.get('rvbench_verilog_top_params'):
+                makefile.write('SIM ?= verilator\n')
+                makefile.write('TOPLEVEL_LANG ?= verilog\n')
+                makefile.write(f'COMPILE_ARGS ?= {verilator_compile_args(config)}\n')
+            else:
+                makefile.write('SIM ?= icarus\n')
+                makefile.write('TOPLEVEL_LANG ?= verilog\n')
+                makefile.write(f'COMPILE_ARGS ?= -g{language_version}\n')
             write_verilog_include_dir(makefile, core_directory)
             for dirs in inc_dir:
                 write_verilog_include_dir(makefile, f'{core_directory}/{dirs}')

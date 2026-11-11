@@ -37,7 +37,7 @@ def run_ghdl_import(cpu_name, vhdl_files, extra_flags=None):
     subprocess.run(cmd, check=True)
 
 
-def run_ghdl_elaborate(cpu_name, top_module, extra_flags=None):
+def run_ghdl_elaborate(cpu_name, top_module, extra_flags=None, generics=None):
     """Elaborar com GHDL -m."""
     print('[INFO] Elaborando projeto com GHDL (-m)...')
     cmd = [
@@ -47,12 +47,12 @@ def run_ghdl_elaborate(cpu_name, top_module, extra_flags=None):
         f'--work={_work_library(cpu_name)}',
         f'--workdir={BUILD_DIR}',
         f'-P{BUILD_DIR}',
-    ] + list(extra_flags or []) + [f'{top_module}']
+    ] + list(extra_flags or []) + [f'-g{name}={value}' for name, value in (generics or {}).items()] + [f'{top_module}']
     print(f"[CMD] {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
 
 
-def synthesize_to_verilog(cpu_name, output_file, top_module, extra_flags=None):
+def synthesize_to_verilog(cpu_name, output_file, top_module, extra_flags=None, generics=None):
     """Sintetizar o VHDL com GHDL para Verilog."""
     print(f'[INFO] Sintetizando {cpu_name} para Verilog...')
     cmd = [
@@ -63,7 +63,7 @@ def synthesize_to_verilog(cpu_name, output_file, top_module, extra_flags=None):
         f'--workdir={BUILD_DIR}',
         f'-P{BUILD_DIR}',
         '--out=verilog',
-    ] + list(extra_flags or []) + [top_module]
+    ] + list(extra_flags or []) + [f'-g{name}={value}' for name, value in (generics or {}).items()] + [top_module]
     print(f"[CMD] {' '.join(cmd)} > {output_file}")
     with open(output_file, 'w') as f:
         subprocess.run(cmd, stdout=f, check=True)

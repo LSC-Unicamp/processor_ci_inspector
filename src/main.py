@@ -174,12 +174,13 @@ def _core_labeler_impl(
         extra_flags = [str(flag) for flag in config.get('extra_flags', [])]
         ghdl_flags = [flag for flag in extra_flags if flag != '--latches']
         synth_flags = extra_flags if '--latches' in extra_flags else ['--latches', *extra_flags]
+        generics = config.get('rvbench_vhdl_generics') or {}
         try:
             VHDL_BUILD_DIR.mkdir(parents=True, exist_ok=True)
             run_ghdl_import(processor_name, sim_files, ghdl_flags)
-            run_ghdl_elaborate(processor_name, top_module, ghdl_flags)
+            run_ghdl_elaborate(processor_name, top_module, ghdl_flags, generics)
             verilog_output = VHDL_BUILD_DIR / f'{processor_name}.v'
-            synthesize_to_verilog(processor_name, verilog_output, top_module, synth_flags)
+            synthesize_to_verilog(processor_name, verilog_output, top_module, synth_flags, generics)
             fix_protected_instances(verilog_output)
         except Exception as e:
             logging.warning('Error during VHDL processing: %s', e)
