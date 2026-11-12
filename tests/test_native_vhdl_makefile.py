@@ -10,9 +10,45 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import cocotb_makefile_creator
+from language import identify_language
 
 
 class NativeVhdlMakefileTests(unittest.TestCase):
+    def test_language_detection_accepts_library_tagged_sources(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            source = Path(temp_dir) / "cpu.vhd"
+            source.write_text("entity cpu is end; architecture rtl of cpu is begin end;\n")
+            self.assertEqual(
+                identify_language(temp_dir, {"files": [{"file": "cpu.vhd", "library": "gaisler"}]}),
+                "VHDL",
+            )
+
+    def test_library_tagged_sources_and_distinct_wrapper_alias(self):
+        config = {
+            "files": [
+                {"file": "rtl/pkg.vhd", "library": "grlib"},
+                {"file": "rtl/cpu.vhd", "library": "gaisler"},
+            ],
+            "include_dirs": [], "top_module": "cpu",
+            "language_version": "93c", "extra_flags": [],
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            wrappers = root / "wrappers"
+            wrappers.mkdir()
+            wrapper = wrappers / "core_wrapper.vhd"
+            wrapper.write_text("entity processorci_top is end;\n")
+            with mock.patch.object(cocotb_makefile_creator, "load_config", return_value=config):
+                makefile = cocotb_makefile_creator.create_cocotb_makefile(
+                    "core", "VHDL", str(root / "config"), str(wrappers),
+                    str(root / "output"), str(root / "source"), False,
+                )
+            content = Path(makefile).read_text(encoding="utf-8")
+            self.assertIn("VHDL_SOURCES_grlib +=", content)
+            self.assertIn("VHDL_SOURCES_gaisler +=", content)
+            self.assertIn(f"VHDL_SOURCES += {wrapper}", content)
+            self.assertIn("RTL_LIBRARY ?= work", content)
+
     def test_vhdl_wrapper_uses_ghdl_and_excludes_sv_wrapper(self):
         config = {
             "files": ["rtl/core_pkg.vhd", "rtl/core.vhd"],

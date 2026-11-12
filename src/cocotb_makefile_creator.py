@@ -216,8 +216,10 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
         str((config.get('interface') or {}).get('memory_interface', '')).lower() == 'dual'
     )
     native_vhdl = next(
-        (Path(top_folder) / f'{processor_name}{extension}' for extension in ('.vhd', '.vhdl')
-         if (Path(top_folder) / f'{processor_name}{extension}').is_file()),
+        (Path(top_folder) / f'{stem}{extension}'
+         for stem in (processor_name, f'{processor_name}_wrapper')
+         for extension in ('.vhd', '.vhdl')
+         if (Path(top_folder) / f'{stem}{extension}').is_file()),
         None,
     ) if language.lower() == 'vhdl' else None
     wrapper_path = str(native_vhdl or Path(top_folder) / f'{processor_name}.sv')
@@ -235,11 +237,18 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
                 version = '08'
             flags = [str(flag) for flag in config.get('extra_flags', []) if flag != '--latches']
             makefile.write(f'GHDL_ARGS ?= {" ".join(shlex.quote(flag) for flag in [f"--std={version}", *flags])}\n')
-            if config.get('work_library'):
-                makefile.write(f'RTL_LIBRARY ?= {config["work_library"]}\n')
-            for file in sim_files:
+            # Cocotb/GHDL supports VHDL_SOURCES_<library>. Keep the configured
+            # library for each GRLIB source; the wrapper is analyzed into the
+            # ordinary work library and resolves those units via library/use.
+            tagged_libraries = any(isinstance(item, dict) and item.get('library') for item in sim_files)
+            wrapper_library = 'work' if tagged_libraries else config.get('work_library', 'work')
+            makefile.write(f'RTL_LIBRARY ?= {wrapper_library}\n')
+            for item in sim_files:
+                file = item['file'] if isinstance(item, dict) else item
+                library = item.get('library') if isinstance(item, dict) else None
+                variable = f'VHDL_SOURCES_{library}' if library else 'VHDL_SOURCES'
                 path = escape_spaces(f'{core_directory}/{file}')
-                makefile.write(f'VHDL_SOURCES += {path}\n')
+                makefile.write(f'{variable} += {path}\n')
             makefile.write(f'VHDL_SOURCES += {escape_spaces(wrapper_path)}\n')
         elif language.lower() != 'vhdl':
             makefile.write(
@@ -331,8 +340,10 @@ def create_cocotb_makefile(processor_name: str, language: str, config_folder: st
         top_path = top_folder  # Keep relative path
         extensions = ('.vhd', '.vhdl', '.sv') if language.lower() == 'vhdl' else ('.sv',)
         top_file = next(
-            (os.path.join(top_folder, f'{processor_name}{extension}') for extension in extensions
-             if os.path.isfile(os.path.join(top_folder, f'{processor_name}{extension}'))),
+            (os.path.join(top_folder, f'{stem}{extension}')
+             for stem in (processor_name, f'{processor_name}_wrapper')
+             for extension in extensions
+             if os.path.isfile(os.path.join(top_folder, f'{stem}{extension}'))),
             os.path.join(top_folder, f'{processor_name}{extensions[0]}'),
         )
     else:

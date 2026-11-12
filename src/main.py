@@ -40,7 +40,10 @@ def _run_pre_script_if_sources_missing(directory: str, config: dict) -> None:
         return
 
     core_dir = Path(directory)
-    configured_sources = [core_dir / source for source in config.get("files", [])]
+    configured_sources = [
+        core_dir / (source["file"] if isinstance(source, dict) else source)
+        for source in config.get("files", [])
+    ]
     if configured_sources and all(source.exists() for source in configured_sources):
         return
 
@@ -162,13 +165,15 @@ def _core_labeler_impl(
     # A native VHDL wrapper is compiled with the core by Cocotb/GHDL. The
     # Verilog conversion below is only for VHDL cores without that wrapper.
     native_vhdl_wrapper = any(
-        (Path(top_dir) / f'{processor_name}{extension}').is_file()
+        (Path(top_dir) / f'{stem}{extension}').is_file()
+        for stem in (processor_name, f'{processor_name}_wrapper')
         for extension in ('.vhd', '.vhdl')
     )
     if language.lower() == 'vhdl' and not native_vhdl_wrapper:
-        sim_files = config['files']
-        for i in range(len(sim_files)):
-            sim_files[i] = os.path.join(directory, sim_files[i])
+        sim_files = [
+            os.path.join(directory, item['file'] if isinstance(item, dict) else item)
+            for item in config['files']
+        ]
         top_module = config['top_module']
 
         extra_flags = [str(flag) for flag in config.get('extra_flags', [])]

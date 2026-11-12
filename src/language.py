@@ -76,7 +76,8 @@ def identify_language(directory: str, config_file) -> str:
     # the files have relative paths to the repository
 
     if sim_files:
-        for file in sim_files:
+        for entry in sim_files:
+            file = entry['file'] if isinstance(entry, dict) else entry
             filepath = os.path.join(directory, file)
             if not os.path.isfile(filepath):
                 continue
