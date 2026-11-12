@@ -11,6 +11,7 @@ import sys
 import re
 import time
 import uuid
+import xml.etree.ElementTree as ET
 from typing import Optional
 
 from pathlib import Path
@@ -95,6 +96,22 @@ def _read_core_progress(path: Path) -> Optional[dict]:
     except (OSError, json.JSONDecodeError):
         return None
     return value if isinstance(value, dict) else None
+
+
+def _check_cocotb_results(path: Path) -> None:
+    """Cocotb's simulator Makefile can exit zero when a test fails."""
+    try:
+        cases = list(ET.parse(path).getroot().iter('testcase'))
+    except (OSError, ET.ParseError) as error:
+        raise RuntimeError(f'Cocotb result is missing or invalid: {path}') from error
+    if not cases:
+        raise RuntimeError(f'Cocotb ran no tests: {path}')
+    failed = [
+        case.get('name', '<unnamed>') for case in cases
+        if any(case.find(tag) is not None for tag in ('failure', 'error', 'skipped'))
+    ]
+    if failed:
+        raise RuntimeError(f'Cocotb tests failed or skipped: {", ".join(failed)}')
 
 
 def _core_labeler_impl(
@@ -199,9 +216,12 @@ def _core_labeler_impl(
     try:
         environment = os.environ.copy()
         environment['PYTHONPATH'] = path_to_main
+        results_file = Path('results.xml')
+        results_file.unlink(missing_ok=True)
         subprocess.run(['make', '-f', makefile, 'clean'], check=True)
         subprocess.run(['make', '-f', makefile], check=True, env=environment)
-    except subprocess.CalledProcessError as e:
+        _check_cocotb_results(results_file)
+    except (subprocess.CalledProcessError, RuntimeError) as e:
         logging.warning('Error executing make command: %s', e)
         _mark_analysis_failed(label_path, previous_labels, processor_name, e)
         return False
