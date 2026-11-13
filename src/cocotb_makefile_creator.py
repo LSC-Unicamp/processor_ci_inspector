@@ -235,6 +235,11 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
             # A named configuration explicitly selects this backend; the
             # caller's SIM environment must not silently replace it.
             makefile.write('SIM = nvc\n')
+        elif simulator == 'ghdl-ubuntu':
+            # The Ubuntu host-package lock supplies a stable GHDL build. The
+            # OSS CAD Suite GHDL can crash in its VPI startup for some cores.
+            makefile.write('SIM = ghdl\n')
+            makefile.write('GHDL_BIN_DIR = /usr/bin\n')
         else:
             makefile.write(f'SIM ?= {simulator}\n')
         makefile.write(f'TOPLEVEL_LANG ?= {"vhdl" if native_vhdl else "verilog"}\n')
@@ -245,7 +250,10 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
             if version in {'2008', 'vhdl2008'}:
                 version = '08'
             if simulator == 'nvc':
-                nvc_standard = {'87': '1987', '93': '1993', '08': '2008', '19': '2019'}.get(version)
+                nvc_standard = {
+                    '87': '1987', '93': '1993', '93c': '1993',
+                    '08': '2008', '19': '2019',
+                }.get(version)
                 if nvc_standard is None:
                     raise ValueError(f'unsupported NVC VHDL standard: {version}')
                 makefile.write(f'EXTRA_ARGS = --std={nvc_standard}\n')
@@ -255,6 +263,19 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
             # library for each GRLIB source; the wrapper is analyzed into the
             # ordinary work library and resolves those units via library/use.
             tagged_libraries = any(isinstance(item, dict) and item.get('library') for item in sim_files)
+            if simulator == 'nvc' and tagged_libraries:
+                libraries = {
+                    item['library'] for item in sim_files
+                    if isinstance(item, dict) and item.get('library')
+                }
+                library_order = config.get('inspector_vhdl_lib_order')
+                if (not isinstance(library_order, list)
+                        or len(library_order) != len(libraries)
+                        or set(library_order) != libraries):
+                    raise ValueError(
+                        'inspector_vhdl_lib_order must list each configured VHDL library once'
+                    )
+                makefile.write(f'VHDL_LIB_ORDER = {" ".join(library_order)}\n')
             wrapper_library = 'work' if tagged_libraries else config.get('work_library', 'work')
             makefile.write(f'RTL_LIBRARY ?= {wrapper_library}\n')
             for item in sim_files:

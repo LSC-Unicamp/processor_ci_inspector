@@ -42,6 +42,56 @@ class NativeVhdlMakefileTests(unittest.TestCase):
             self.assertIn("EXTRA_ARGS = --std=2008", content)
             self.assertNotIn("EXTRA_ARGS = -fsynopsys", content)
 
+    def test_nvc_93c_requires_explicit_library_order(self):
+        config = {
+            "files": [
+                {"file": "rtl/pkg.vhd", "library": "grlib"},
+                {"file": "rtl/cpu.vhd", "library": "gaisler"},
+            ],
+            "include_dirs": [], "language_version": "93c",
+            "extra_flags": [], "inspector_simulator": "nvc",
+            "inspector_vhdl_lib_order": ["grlib", "gaisler"],
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            wrappers = root / "wrappers"
+            wrappers.mkdir()
+            (wrappers / "core.vhd").write_text("entity processorci_top is end;\n")
+            with mock.patch.object(cocotb_makefile_creator, "load_config", return_value=config):
+                makefile = cocotb_makefile_creator.create_cocotb_makefile(
+                    "core", "VHDL", str(root / "config"), str(wrappers),
+                    str(root / "output"), str(root / "source"), False,
+                )
+                content = Path(makefile).read_text(encoding="utf-8")
+                self.assertIn("EXTRA_ARGS = --std=1993", content)
+                self.assertIn("VHDL_LIB_ORDER = grlib gaisler", content)
+                config["inspector_vhdl_lib_order"] = ["grlib"]
+                with self.assertRaisesRegex(ValueError, "each configured VHDL library"):
+                    cocotb_makefile_creator.create_cocotb_makefile(
+                        "core", "VHDL", str(root / "config"), str(wrappers),
+                        str(root / "output"), str(root / "source"), False,
+                    )
+
+    def test_ubuntu_ghdl_is_selected_without_path_guessing(self):
+        config = {
+            "files": ["rtl/core.vhd"], "include_dirs": [],
+            "language_version": "08", "extra_flags": [],
+            "inspector_simulator": "ghdl-ubuntu",
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            wrappers = root / "wrappers"
+            wrappers.mkdir()
+            (wrappers / "core.vhd").write_text("entity processorci_top is end;\n")
+            with mock.patch.object(cocotb_makefile_creator, "load_config", return_value=config):
+                makefile = cocotb_makefile_creator.create_cocotb_makefile(
+                    "core", "VHDL", str(root / "config"), str(wrappers),
+                    str(root / "output"), str(root / "source"), False,
+                )
+            content = Path(makefile).read_text(encoding="utf-8")
+            self.assertIn("SIM = ghdl", content)
+            self.assertIn("GHDL_BIN_DIR = /usr/bin", content)
+
     def test_language_detection_accepts_library_tagged_sources(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             source = Path(temp_dir) / "cpu.vhd"

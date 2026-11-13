@@ -60,9 +60,16 @@ def _run_pre_script_if_sources_missing(directory: str, config: dict) -> None:
 
 
 def _require_simulator(config: dict) -> None:
-    if config.get('inspector_simulator') == 'nvc' and shutil.which('nvc') is None:
+    simulator = config.get('inspector_simulator')
+    if simulator not in (None, 'nvc', 'ghdl-ubuntu'):
+        raise ValueError(f'unsupported Inspector simulator: {simulator}')
+    if simulator == 'nvc' and shutil.which('nvc') is None:
         raise FileNotFoundError(
             'NVC is required by this Inspector configuration; run ./setup.sh nvc'
+        )
+    if simulator == 'ghdl-ubuntu' and not Path('/usr/bin/ghdl').is_file():
+        raise FileNotFoundError(
+            'Ubuntu GHDL is required by this Inspector configuration; install the locked Ubuntu host packages'
         )
 
 
@@ -403,6 +410,13 @@ def _mark_analysis_failed(
     }
     labels.pop('forwarding_debug', None)
     labels.pop('hazard_handling', None)
+    if os.environ.get('RVB_INSPECTOR_SKIP_EXPERIMENTAL') == '1':
+        labels.pop('forwarding', None)
+        labels.pop('branch_prediction', None)
+        labels.setdefault('analysis', {})['disabled_probes'] = {
+            'forwarding': 'not released',
+            'branch_prediction': 'not released',
+        }
     label_path.parent.mkdir(parents=True, exist_ok=True)
     temporary = label_path.with_suffix(label_path.suffix + '.tmp')
     temporary.write_text(json.dumps(data, indent=4), encoding='utf-8')

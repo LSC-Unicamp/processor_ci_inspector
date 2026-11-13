@@ -74,6 +74,41 @@ def resolve_path(dut, path: str):
     return handle
 
 
+def _record_unavailable_regfile(dut, output_dir, processor_name, reason):
+    """Keep independent findings when storage-dependent probes cannot run."""
+    dut._log.warning("Register-file-dependent probes unavailable: %s", reason)
+    output_file = os.path.join(output_dir, f"{processor_name}_labels.json")
+    try:
+        with open(output_file, 'r', encoding='utf-8') as json_file:
+            labels = json.load(json_file)
+    except (json.JSONDecodeError, OSError):
+        labels = {}
+    core_labels = labels.setdefault(processor_name, {})
+    core_labels["analysis"] = {
+        "state": "partial",
+        "reason": reason,
+        "unavailable_probes": (
+            ["cycle"] if _discovery._env_flag("RVB_INSPECTOR_SKIP_EXPERIMENTAL")
+            else ["cycle", "forwarding", "branch_prediction"]
+        ),
+    }
+    _mark_experimental_disabled(core_labels)
+    with open(output_file, 'w', encoding='utf-8') as json_file:
+        json.dump(labels, json_file, indent=4)
+
+
+def _mark_experimental_disabled(core_labels):
+    """Discard prior experimental findings from RV-Bench result reuse."""
+    if not _discovery._env_flag("RVB_INSPECTOR_SKIP_EXPERIMENTAL"):
+        return
+    for name in ("forwarding", "forwarding_debug", "branch_prediction", "hazard_handling"):
+        core_labels.pop(name, None)
+    core_labels.setdefault("analysis", {})["disabled_probes"] = {
+        "forwarding": "not released",
+        "branch_prediction": "not released",
+    }
+
+
 @cocotb.test()
 async def processor_test(dut):
     """Test function for the processor.
@@ -100,9 +135,11 @@ async def processor_test(dut):
     except (json.JSONDecodeError, OSError) as e:
         logging.warning('Error reading register file candidates: %s', e)
     if not regfile_candidates:
-        raise AssertionError(
-            "No visible register file candidates were found; analysis is incomplete"
+        _record_unavailable_regfile(
+            dut, output_dir, processor_name,
+            "No visible register-file candidate was found",
         )
+        return
     dut._log.info(f"Register file candidates: {regfile_candidates}")    
 
     candidate = selected_candidate_metadata(discovery)
@@ -113,13 +150,19 @@ async def processor_test(dut):
     )
     dut._log.info(f"Using register file: {regfile_path}")
 
-    if candidate and candidate.get("kind") != "array_of_words":
-        regfile = _ArchitecturalRegfileView(dut, candidate)
-    else:
-        regfile = resolve_path(dut, regfile_path)
+    try:
+        if candidate and candidate.get("kind") != "array_of_words":
+            regfile = _ArchitecturalRegfileView(dut, candidate)
+        else:
+            regfile = resolve_path(dut, regfile_path)
+        bits = len(regfile[7])
+    except (AttributeError, IndexError, KeyError, TypeError) as error:
+        _record_unavailable_regfile(
+            dut, output_dir, processor_name,
+            f"Candidate {regfile_path!r} is not observable: {error}",
+        )
+        return
     dut._log.info(f"Resolved register file: {regfile}")
-
-    bits = len(regfile[7])
 
     # All discovery phases share one pair of memory drivers. Individual probes
     # select/reset their program and data images without spawning competing
@@ -197,7 +240,9 @@ async def processor_test(dut):
         logging.warning('Error reading existing JSON file: %s', e)
         existing_data = {}
 
-    existing_data.setdefault(processor_name, {})["bits"] = bits
+    core_labels = existing_data.setdefault(processor_name, {})
+    core_labels["bits"] = bits
+    _mark_experimental_disabled(core_labels)
 
     # Save the updated data back to the JSON file
     try:
