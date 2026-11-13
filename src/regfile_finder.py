@@ -414,6 +414,37 @@ def _classify_array_like_candidate(handle, depths=None, word_widths=None):
                 "reasons": reasons,
             }
 
+        # Some multithreaded cores interleave one architectural register bank
+        # per hart in a single flat array (for example, 3 x 32 words). Treat
+        # the first bank as a candidate, then require the usual clocked write
+        # confirmation before accepting it as architectural state. This does
+        # not reinterpret arbitrary memories with the same shape.
+        name_score, _ = _path_name_score(path)
+        if (
+            depth is not None
+            and depth % 32 == 0
+            and 2 <= depth // 32 <= 8
+            and word_width is not None
+            and name_score > 0
+        ):
+            score, reasons = _score_array_shape(
+                32, word_width, "array_of_words", path, word_widths
+            )
+            reasons.append(f"first of {depth // 32} flattened 32-word hart banks")
+            return {
+                "path": path,
+                "kind": "array_of_words",
+                "handle_type": handle_type,
+                "depth": 32,
+                "storage_depth": depth,
+                "word_width": word_width,
+                "storage_word_width": storage_word_width,
+                "total_width": depth * storage_word_width,
+                "sample_indices": [0, 1, 7, 31],
+                "score": score,
+                "reasons": reasons,
+            }
+
         # Bit-serial cores such as SERV store each architectural register in
         # several narrow RAM entries.  Recognize 32 GPRs plus up to four CSR
         # slots and reconstruct only the architectural GPR portion.

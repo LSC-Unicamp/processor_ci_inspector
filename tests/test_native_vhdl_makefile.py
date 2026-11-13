@@ -10,10 +10,38 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import cocotb_makefile_creator
+import main
 from language import identify_language
 
 
 class NativeVhdlMakefileTests(unittest.TestCase):
+    def test_missing_named_nvc_backend_fails_before_compilation(self):
+        with mock.patch.object(main.shutil, "which", return_value=None):
+            with self.assertRaisesRegex(FileNotFoundError, "setup.sh nvc"):
+                main._require_simulator({"inspector_simulator": "nvc"})
+            main._require_simulator({})
+
+    def test_named_nvc_backend_is_fixed_in_makefile(self):
+        config = {
+            "files": ["rtl/core.vhd"], "include_dirs": [],
+            "language_version": "08", "extra_flags": ["-fsynopsys"],
+            "inspector_simulator": "nvc",
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            wrappers = root / "wrappers"
+            wrappers.mkdir()
+            (wrappers / "core.vhd").write_text("entity processorci_top is end;\n")
+            with mock.patch.object(cocotb_makefile_creator, "load_config", return_value=config):
+                makefile = cocotb_makefile_creator.create_cocotb_makefile(
+                    "core", "VHDL", str(root / "config"), str(wrappers),
+                    str(root / "output"), str(root / "source"), False,
+                )
+            content = Path(makefile).read_text(encoding="utf-8")
+            self.assertIn("SIM = nvc", content)
+            self.assertIn("EXTRA_ARGS = --std=2008", content)
+            self.assertNotIn("EXTRA_ARGS = -fsynopsys", content)
+
     def test_language_detection_accepts_library_tagged_sources(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             source = Path(temp_dir) / "cpu.vhd"

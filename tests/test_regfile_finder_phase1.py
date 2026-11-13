@@ -49,6 +49,24 @@ class FakeModule:
 
 
 class Phase1DiscoveryTests(unittest.TestCase):
+    def test_flattened_multihart_register_bank_uses_first_hart(self):
+        bank = FakeArray(
+            "dut.rf.regfile_lutram_rs1",
+            [FakeSignal(f"dut.rf.regfile_lutram_rs1[{i}]", 32, value=i) for i in range(96)],
+        )
+        candidate = finder._classify_array_like_candidate(bank)
+        self.assertIsNotNone(candidate)
+        self.assertEqual(candidate["depth"], 32)
+        self.assertEqual(candidate["storage_depth"], 96)
+        self.assertEqual(candidate["sample_indices"], [0, 1, 7, 31])
+        dut = FakeModule("dut", rf=FakeModule("dut.rf", regfile_lutram_rs1=bank))
+        self.assertEqual(finder._sample_array_candidate(dut, candidate)["x7"], 7)
+
+        unrelated = FakeArray(
+            "dut.dmem", [FakeSignal(f"dut.dmem[{i}]", 32) for i in range(96)]
+        )
+        self.assertIsNone(finder._classify_array_like_candidate(unrelated))
+
     def test_config_normalizes_sim_files_and_optional_lists(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             config_path = Path(temp_dir) / "demo.json"

@@ -223,11 +223,20 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
         None,
     ) if language.lower() == 'vhdl' else None
     wrapper_path = str(native_vhdl or Path(top_folder) / f'{processor_name}.sv')
+    if config.get('inspector_simulator') and not native_vhdl:
+        raise ValueError('inspector_simulator requires a native VHDL wrapper')
     internal_rtl = None if native_vhdl else resolve_internal_rtl_directory(top_folder)
 
     # Write the Makefile content
     with open(makefile_path, 'a', encoding='utf-8') as makefile:
-        makefile.write(f'SIM ?= {"ghdl" if native_vhdl else "verilator"}\n')
+        simulator = config.get('inspector_simulator', 'ghdl') if native_vhdl else 'verilator'
+        if simulator == 'nvc':
+            # NVC's VHPI exposes VHDL arrays that GHDL's VPI cannot expose.
+            # A named configuration explicitly selects this backend; the
+            # caller's SIM environment must not silently replace it.
+            makefile.write('SIM = nvc\n')
+        else:
+            makefile.write(f'SIM ?= {simulator}\n')
         makefile.write(f'TOPLEVEL_LANG ?= {"vhdl" if native_vhdl else "verilog"}\n')
         makefile.write(f'export TWO_MEMORIES = {two_memories}\n')
         makefile.write(f'export OLLAMA = {ollama_flag}\n')
@@ -235,6 +244,11 @@ def processor_top_makefile(processor_name: str, language: str, config_folder: st
             version = str(config.get('language_version') or '08')
             if version in {'2008', 'vhdl2008'}:
                 version = '08'
+            if simulator == 'nvc':
+                nvc_standard = {'87': '1987', '93': '1993', '08': '2008', '19': '2019'}.get(version)
+                if nvc_standard is None:
+                    raise ValueError(f'unsupported NVC VHDL standard: {version}')
+                makefile.write(f'EXTRA_ARGS = --std={nvc_standard}\n')
             flags = [str(flag) for flag in config.get('extra_flags', []) if flag != '--latches']
             makefile.write(f'GHDL_ARGS ?= {" ".join(shlex.quote(flag) for flag in [f"--std={version}", *flags])}\n')
             # Cocotb/GHDL supports VHDL_SOURCES_<library>. Keep the configured

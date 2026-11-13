@@ -11,6 +11,7 @@ import sys
 import re
 import time
 import uuid
+import shutil
 import xml.etree.ElementTree as ET
 from typing import Optional
 
@@ -56,6 +57,13 @@ def _run_pre_script_if_sources_missing(directory: str, config: dict) -> None:
         executable="/bin/bash",
         check=True,
     )
+
+
+def _require_simulator(config: dict) -> None:
+    if config.get('inspector_simulator') == 'nvc' and shutil.which('nvc') is None:
+        raise FileNotFoundError(
+            'NVC is required by this Inspector configuration; run ./setup.sh nvc'
+        )
 
 
 def _core_progress_path(output_dir: str, processor_name: str) -> Path:
@@ -161,6 +169,7 @@ def _core_labeler_impl(
 
     processor_name = os.path.basename(os.path.normpath(directory))
     config = load_config(config_file, processor_name)
+    _require_simulator(config)
 
     try:
         _run_pre_script_if_sources_missing(directory, config)
